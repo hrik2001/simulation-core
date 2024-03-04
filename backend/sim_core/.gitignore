@@ -163,3 +163,4 @@ cython_debug/
 # arcadiasim generated logs
 logs/
 pipeline_logs/
+*.sqlite3
