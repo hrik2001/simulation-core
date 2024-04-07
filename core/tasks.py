@@ -73,7 +73,4 @@ def task_cryo_logs(
         metadata.save()
 
     os.chdir(os.path.join(settings.MEDIA_ROOT, f"logs__{label}"))
-    # extracted = list(sorted(os.listdir()))[:-1]
-    # extracted = json.dumps(extracted)
-    # metadata.extracted = extracted
     metadata.save()
