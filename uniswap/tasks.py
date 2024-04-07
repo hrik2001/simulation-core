@@ -28,6 +28,7 @@ def task__uniswap__pair_created():
                     transaction_hash = "0x" + str(row["transaction_hash"].hex()).lower(),
                     transaction_index = row["transaction_index"],
                     log_index = row["log_index"],
+                    chain = metadata.chain,
                     block_number = row["block_number"]
                 )
                 pairs_created.append(pair_created)

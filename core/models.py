@@ -33,6 +33,7 @@ class Transaction(BaseModel):
     timestamp = models.IntegerField(null=True)
     transaction_index = models.IntegerField(null=True)
     log_index = models.IntegerField(null=True)
+    chain = models.ForeignKey(Chain, on_delete=models.CASCADE)
 
     class Meta:
         abstract = True
