@@ -1,4 +1,4 @@
-# ArcadiaSim
+# Core component
 This repository contains code to conduct agent based simulation on Aracadia Finance, and is in active development
 
 ## Installation
