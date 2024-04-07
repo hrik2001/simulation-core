@@ -25,9 +25,14 @@ class Chain(BaseModel):
 class CryoLogsMetadata(BaseModel):
     label = models.CharField(max_length=255, unique=True, db_index=True)
     chain = models.ForeignKey(Chain, on_delete=models.CASCADE)
-    ingested = models.JSONField(null=True, blank=True, default=[])
-    extracted = models.JSONField(null=True, blank=True, default=[])
+    ingested = models.JSONField(null=True, blank=True, default=list())
 
 class Transaction(BaseModel):
-    hash = models.CharField(max_length=255, db_index=True, unique=True)
+    transaction_hash = models.CharField(max_length=255, db_index=True, unique=True)
     block_number = models.IntegerField(null=False)
+    timestamp = models.IntegerField(null=True)
+    transaction_index = models.IntegerField(null=True)
+    log_index = models.IntegerField(null=True)
+
+    class Meta:
+        abstract = True
