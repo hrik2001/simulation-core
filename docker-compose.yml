@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+  web:
+    env_file: env/local/app.env
+    build:
+      context: .
+      dockerfile: Dockerfiles/app_worker.Dockerfile
+    ports:
+      - '8000:8000'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
