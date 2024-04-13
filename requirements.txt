@@ -26,6 +26,7 @@ pandas==2.2.1
 prometheus_client==0.20.0
 promise==2.3
 prompt-toolkit==3.0.43
+psycopg2==2.9.9
 pyarrow==15.0.2
 python-crontab==3.0.0
 python-dateutil==2.9.0.post0

@@ -4,7 +4,7 @@
 start_backend() {
     echo "Migration Database..."
     python3 manage.py migrate
-    python3 manage.py collectstatic
+    # python3 manage.py collectstatic
 
     echo "Starting Django backend..."
     # Replace 'python manage.py runserver' with your actual command to start the Django server

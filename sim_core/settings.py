@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-tf1!one#d4d^o*g#4a0307009xcw9nm7656u72$z^@1uye2%39
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['sim-core.up.railway.app']
+ALLOWED_HOSTS = ['sim-core.up.railway.app', "127.0.0.1", "localhost"]
 CSRF_TRUSTED_ORIGINS = ['https://sim-core.up.railway.app']
 
 
@@ -83,20 +83,29 @@ WSGI_APPLICATION = 'sim_core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-if os.environ.get('ENVIRONMENT') == 'local':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+# if os.environ.get('ENVIRONMENT') == 'local':
+    # DATABASES = {
+        # 'default': {
+            # 'ENGINE': 'django.db.backends.sqlite3',
+            # 'NAME': BASE_DIR / 'db.sqlite3',
+        # }
+    # }
+# elif os.environ.get('ENVIRONMENT') == 'production':
+POSTGRES_DB = os.environ.get("POSTGRES_DB")  # database name
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")  # database user password
+POSTGRES_USER = os.environ.get("POSTGRES_USER")  # database username
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST")  # database host
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT")  # database port
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": POSTGRES_DB,
+        "USER": POSTGRES_USER,
+        "PASSWORD": POSTGRES_PASSWORD,
+        "HOST": POSTGRES_HOST,
+        "PORT": POSTGRES_PORT,
     }
-elif os.environ.get("ENVIRONMENT") == "production":
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / Path(os.environ.get("MEDIA_DIR")) / 'db.sqlite3'
-        }
-    }
+}
 
 
 # Password validation
