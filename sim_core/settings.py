@@ -35,6 +35,7 @@ CSRF_TRUSTED_ORIGINS = ['https://sim-core.up.railway.app']
 # Application definition
 
 INSTALLED_APPS = [
+    'filebrowser',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,7 +45,7 @@ INSTALLED_APPS = [
     'core',
     'uniswap',
     "django_celery_beat",  # for scheduling tasks
-    "graphene_django"
+    "graphene_django",
 ]
 
 MIDDLEWARE = [
@@ -158,3 +159,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT = (BASE_DIR / Path(os.environ.get("MEDIA_DIR"))).resolve().as_posix()
 CELERY_BROKER_URL = os.environ["REDIS_URL"]
 CELERY_RESULT_BACKEND = os.environ["REDIS_URL"]
+
+FILEBROWSER_DIRECTORY = ''
+DIRECTORY = ''
