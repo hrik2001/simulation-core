@@ -9,27 +9,11 @@ The core component also requires a persistent directory where it will store all 
 For now it's assumed to be `./media` directory.
 
 ## Installation
-The codebase assumes that the python version is 3.10.12 (having any release of 3.10 would be fine). 
-
-It is recommended to use a virtual environment for developing this. To create one, kindly run the following command at the root of the project
-
+To run the codebase, make sure that you have docker. To run the codebase locally run the following command
 ```
-python3.10 -m venv .venv
+docker-compose build
 ```
-
-To activate the virtual environment, kindly run the following command
+The above command builds the docker images, once done, the whole backend can be run locally by the following command
 ```
-source .venv/bin/activate
+docker-compose up
 ```
-To install the dependencies, the following command should install it all
-```
-pip install -r requirements.txt
-```
-To update the `requirements.txt`, the following command should be called
-```
-pip freeze > requirements.txt
-```
-
-## Running
-You can run the core component locally by running `./dev.sh`, you can also check the job queue using `./flower_dev.sh`. Please make sure that redis is already running.
-`./dev.sh` will start the django backend locally along with an instance of scheduler and worker.

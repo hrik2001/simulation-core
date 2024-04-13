@@ -28,7 +28,8 @@ SECRET_KEY = 'django-insecure-tf1!one#d4d^o*g#4a0307009xcw9nm7656u72$z^@1uye2%39
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['sim-core.up.railway.app', "127.0.0.1", "localhost"]
+CSRF_TRUSTED_ORIGINS = ['https://sim-core.up.railway.app']
 
 
 # Application definition
@@ -48,6 +49,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -80,10 +83,27 @@ WSGI_APPLICATION = 'sim_core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# if os.environ.get('ENVIRONMENT') == 'local':
+    # DATABASES = {
+        # 'default': {
+            # 'ENGINE': 'django.db.backends.sqlite3',
+            # 'NAME': BASE_DIR / 'db.sqlite3',
+        # }
+    # }
+# elif os.environ.get('ENVIRONMENT') == 'production':
+POSTGRES_DB = os.environ.get("POSTGRES_DB")  # database name
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")  # database user password
+POSTGRES_USER = os.environ.get("POSTGRES_USER")  # database username
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST")  # database host
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT")  # database port
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": POSTGRES_DB,
+        "USER": POSTGRES_USER,
+        "PASSWORD": POSTGRES_PASSWORD,
+        "HOST": POSTGRES_HOST,
+        "PORT": POSTGRES_PORT,
     }
 }
 
@@ -122,7 +142,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+# STATIC_URL = 'static/'
+STATIC_ROOT = "static"
+STATICFILES_DIRS = []
+STATIC_URL = "/static/"
+STATICFILES_FINDERS = (
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

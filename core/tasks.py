@@ -26,7 +26,7 @@ def cryo_ingest_logs(
         block_str = f"{start_block_str}:{end_block_str}"
         print(f"{block_str=}")
         command = [
-            'cryo', 'logs',
+            '/code/bin/cryo', 'logs',
             '--label', label,
             '--blocks', block_str,
             '--reorg-buffer', str(reorg_buffer),

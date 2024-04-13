@@ -17,13 +17,16 @@ graphene==3.3
 graphene-django==3.2.0
 graphql-core==3.2.3
 graphql-relay==3.2.0
+gunicorn==21.2.0
 humanize==4.9.0
 kombu==5.3.6
 numpy==1.26.4
+packaging==24.0
 pandas==2.2.1
 prometheus_client==0.20.0
 promise==2.3
 prompt-toolkit==3.0.43
+psycopg2==2.9.9
 pyarrow==15.0.2
 python-crontab==3.0.0
 python-dateutil==2.9.0.post0
@@ -38,3 +41,4 @@ typing_extensions==4.10.0
 tzdata==2024.1
 vine==5.1.0
 wcwidth==0.2.13
+whitenoise==6.6.0
