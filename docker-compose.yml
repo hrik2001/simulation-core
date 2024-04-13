@@ -4,9 +4,16 @@ services:
   web:
     # env_file: env/local/app.env
     environment:
-      TIMEOUT: 9
       PORT: 8000
-      REDIS_URL: redis://redis:6379/0
+      MEDIA_DIR: 'media'
+      REDIS_URL: 'redis://localhost:6379/0'
+      ENVIRONMENT: 'local'
+      POSTGRES_DB: 'postgres'
+      POSTGRES_PASSWORD: 'postgres'
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PORT: 5432
+      POSTGRES_HOST: 'postgres'
+      TIMEOUT: 9
     build:
       context: .
       dockerfile: Dockerfiles/app_worker.Dockerfile

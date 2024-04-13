@@ -16,8 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from filebrowser.sites import site
+
+admin.site.site_header = "Llamarisk Core"
+admin.site.site_title = "Llamarisk Core Admin Dashboard"
+admin.site.index_title = "Llamarisk Core Administration"
 
 urlpatterns = [
+    path('admin/filebrowser/', site.urls),
     path('admin/', admin.site.urls),
     path('protocols/uniswap', include('uniswap.urls')),
 ]
