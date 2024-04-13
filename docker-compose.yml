@@ -17,6 +17,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    volumes:
+          - media:/code/media
   
   redis:
     image: redis:latest
@@ -36,3 +38,4 @@ services:
 
 volumes:
   pgdata:
+  media:
