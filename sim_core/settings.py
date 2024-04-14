@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'uniswap',
+    'arcadia',
     "django_celery_beat",  # for scheduling tasks
     "graphene_django",
 ]

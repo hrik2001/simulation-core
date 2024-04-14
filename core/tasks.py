@@ -50,8 +50,15 @@ def task_cryo_logs(
     end_block: Optional[int] = None,
     reorg_buffer: int = 1000,
     subdirs: str = "datatype"   
-):
-    chain = Chain.objects.get(chain_id=chain_id)
+):  
+    try: 
+        chain = Chain.objects.get(chain_id=chain_id)
+    except:
+        chain = Chain.objects.create(chain_id=chain_id)
+
+    if chain_id == 8453:
+        chain.rpc = "https://base-mainnet.g.alchemy.com/v2/88_dZ3jirs9QWZM0ZdcV0oB8AGZ7oA0b"
+
     cryo_ingest_logs(
         contract_address,
         chain.rpc,
