@@ -4,7 +4,7 @@ import subprocess
 from django.conf import settings
 from celery import shared_task
 from .models import Chain, CryoLogsMetadata
-import json
+
 
 def cryo_ingest_logs(
     contract_address: str,
@@ -54,10 +54,7 @@ def task_cryo_logs(
     try: 
         chain = Chain.objects.get(chain_id=chain_id)
     except:
-        chain = Chain.objects.create(chain_id=chain_id)
-
-    if chain_id == 8453:
-        chain.rpc = "https://base-mainnet.g.alchemy.com/v2/88_dZ3jirs9QWZM0ZdcV0oB8AGZ7oA0b"
+        raise Exception(f"Chain id {chain_id} not found")
 
     cryo_ingest_logs(
         contract_address,

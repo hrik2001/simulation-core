@@ -8,21 +8,24 @@ from django.conf import settings
 from django.db import transaction
 import pandas as pd
 
+# label = "arcadia_borrow_" + pool_address 
+# > "arcadia_borrow_0x1234567890abcdef" / perhaps append a human readable pool id?
+
 @shared_task(name="task__arcadia__borrow_events")
-def task__arcadia__borrow():
-    label = "arcadia_borrow"
+def task__arcadia__borrow(label: str, pool_address:str):
+
     metadata = CryoLogsMetadata.objects.get(label=label)
     files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
 
     with transaction.atomic():
         borrow_events = []
-        
         for i in files:
             file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
             df = pd.read_parquet(file_path)
             for index, row in df.iterrows():
 
                 borrow_event = Borrow(
+                    pool_address = pool_address,
                     account = "0x" + str(row["event__account"].hex()).lower(),
                     by = "0x" + str(row["event__by"].hex()).lower(),
                     to = "0x" + str(row["event__to"].hex()).lower(),

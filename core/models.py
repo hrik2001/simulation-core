@@ -16,8 +16,8 @@ class Chain(BaseModel):
     chain_id = models.IntegerField(null=False, unique=True)
     chain_name = models.TextField(null=False)
     rpc = models.TextField(null=False)
-    explorer = models.TextField(null=False, blank=True)
-    misc_info = models.JSONField(null=False, blank=True)
+    explorer = models.TextField(null=True, blank=True)
+    misc_info = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return self.chain_name
