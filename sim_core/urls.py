@@ -26,4 +26,5 @@ urlpatterns = [
     path('admin/filebrowser/', site.urls),
     path('admin/', admin.site.urls),
     path('protocols/uniswap', include('uniswap.urls')),
+    path('explorer/', include('explorer.urls')),
 ]
