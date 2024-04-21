@@ -36,6 +36,7 @@ CSRF_TRUSTED_ORIGINS = ['https://sim-core.up.railway.app']
 
 INSTALLED_APPS = [
     'filebrowser',
+    'explorer',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,9 +45,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'uniswap',
+    'arcadia',
     "django_celery_beat",  # for scheduling tasks
     "graphene_django",
 ]
+EXPLORER_CONNECTIONS = { 'Default': 'default' }
+EXPLORER_DEFAULT_CONNECTION = 'default'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
