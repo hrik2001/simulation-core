@@ -33,8 +33,8 @@ def task__arcadia__borrow(label: str, pool_address:str):
                     account = "0x" + str(row["event__account"].hex()).lower(),
                     by = "0x" + str(row["event__by"].hex()).lower(),
                     to = "0x" + str(row["event__to"].hex()).lower(),
-                    amount =  str(row["event__amount"]),
-                    fee =  int(row["event__fee"]),
+                    amount =  str(row["event__amount_string"]),
+                    fee =  int(row["event__fee_string"]),
                     referrer = "0x" + str(row["event__referrer"].hex()).lower(),
 
                     transaction_hash = "0x" + str(row["transaction_hash"].hex()).lower(),
