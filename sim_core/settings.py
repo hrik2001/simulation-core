@@ -28,8 +28,8 @@ SECRET_KEY = 'django-insecure-tf1!one#d4d^o*g#4a0307009xcw9nm7656u72$z^@1uye2%39
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['sim-core.up.railway.app', "127.0.0.1", "localhost"]
-CSRF_TRUSTED_ORIGINS = ['https://sim-core.up.railway.app']
+ALLOWED_HOSTS = ['data-core.up.railway.app', "127.0.0.1", "localhost"]
+CSRF_TRUSTED_ORIGINS = ['https://data-core.up.railway.app']
 
 
 # Application definition
