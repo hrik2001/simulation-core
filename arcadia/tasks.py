@@ -54,99 +54,99 @@ def task__arcadia__borrow(label: str, pool_address:str):
 @shared_task(name="task__arcadia__auction_started_events")
 def task__arcadia__auction_started(label: str, pool_address:str):
     
-        metadata = CryoLogsMetadata.objects.get(label=label)
-        files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
-    
-        with transaction.atomic():
-            auction_started_events = []
-            for i in files:
-                file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
-                df = pd.read_parquet(file_path)
-                for index, row in df.iterrows():
-    
-                    auction_started_event = AuctionStarted(
-                        pool_address = pool_address,
-                        account = "0x" + str(row["event__account"].hex()).lower(),
-                        creditor =  str(row["event__creditor"]),
-                        open_debt =  str(row["event__open_debt"]),
+    metadata = CryoLogsMetadata.objects.get(label=label)
+    files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
 
-                        transaction_hash = "0x" + str(row["transaction_hash"].hex()).lower(),
-                        transaction_index = row["transaction_index"],
-                        log_index = row["log_index"],
-                        chain = metadata.chain,
-                        block_number = row["block_number"]
-                    )
-                    auction_started_events.append(auction_started_event)
-            
-            AuctionStarted.objects.bulk_create(auction_started_events, ignore_conflicts=True)
-            metadata.ingested = after_ingestion
-            metadata.save()
+    with transaction.atomic():
+        auction_started_events = []
+        for i in files:
+            file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
+            df = pd.read_parquet(file_path)
+            for index, row in df.iterrows():
+
+                auction_started_event = AuctionStarted(
+                    pool_address = pool_address,
+                    account = "0x" + str(row["event__account"].hex()).lower(),
+                    creditor =  str(row["event__creditor"]),
+                    open_debt =  str(row["event__open_debt"]),
+
+                    transaction_hash = "0x" + str(row["transaction_hash"].hex()).lower(),
+                    transaction_index = row["transaction_index"],
+                    log_index = row["log_index"],
+                    chain = metadata.chain,
+                    block_number = row["block_number"]
+                )
+                auction_started_events.append(auction_started_event)
+        
+        AuctionStarted.objects.bulk_create(auction_started_events, ignore_conflicts=True)
+        metadata.ingested = after_ingestion
+        metadata.save()
     update_timestamp(metadata.chain, AuctionStarted.objects.filter(timestamp=None), AuctionStarted)
 
 @shared_task(name="task__arcadia__auction_finished_events")
 def task__arcadia__auction_finished(label: str, pool_address:str):
-            metadata = CryoLogsMetadata.objects.get(label=label)
-            files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
+    metadata = CryoLogsMetadata.objects.get(label=label)
+    files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
+
+    with transaction.atomic():
+        auction_finished_events = []
+        for i in files:
+            file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
+            df = pd.read_parquet(file_path)
+            for index, row in df.iterrows():
+
+                auction_finished_event = AuctionFinished(
+                    pool_address = pool_address,
+                    account = "0x" + str(row["event__account"].hex()).lower(),
+                    creditor =  str(row["event__creditor"]),
+                    start_debt =  str(row["event__start_debt"]),
+                    initiation_reward =  str(row["event__initiation_reward"]),
+                    termination_reward =  str(row["event__termination_reward"]),
+                    penalty =  str(row["event__penalty"]),
+                    bad_debt =  str(row["event__bad_debt"]),
+                    surplus =  str(row["event__surplus"]),
+                    
+                    transaction_hash = "0x" + str(row["transaction_hash"].hex()).lower(),
+                    transaction_index = row["transaction_index"],
+                    log_index = row["log_index"],
+                    chain = metadata.chain,
+                    block_number = row["block_number"]
+                )
+                auction_finished_events.append(auction_finished_event)
         
-            with transaction.atomic():
-                auction_finished_events = []
-                for i in files:
-                    file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
-                    df = pd.read_parquet(file_path)
-                    for index, row in df.iterrows():
-        
-                        auction_finished_event = AuctionFinished(
-                            pool_address = pool_address,
-                            account = "0x" + str(row["event__account"].hex()).lower(),
-                            creditor =  str(row["event__creditor"]),
-                            start_debt =  str(row["event__start_debt"]),
-                            initiation_reward =  str(row["event__initiation_reward"]),
-                            termination_reward =  str(row["event__termination_reward"]),
-                            penalty =  str(row["event__penalty"]),
-                            bad_debt =  str(row["event__bad_debt"]),
-                            surplus =  str(row["event__surplus"]),
-                            
-                            transaction_hash = "0x" + str(row["transaction_hash"].hex()).lower(),
-                            transaction_index = row["transaction_index"],
-                            log_index = row["log_index"],
-                            chain = metadata.chain,
-                            block_number = row["block_number"]
-                        )
-                        auction_finished_events.append(auction_finished_event)
-                
-                AuctionFinished.objects.bulk_create(auction_finished_events, ignore_conflicts=True)
-                metadata.ingested = after_ingestion
-                metadata.save()
+        AuctionFinished.objects.bulk_create(auction_finished_events, ignore_conflicts=True)
+        metadata.ingested = after_ingestion
+        metadata.save()
     update_timestamp(metadata.chain, AuctionFinished.objects.filter(timestamp=None), AuctionFinished)
 
 @shared_task(name="task__arcadia__repay_events")
 def task__arcadia__repay(label: str, pool_address:str):
-            metadata = CryoLogsMetadata.objects.get(label=label)
-            files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
+    metadata = CryoLogsMetadata.objects.get(label=label)
+    files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
+
+    with transaction.atomic():
+        repay_events = []
+        for i in files:
+            file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
+            df = pd.read_parquet(file_path)
+            for index, row in df.iterrows():
+
+                repay_event = Repay(
+                    pool_address = pool_address,
+                    account = "0x" + str(row["event__account"].hex()).lower(),
+                    from_address =  str(row["event__from"]),
+                    amount =  str(row["event__amount"]),
+                    
+                    transaction_hash = "0x" + str(row["transaction_hash"].hex()).lower(),
+                    transaction_index = row["transaction_index"],
+                    log_index = row["log_index"],
+                    chain = metadata.chain,
+                    block_number = row["block_number"]
+                )
+                repay_events.append(repay_event)
         
-            with transaction.atomic():
-                repay_events = []
-                for i in files:
-                    file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
-                    df = pd.read_parquet(file_path)
-                    for index, row in df.iterrows():
-        
-                        repay_event = Repay(
-                            pool_address = pool_address,
-                            account = "0x" + str(row["event__account"].hex()).lower(),
-                            from_address =  str(row["event__from"]),
-                            amount =  str(row["event__amount"]),
-                            
-                            transaction_hash = "0x" + str(row["transaction_hash"].hex()).lower(),
-                            transaction_index = row["transaction_index"],
-                            log_index = row["log_index"],
-                            chain = metadata.chain,
-                            block_number = row["block_number"]
-                        )
-                        repay_events.append(repay_event)
-                
-                Repay.objects.bulk_create(repay_events, ignore_conflicts=True)
-                metadata.ingested = after_ingestion
-                metadata.save()
+        Repay.objects.bulk_create(repay_events, ignore_conflicts=True)
+        metadata.ingested = after_ingestion
+        metadata.save()
     update_timestamp(metadata.chain, Repay.objects.filter(timestamp=None), Repay)
  
