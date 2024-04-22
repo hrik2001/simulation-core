@@ -1,4 +1,4 @@
-from sim_core.utils import parquet_files_to_process
+from sim_core.utils import parquet_files_to_process, update_timestamp
 from .models import Borrow, AuctionStarted, AuctionFinished, Repay
 from core.models import CryoLogsMetadata
 from celery import shared_task
@@ -48,6 +48,8 @@ def task__arcadia__borrow(label: str, pool_address:str):
         Borrow.objects.bulk_create(borrow_events, ignore_conflicts=True)
         metadata.ingested = after_ingestion
         metadata.save()
+    
+    update_timestamp(metadata.chain, Borrow.objects.filter(timestamp=None), Borrow)
 
 @shared_task(name="task__arcadia__auction_started_events")
 def task__arcadia__auction_started(label: str, pool_address:str):
@@ -79,6 +81,7 @@ def task__arcadia__auction_started(label: str, pool_address:str):
             AuctionStarted.objects.bulk_create(auction_started_events, ignore_conflicts=True)
             metadata.ingested = after_ingestion
             metadata.save()
+    update_timestamp(metadata.chain, AuctionStarted.objects.filter(timestamp=None), AuctionStarted)
 
 @shared_task(name="task__arcadia__auction_finished_events")
 def task__arcadia__auction_finished(label: str, pool_address:str):
@@ -114,6 +117,7 @@ def task__arcadia__auction_finished(label: str, pool_address:str):
                 AuctionFinished.objects.bulk_create(auction_finished_events, ignore_conflicts=True)
                 metadata.ingested = after_ingestion
                 metadata.save()
+    update_timestamp(metadata.chain, AuctionFinished.objects.filter(timestamp=None), AuctionFinished)
 
 @shared_task(name="task__arcadia__repay_events")
 def task__arcadia__repay(label: str, pool_address:str):
@@ -144,4 +148,5 @@ def task__arcadia__repay(label: str, pool_address:str):
                 Repay.objects.bulk_create(repay_events, ignore_conflicts=True)
                 metadata.ingested = after_ingestion
                 metadata.save()
+    update_timestamp(metadata.chain, Repay.objects.filter(timestamp=None), Repay)
  

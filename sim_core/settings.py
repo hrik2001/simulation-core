@@ -37,7 +37,6 @@ CSRF_TRUSTED_ORIGINS = ['https://data-core.up.railway.app']
 INSTALLED_APPS = [
     'filebrowser',
     'explorer',
-    'django_filters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
