@@ -4,9 +4,11 @@ from .models import (
     AuctionFinished,
     Borrow,
     Repay,
+    AccountAssets
 )
 
 admin.site.register(AuctionStarted)
 admin.site.register(AuctionFinished)
 admin.site.register(Borrow)
 admin.site.register(Repay)
+admin.site.register(AccountAssets)

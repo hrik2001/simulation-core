@@ -1,11 +1,13 @@
 from sim_core.utils import parquet_files_to_process, update_timestamp
-from .models import Borrow, AuctionStarted, AuctionFinished, Repay
+from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets
 from core.models import CryoLogsMetadata
 from celery import shared_task
 import os
 from django.conf import settings
 from django.db import transaction
 import pandas as pd
+from .utils import get_account_value, call_generate_asset_data, usdc_address, weth_address
+from django.db.models import Max
 
 # Arcadia events ingestion tasks:
 # 1. Borrow(address indexed account, address indexed by, address to, uint256 amount, uint256 fee, bytes3 indexed referrer);
@@ -149,4 +151,74 @@ def task__arcadia__repay(label: str, pool_address:str):
         metadata.ingested = after_ingestion
         metadata.save()
     update_timestamp(metadata.chain, Repay.objects.filter(timestamp=None), Repay)
- 
+
+# @shared_task
+# def update_account_assets():
+    # accounts = Borrow.objects.values_list('account', flat=True).distinct()
+    # with transaction.atomic():
+        # for account in accounts:
+            # usdc_value = get_account_value(account, usdc_address)
+            # weth_value = get_account_value(account, weth_address)  # Adjust if needed
+            # asset_data = call_generate_asset_data(account)
+
+            # AccountAssets.objects.update_or_create(
+                # account=account,
+                # defaults={
+                    # 'usdc_value': str(usdc_value),
+                    # 'weth_value': str(weth_value),
+                    # 'asset_details': asset_data,
+                # }
+            # )
+
+def update_all_data(account):
+    usdc_value = str(get_account_value(account, usdc_address))
+    weth_value = str(get_account_value(account, weth_address))
+    asset_data = call_generate_asset_data(account)
+
+    # Update or create the asset record
+    AccountAssets.objects.update_or_create(
+        account=account,
+        defaults={
+            'usdc_value': usdc_value,
+            'weth_value': weth_value,
+            'asset_details': asset_data,
+        }
+    )
+    print(f"Updated everything for account {account}.")
+
+def update_usdc_and_weth_only(account, asset_record):
+    usdc_value = str(get_account_value(account, usdc_address))
+    weth_value = str(get_account_value(account, usdc_address))
+
+    # Update only the USDC and WETH values
+    asset_record.usdc_value = usdc_value
+    asset_record.weth_value = weth_value
+    asset_record.save(update_fields=['usdc_value', 'weth_value'])
+
+@shared_task
+def task_update_account_assets():
+
+    accounts = Borrow.objects.values_list('account', flat=True).distinct()
+    with transaction.atomic():
+        for account in accounts:
+            try:
+                asset_record = AccountAssets.objects.get(account=account)
+                created = False
+            except AccountAssets.DoesNotExist:
+                asset_record = AccountAssets(
+                    account=account
+                )
+                created = True
+            usdc_is_zero = asset_record.usdc_value == '0' if asset_record.usdc_value else True
+
+            latest_borrow_time = Borrow.objects.filter(account=account).aggregate(Max('created_at'))['created_at__max'] or 0
+            needs_update = created or (asset_record.updated_at < latest_borrow_time)
+
+            if usdc_is_zero:
+                if needs_update:
+                    update_all_data(account)
+            else:
+                if needs_update:
+                    update_all_data(account)
+                else:
+                    update_usdc_and_weth_only(account, asset_record)

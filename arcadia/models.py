@@ -1,5 +1,5 @@
 from django.db import models
-from core.models import Transaction
+from core.models import Transaction, BaseModel
 
 class Borrow(Transaction):
     pool_address = models.TextField(null=False)
@@ -35,3 +35,9 @@ class Repay(Transaction):
     account = models.TextField(null=False)
     from_address = models.TextField(null=False)
     amount = models.TextField(null=False)
+
+class AccountAssets(BaseModel):
+    account = models.TextField(unique=True)
+    usdc_value = models.TextField()
+    weth_value = models.TextField()
+    asset_details = models.JSONField()
