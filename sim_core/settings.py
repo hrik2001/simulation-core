@@ -200,3 +200,10 @@ CELERY_RESULT_BACKEND = os.environ["REDIS_URL"]
 
 FILEBROWSER_DIRECTORY = ''
 DIRECTORY = ''
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}

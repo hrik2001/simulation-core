@@ -6,7 +6,7 @@ import os
 from django.conf import settings
 from django.db import transaction
 import pandas as pd
-from .utils import get_account_value, call_generate_asset_data, usdc_address, weth_address
+from .utils import get_account_value, call_generate_asset_data, update_all_data, update_amounts, usdc_address, weth_address
 from django.db.models import Max
 
 # Arcadia events ingestion tasks:
@@ -170,33 +170,9 @@ def task__arcadia__repay(label: str, pool_address:str):
                 # }
             # )
 
-def update_all_data(account):
-    usdc_value = str(get_account_value(account, usdc_address))
-    weth_value = str(get_account_value(account, weth_address))
-    asset_data = call_generate_asset_data(account)
-
-    # Update or create the asset record
-    AccountAssets.objects.update_or_create(
-        account=account,
-        defaults={
-            'usdc_value': usdc_value,
-            'weth_value': weth_value,
-            'asset_details': asset_data,
-        }
-    )
-    print(f"Updated everything for account {account}.")
-
-def update_usdc_and_weth_only(account, asset_record):
-    usdc_value = str(get_account_value(account, usdc_address))
-    weth_value = str(get_account_value(account, usdc_address))
-
-    # Update only the USDC and WETH values
-    asset_record.usdc_value = usdc_value
-    asset_record.weth_value = weth_value
-    asset_record.save(update_fields=['usdc_value', 'weth_value'])
 
 @shared_task
-def task_update_account_assets():
+def task__arcadia__update_account_assets():
 
     accounts = Borrow.objects.values_list('account', flat=True).distinct()
     with transaction.atomic():
@@ -221,4 +197,4 @@ def task_update_account_assets():
                 if needs_update:
                     update_all_data(account)
                 else:
-                    update_usdc_and_weth_only(account, asset_record)
+                    update_amounts(account, asset_record)
