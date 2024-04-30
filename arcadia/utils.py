@@ -9,6 +9,8 @@ from time import sleep
 usdc_address = Web3.to_checksum_address("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")
 weth_address = Web3.to_checksum_address("0x4200000000000000000000000000000000000006")
 
+usdc_lending_pool_address = Web3.to_checksum_address("0x3ec4a293Fb906DD2Cd440c20dECB250DeF141dF1")
+weth_lending_pool_address = Web3.to_checksum_address("0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2")
 # base = Chain.objects.get(chain_name="Base")
 
 minimal_abi = [
@@ -84,8 +86,35 @@ minimal_abi = [
     }
 ]
 
+lending_pool_abi = [
+    {
+        "constant": True,
+        "inputs": [
+            {
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "getOpenPosition",
+        "outputs": [
+            {
+                "name": "openPosition",
+                "type": "uint256"
+            }
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
 web3 = Web3(Web3.HTTPProvider(Chain.objects.get(chain_name="Base").rpc))
 
+def get_debt(lending_pool, account):
+    contract_address = Web3.to_checksum_address(lending_pool)
+    account = Web3.to_checksum_address(account)
+    contract = web3.eth.contract(address=contract_address, abi=lending_pool_abi)
+    return contract.functions.getOpenPosition(account).call()
 # The contract address. Replace with the actual contract address.
 
 # Function to get the account value
@@ -136,9 +165,12 @@ def get_price_defillama(labels, search_width=4):
     return result
         
 def update_amounts(account: str, asset_record: AccountAssets):
-    usdc_value = str(get_account_value(account, usdc_address))
-    weth_value = str(get_account_value(account, usdc_address))
-    collateral_value = str(get_collateral_value(account))
+    usdc_value = get_account_value(account, usdc_address)
+    if usdc_value == 0:
+        weth_value = 0
+    else:
+        weth_value = get_account_value(account, usdc_address)
+    collateral_value = get_collateral_value(account)
         
     if asset_record.numeraire is None:
         numeraire = get_numeraire_address(account)
@@ -146,18 +178,25 @@ def update_amounts(account: str, asset_record: AccountAssets):
     else:
         numeraire = asset_record.numeraire
     
-    if numeraire.lower() == weth_address.lower():
-        price_weth = (weth_value / 1e18) / (usdc_value / 1e6)
-        collateral_value_usd = (collateral_value / 1e18) * price_weth
-    else:
-        collateral_value_usd = collateral_value/1e6
+    if usdc_value != "0":
+        if numeraire.lower() == weth_address.lower():
+            price_weth = (weth_value / 1e18) / (usdc_value / 1e6)
+            price_weth = 1/price_weth
+            collateral_value_usd = (collateral_value / 1e18) * price_weth
+            debt = get_debt(weth_lending_pool_address, account)
+            debt_usd = (debt/1e18) * price_weth
+        else:
+            collateral_value_usd = collateral_value/1e6
+            debt = get_debt(usdc_lending_pool_address, account)
+            debt_usd = (debt/1e6)
 
-    asset_record.usdc_value = usdc_value
-    asset_record.weth_value = weth_value
-    asset_record.collateral_value = collateral_value
-    asset_record.collateral_value_usd = collateral_value_usd
+    asset_record.usdc_value = str(usdc_value)
+    asset_record.weth_value = str(weth_value)
+    asset_record.collateral_value = str(collateral_value)
+    asset_record.collateral_value_usd = str(collateral_value_usd)
+    asset_record.debt_usd = str(debt_usd)
 
-    asset_record.save(update_fields=['usdc_value', 'weth_value', 'collateral_value'])
+    asset_record.save(update_fields=['usdc_value', 'weth_value', 'collateral_value', 'collateral_value_usd', 'debt_usd'])
 
 def update_all_data(account):
     usdc_value = get_account_value(account, usdc_address)
@@ -186,12 +225,17 @@ def update_all_data(account):
             price_weth = (weth_value / 1e18) / (usdc_value / 1e6)
             price_weth = 1/price_weth
             collateral_value_usd = (collateral_value / 1e18) * price_weth
+            debt = get_debt(weth_lending_pool_address, account)
+            debt_usd = (debt/1e18) * price_weth
         else:
             collateral_value_usd = collateral_value/1e6
+            debt = get_debt(usdc_lending_pool_address, account)
+            debt_usd = (debt/1e6)
     else:
         collateral_value_usd = 0
+        debt_usd = 0
 
-    asset_data_usd["NFT"] = (collateral_value_usd/1e6) - usd_value_without_nft
+    asset_data_usd["NFT"] = (collateral_value_usd) - usd_value_without_nft
 
     print({
             'usdc_value': str(usdc_value),
@@ -200,6 +244,7 @@ def update_all_data(account):
             'numeraire': numeraire,
             'collateral_value': str(collateral_value),
             'collateral_value_usd': str(collateral_value_usd),
+            'debt_usd': str(debt_usd),
             'asset_details_usd': asset_data_usd
         })
     # Update or create the asset record
@@ -212,6 +257,7 @@ def update_all_data(account):
             'numeraire': numeraire,
             'collateral_value': str(collateral_value),
             'collateral_value_usd': str(collateral_value_usd),
+            'debt_usd': str(debt_usd),
             'asset_details_usd': asset_data_usd
         }
     )

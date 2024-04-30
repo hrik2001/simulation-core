@@ -39,6 +39,7 @@ class Repay(Transaction):
 class AccountAssets(BaseModel):
     account = models.TextField(unique=True)
     numeraire = models.TextField()
+    debt_usd = models.TextField()
     usdc_value = models.TextField()
     weth_value = models.TextField()
     collateral_value = models.TextField()
@@ -47,4 +48,4 @@ class AccountAssets(BaseModel):
     asset_details_usd = models.JSONField()
 
     def __str__(self):
-        return f"Account={self.account} Debt={int(self.usdc_value)/1e6}"
+        return f"Account={self.account} Debt={self.debt_usd}"
