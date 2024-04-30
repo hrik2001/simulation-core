@@ -48,4 +48,4 @@ class AccountAssets(BaseModel):
     asset_details_usd = models.JSONField()
 
     def __str__(self):
-        return f"Account={self.account} Debt={self.debt_usd}"
+        return f"Account={self.account} Debt={self.debt_usd} Collateral={self.collateral_value_usd}"

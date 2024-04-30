@@ -169,16 +169,26 @@ def update_amounts(account: str, asset_record: AccountAssets):
     if usdc_value == 0:
         weth_value = 0
     else:
-        weth_value = get_account_value(account, usdc_address)
+        weth_value = get_account_value(account, weth_address)
+    # asset_data = call_generate_asset_data(account)
+    asset_data = asset_record.asset_details
     collateral_value = get_collateral_value(account)
-        
-    if asset_record.numeraire is None:
-        numeraire = get_numeraire_address(account)
-        asset_record.save()
-    else:
-        numeraire = asset_record.numeraire
+    # numeraire = get_numeraire_address(account)
+    numeraire = asset_record.numeraire
+
+    labels = list(set(asset_data[0]))
+    prices = get_price_defillama([f"base:{i}" for i in labels])
+    asset_data_usd = defaultdict(int)
+    usd_value_without_nft = 0
+    for i, asset in enumerate(asset_data[0]):
+        p = prices[f"base:{asset}"]
+        if p != 0:
+            usd = asset_data[2][i] / (10 ** p["decimals"]) * (p["price"])
+            asset_data_usd[asset] = usd
+            usd_value_without_nft += usd
     
-    if usdc_value != "0":
+    
+    if usdc_value != 0:
         if numeraire.lower() == weth_address.lower():
             price_weth = (weth_value / 1e18) / (usdc_value / 1e6)
             price_weth = 1/price_weth
@@ -189,15 +199,36 @@ def update_amounts(account: str, asset_record: AccountAssets):
             collateral_value_usd = collateral_value/1e6
             debt = get_debt(usdc_lending_pool_address, account)
             debt_usd = (debt/1e6)
+    else:
+        collateral_value_usd = 0
+        debt_usd = 0
 
-    asset_record.usdc_value = str(usdc_value)
-    asset_record.weth_value = str(weth_value)
-    asset_record.collateral_value = str(collateral_value)
-    asset_record.collateral_value_usd = str(collateral_value_usd)
-    asset_record.debt_usd = str(debt_usd)
+    asset_data_usd["NFT"] = (collateral_value_usd) - usd_value_without_nft
 
-    asset_record.save(update_fields=['usdc_value', 'weth_value', 'collateral_value', 'collateral_value_usd', 'debt_usd'])
-
+    print({
+            'usdc_value': str(usdc_value),
+            'weth_value': str(weth_value),
+            # 'asset_details': asset_data,
+            # 'numeraire': numeraire,
+            'collateral_value': str(collateral_value),
+            'collateral_value_usd': str(collateral_value_usd),
+            'debt_usd': str(debt_usd),
+            'asset_details_usd': asset_data_usd
+        })
+    # Update or create the asset record
+    AccountAssets.objects.update_or_create(
+        account=account,
+        defaults={
+            'usdc_value': str(usdc_value),
+            'weth_value': str(weth_value),
+            'asset_details': asset_data,
+            'numeraire': numeraire,
+            'collateral_value': str(collateral_value),
+            'collateral_value_usd': str(collateral_value_usd),
+            'debt_usd': str(debt_usd),
+            'asset_details_usd': asset_data_usd
+        }
+    )
 def update_all_data(account):
     usdc_value = get_account_value(account, usdc_address)
     if usdc_value == 0:
