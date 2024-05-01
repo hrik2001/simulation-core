@@ -3,7 +3,8 @@ from .models import (
     Borrow,
     AuctionStarted,
     AuctionFinished,
-    Repay
+    Repay,
+    MetricSnapshot
 )
 
 class arcadia__Borrow(DjangoObjectType):
@@ -25,3 +26,8 @@ class arcadia__Repay(DjangoObjectType):
     class Meta:
         model = Repay
         fields = "__all__" 
+
+class arcadia__MetricSnapshot(DjangoObjectType):
+    class Meta:
+        model = MetricSnapshot
+        fields = "__all__"

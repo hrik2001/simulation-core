@@ -1,13 +1,23 @@
+from datetime import datetime
 import graphene
 from graphene import ObjectType, String, Int, UUID
-from .models import Borrow, AuctionStarted, AuctionFinished, Repay
-from .types import arcadia__Borrow, arcadia__AuctionStarted, arcadia__AuctionFinished, arcadia__Repay
+from .models import Borrow, AuctionStarted, AuctionFinished, Repay, MetricSnapshot
+from .types import arcadia__Borrow, arcadia__AuctionStarted, arcadia__AuctionFinished, arcadia__Repay, arcadia__MetricSnapshot
 
 class Query(ObjectType):
     all_borrows = graphene.List(arcadia__Borrow, pool_address=String(), account=String(), by=String(), to=String())
     all_auctions_started = graphene.List(arcadia__AuctionStarted, pool_address=String(), account=String(), creditor=String())
     all_auctions_finished = graphene.List(arcadia__AuctionFinished, pool_address=String(), account=String(), creditor=String())
     all_repays = graphene.List(arcadia__Repay, pool_address=String(), account=String(), from_address=String())
+    all_snapshots = graphene.List(arcadia__MetricSnapshot, start_time=Int(), end_time=Int())
+
+    def resolve_all_snapshots(self, info, start_time=None, end_time=None):
+        queryset = MetricSnapshot.objects.all()
+        if start_time:
+            queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(created_at__lte=datetime.fromtimestamp(end_time))
+        return queryset.order_by('created_at')
 
     def resolve_all_borrows(self, info, pool_address=None, account=None, by=None, to=None):
         queryset = Borrow.objects.all()
