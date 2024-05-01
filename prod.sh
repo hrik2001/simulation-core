@@ -2,15 +2,13 @@
 
 # Function to start the backend server
 start_backend() {
-    echo "Migration Database..."
+    echo "Migrating Database..."
     python3 manage.py migrate
     # python3 manage.py collectstatic
 
     echo "Starting Django backend..."
-    # Replace 'python manage.py runserver' with your actual command to start the Django server
-    gunicorn --timeout $TIMEOUT --bind 0.0.0.0:$PORT  --workers=1 --access-logfile - sim_core.wsgi:application
+    gunicorn --timeout $TIMEOUT --bind 0.0.0.0:$PORT --workers=1 --access-logfile - sim_core.wsgi:application
 }
-
 
 # Function to start the Celery worker
 start_worker() {
@@ -19,17 +17,20 @@ start_worker() {
 }
 
 start_scheduler() {
-    echo "Starting start_scheduler"
+    echo "Starting Scheduler..."
     celery -A sim_core beat --loglevel=debug --scheduler django_celery_beat.schedulers:DatabaseScheduler
 }
 
-# Function to stop both backend and worker processes
+start_redis() {
+    echo "Starting Redis..."
+    redis-server
+}
+
+# Function to stop processes gracefully
 stop_processes() {
     echo "Stopping processes..."
-    # Kill the background processes
-    kill "$backend_pid"
-    kill "$worker_pid"
-    kill "$scheduler_pid"
+    kill -SIGTERM $backend_pid $worker_pid $scheduler_pid
+    redis-cli shutdown
     exit 0
 }
 
@@ -41,12 +42,16 @@ backend_pid=$!
 start_worker &
 worker_pid=$!
 
+# Start the scheduler in the background
 start_scheduler &
 scheduler_pid=$!
 
-# Set up trap to catch Ctrl+C and stop both processes
-trap stop_processes SIGINT
+# Start Redis in the background
+start_redis &
+redis_pid=$!
 
-# Wait for both processes to finish
+# Set up trap to catch Ctrl+C and stop processes
+trap stop_processes SIGINT SIGTERM
+
+# Wait for all processes to finish
 wait
-

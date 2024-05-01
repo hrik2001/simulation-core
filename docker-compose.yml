@@ -6,7 +6,7 @@ services:
     environment:
       PORT: 8000
       MEDIA_DIR: 'media'
-      REDIS_URL: 'redis://redis:6379/0'
+      REDIS_URL: 'redis://localhost:6379/0'
       ENVIRONMENT: 'local'
       POSTGRES_DB: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
@@ -27,10 +27,10 @@ services:
     volumes:
           - media:/code/media
   
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
+  # redis:
+    # image: redis:latest
+    # ports:
+      # - "6379:6379"
   
   postgres:
     image: postgres:latest
