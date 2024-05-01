@@ -49,3 +49,20 @@ class AccountAssets(BaseModel):
 
     def __str__(self):
         return f"Account={self.account} Debt={self.debt_usd} Collateral={self.collateral_value_usd}"
+
+class MetricSnapshot(BaseModel):
+    weighted_cr = models.FloatField()
+    weighted_cr_usdc = models.FloatField()
+    weighted_cr_weth = models.FloatField()
+    active_auctions = models.IntegerField()
+    active_auctions_usd = models.IntegerField()
+    active_auctions_weth = models.IntegerField()
+    total_debt = models.TextField()
+    total_debt_usdc = models.TextField()
+    total_debt_weth = models.TextField()
+    total_collateral = models.TextField()
+    total_collateral_usdc = models.TextField()
+    total_collateral_weth = models.TextField()
+
+    def __str__(self):
+        return f"Snapshot @ {self.created_at}"

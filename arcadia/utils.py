@@ -221,8 +221,8 @@ def update_amounts(account: str, asset_record: AccountAssets):
         defaults={
             'usdc_value': str(usdc_value),
             'weth_value': str(weth_value),
-            'asset_details': asset_data,
-            'numeraire': numeraire,
+            # 'asset_details': asset_data,
+            # 'numeraire': numeraire,
             'collateral_value': str(collateral_value),
             'collateral_value_usd': str(collateral_value_usd),
             'debt_usd': str(debt_usd),
