@@ -1,5 +1,5 @@
 from django.db import models
-from core.models import Transaction
+from core.models import Transaction, BaseModel
 
 class Borrow(Transaction):
     pool_address = models.TextField(null=False)
@@ -35,3 +35,34 @@ class Repay(Transaction):
     account = models.TextField(null=False)
     from_address = models.TextField(null=False)
     amount = models.TextField(null=False)
+
+class AccountAssets(BaseModel):
+    account = models.TextField(unique=True)
+    numeraire = models.TextField()
+    debt_usd = models.TextField()
+    usdc_value = models.TextField()
+    weth_value = models.TextField()
+    collateral_value = models.TextField()
+    collateral_value_usd = models.TextField()
+    asset_details = models.JSONField()
+    asset_details_usd = models.JSONField()
+
+    def __str__(self):
+        return f"Account={self.account} Debt={self.debt_usd} Collateral={self.collateral_value_usd}"
+
+class MetricSnapshot(BaseModel):
+    weighted_cr = models.FloatField()
+    weighted_cr_usdc = models.FloatField()
+    weighted_cr_weth = models.FloatField()
+    active_auctions = models.IntegerField()
+    active_auctions_usd = models.IntegerField()
+    active_auctions_weth = models.IntegerField()
+    total_debt = models.TextField()
+    total_debt_usdc = models.TextField()
+    total_debt_weth = models.TextField()
+    total_collateral = models.TextField()
+    total_collateral_usdc = models.TextField()
+    total_collateral_weth = models.TextField()
+
+    def __str__(self):
+        return f"Snapshot @ {self.created_at}"
