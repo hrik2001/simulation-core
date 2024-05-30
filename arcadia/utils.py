@@ -1,10 +1,12 @@
 from web3 import Web3
-from core.models import Chain
+from core.models import Chain, ERC20, UniswapLPPosition
 from arcadia.models import AccountAssets
 import requests
 from django.core.cache import cache
 from collections import defaultdict
 from time import sleep
+from arcadia.arcadiasim.models.asset import Asset, SimCoreUniswapLPPosition
+from arcadia.arcadiasim.models.chain import Chain as ArcadiaChain
 
 usdc_address = Web3.to_checksum_address("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")
 weth_address = Web3.to_checksum_address("0x4200000000000000000000000000000000000006")
@@ -292,3 +294,22 @@ def update_all_data(account):
             'asset_details_usd': asset_data_usd
         }
     )
+
+def chain_to_pydantic(chain: Chain):
+    chain_dict = chain.__dict__
+    chain_dict["rpc_url"] = chain_dict["rpc"]
+    chain_dict["explorer_url"] = chain_dict["explorer"]
+    chain_dict["name"] = chain_dict["chain_name"]
+    return ArcadiaChain(**chain_dict)
+
+def erc20_to_pydantic(asset: ERC20 | UniswapLPPosition):
+    chain = chain_to_pydantic(asset.chain)
+    response = asset.__dict__
+    response["chain"] = chain
+    if isinstance(asset, UniswapLPPosition):
+        response["token0"] = erc20_to_pydantic(asset.token0)
+        response["token1"] = erc20_to_pydantic(asset.token1)
+        response["name"] = ""
+        response["symbol"] = ""
+        return SimCoreUniswapLPPosition(**response)
+    return Asset(**response)

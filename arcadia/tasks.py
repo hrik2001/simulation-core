@@ -1,15 +1,32 @@
 from sim_core.utils import parquet_files_to_process, update_timestamp
 from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot
-from core.models import CryoLogsMetadata
+from core.models import CryoLogsMetadata, ERC20, UniswapLPPosition
+from core.utils import get_or_create_erc20, get_or_create_uniswap_lp
 from celery import shared_task
 import os
 from django.conf import settings
 from django.db import transaction
 import pandas as pd
-from .utils import get_account_value, call_generate_asset_data, update_all_data, update_amounts, usdc_address, weth_address
-from django.db.models import Max
-from django.db.models import Sum, F, FloatField
+from .utils import get_account_value, call_generate_asset_data, update_all_data, update_amounts, usdc_address, weth_address, erc20_to_pydantic
+from django.db.models import Sum, F, FloatField, Q, Max
 from django.db.models.functions import Cast
+from .arcadiasim.models.arcadia import (
+    LiquidationConfig,
+    LendingPoolLiquidationConfig,
+    MarginAccount,
+    AssetsInMarginAccount,
+    AssetMetadata,
+    AssetValueAndRiskFactors,
+)
+from .arcadiasim.models.asset import Asset
+from .arcadiasim.pipeline.pipeline import Pipeline
+from .arcadiasim.models.time import SimulationTime
+from .arcadiasim.arcadia.liquidation_engine import LiquidationEngine
+from .arcadiasim.arcadia.liquidator import Liquidator
+from .arcadiasim.pipeline.utils import create_market_price_feed
+from .utils import chain_to_pydantic
+from uuid import uuid4
+# from .arcadiasim.entities.asset import weth
 
 # Hex cleaner function
 def hex_cleaner(param):
@@ -232,3 +249,129 @@ def task__arcadia__metric_snapshot():
         total_collateral_usdc=str(total_collateral_usdc),
         total_collateral_weth=str(total_collateral_weth),
     )
+
+@shared_task(name="task__arcadia__sim_weth")
+def task__arcadia__sim_weth():
+    # let's run sims only for WETH pool
+    start_timestamp = 1716805523
+    end_timestamp = 1716891923
+    account_assets = AccountAssets.objects.filter(
+        ~Q(debt_usd=0),
+        numeraire__iexact="0x4200000000000000000000000000000000000006",
+    )
+    weth = ERC20.objects.get(contract_address__iexact="0x4200000000000000000000000000000000000006")
+    base = weth.chain
+    weth = erc20_to_pydantic(weth)
+
+    sim_accounts = []
+    all_erc20_assets = dict()
+    all_lp_assets = list()
+    for account in account_assets:
+        price_weth = (int(account.weth_value) / 1e18) / (int(account.usdc_value) / 1e6)
+        debt_amount_numeraire = price_weth * float(account.debt_usd) * 1e18
+        debt_amount_numeraire = int(debt_amount_numeraire)
+        if debt_amount_numeraire == 0:
+            continue
+        sim_account = MarginAccount(
+            address=account.account,
+            debt=debt_amount_numeraire,
+            numeraire=weth,
+            assets=[],
+        )
+        include_account = True
+        for index, value in enumerate(account.asset_details[1]):
+            # here value above is asset ID, if it's 0 then it's an ERC20
+            if not value:
+                # case when it's an ERC20 Asset
+                asset = get_or_create_erc20(account.asset_details[0][index], base)
+                asset = erc20_to_pydantic(asset)
+                # asset = Asset(**asset)
+                if asset.contract_address.lower() in all_erc20_assets:
+                    asset = all_erc20_assets[asset.contract_address.lower()]
+                else:
+                    all_erc20_assets[asset.contract_address.lower()] = asset
+                amount = account.asset_details[2][index]
+                asset_in_margin_account = AssetsInMarginAccount(
+                    asset=asset,
+                    metadata=AssetMetadata(
+                        amount=amount,
+                        current_amount=amount,
+                        risk_metadata=AssetValueAndRiskFactors(
+                            collateral_factor=0,
+                            liquidation_factor=0.5,
+                            exposure=0,
+                        ),
+                    ),
+                )
+            else:
+                asset = get_or_create_uniswap_lp(account.asset_details[0][index], base, account.asset_details[1][index])
+                asset = erc20_to_pydantic(asset)
+                asset_in_margin_account = AssetsInMarginAccount(
+                    asset=asset,
+                    metadata=AssetMetadata(
+                        amount=1,
+                        current_amount=1,
+                        risk_metadata=AssetValueAndRiskFactors(
+                            collateral_factor=0,
+                            liquidation_factor=0.5,
+                            exposure=0,
+                        ),
+                    ),
+                )
+                if asset.tickLower.startswith("-") or asset.tickUpper.startswith("-"):
+                    include_account = False
+                    break
+                all_lp_assets.append(asset)
+            sim_account.assets.append(asset_in_margin_account)
+        if include_account:
+            # filter accounts for which we can price uniswap lp positions
+            sim_accounts.append(sim_account)
+    assets = list(all_erc20_assets.values()) + all_lp_assets
+    pydantic_base = chain_to_pydantic(base)
+    prices = create_market_price_feed(assets, weth, pydantic_base, start_timestamp, end_timestamp)
+
+    sim_time = SimulationTime(
+        timestamp=start_timestamp,
+        prices=prices,
+        chain=pydantic_base,
+    )
+    pool_config = LendingPoolLiquidationConfig(
+        max_initiation_fee=1,
+        max_termination_fee=1,
+        initiation_weight=1,
+        termination_weight=1,
+        penalty_weight=1,
+    )
+
+    liquidation_config = LiquidationConfig(
+        base=999_807_477_651_317_446,
+        maximum_auction_duration=14_400,
+        start_price_multiplier=15_000,
+        min_price_multiplier=6000,
+        lending_pool=pool_config,
+    )
+
+    liquidation_engine = LiquidationEngine(
+        liquidation_config=liquidation_config,
+        simulation_time=sim_time,
+        auction_information={},
+    )
+    liquidator = Liquidator(
+        liquidation_engine=liquidation_engine,
+        balance=5000,  # balance in terms of USDT (numeraire)
+        sim_time=sim_time,
+        # address= "0xLiquidator"
+    )
+
+    unique_id = uuid4()
+    pipeline = Pipeline(
+        simulation_time=sim_time,
+        liquidation_engine=liquidation_engine,
+        liquidators=[liquidator],
+        accounts=sim_accounts,
+        numeraire=weth,
+        orchestrator_id=unique_id,
+        pipeline_id=unique_id
+    )
+
+    pipeline.event_loop()
