@@ -360,7 +360,7 @@ def task__arcadia__sim_weth():
         liquidation_engine=liquidation_engine,
         balance=5000,  # balance in terms of USDT (numeraire)
         sim_time=sim_time,
-        # address= "0xLiquidator"
+        liquidator_address= "0xLiquidator"
     )
 
     unique_id = uuid4()

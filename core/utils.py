@@ -84,6 +84,8 @@ def get_or_create_uniswap_lp(contract_address: str, chain: Chain, token_id: str 
             tickUpper = str(position_details["tickUpper"]),
             token1 = ERC20.objects.get(contract_address__iexact=position_details["token1"]),
             token0 = ERC20.objects.get(contract_address__iexact=position_details["token0"]),
+            name = f"{Web3.to_checksum_address(contract_address)}-{str(token_id)}",
+            symbol = f"{Web3.to_checksum_address(contract_address)}-{str(token_id)}",
         )
         asset.save()
     return asset

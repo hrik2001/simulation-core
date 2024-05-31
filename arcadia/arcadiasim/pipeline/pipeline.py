@@ -240,9 +240,9 @@ class Pipeline(Base):
                 initial_collateral_value = 0
                 prices_per_asset = {}
                 for i in account.assets:
-                    start_timestamp = min(self.simulation_time.prices[i])
-                    initial_price = self.simulation_time.prices[i][start_timestamp]
-                    prices_per_asset[i.symbol] = (
+                    start_timestamp = min(self.simulation_time.prices[i.asset])
+                    initial_price = self.simulation_time.prices[i.asset][start_timestamp]
+                    prices_per_asset[i.asset.symbol] = (
                         i.metadata.amount / (10**i.asset.decimals)
                     ) * initial_price
                     initial_collateral_value += (
@@ -277,9 +277,12 @@ class Pipeline(Base):
                         * (10**self.numeraire.decimals)
                     )
 
-        result_context["position_weighted_collateral_ratio"] = (
-            collateral_value / total_debt
-        )
+        try:
+            result_context["position_weighted_collateral_ratio"] = (
+                collateral_value / total_debt
+            )
+        except ZeroDivisionError:
+            result_context["position_weighted_collateral_ratio"] = np.inf
         result_context["protocol_revenue_per_asset"] = dict(
             self.liquidation_engine.protocol_revenue_per_asset
         )
@@ -330,15 +333,6 @@ class Pipeline(Base):
             #     f"(<{self.pipeline_id}>) [BID] {{'simulation_time': {self.simulation_time.timestamp}, 'prices': {self.sim_price()}, 'liquidator_bids': {bids_context}}}\n"
             # )
             bid_collection = db["BID"]
-            print({
-                    "orchestrator_id": str(self.orchestrator_id),
-                    "pipeline_id": str(self.pipeline_id),
-                    "data": {
-                        "simulation_time": self.simulation_time.timestamp,
-                        "prices": self.sim_price(),
-                        "liquidator_bids": bids_context,
-                    },
-                })
             bid_collection.insert_one(
                 {
                     "orchestrator_id": str(self.orchestrator_id),
