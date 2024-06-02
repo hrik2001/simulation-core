@@ -181,8 +181,8 @@ def historical_get_price(
             return 0
         return get_value_of_lp(
             int(asset.liquidity),
-            float(asset.tickLower),
-            float(asset.tickUpper),
+            1.001**float(asset.tickLower),
+            1.001**float(asset.tickUpper),
             historical_get_price(
                 asset.token0, numeraire, target_timestamp=target_timestamp
             ),
