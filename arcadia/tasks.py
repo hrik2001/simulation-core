@@ -1,3 +1,5 @@
+from typing import Optional, Dict
+from web3 import Web3
 from sim_core.utils import parquet_files_to_process, update_timestamp
 from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot
 from core.models import CryoLogsMetadata, ERC20, UniswapLPPosition
@@ -24,7 +26,7 @@ from .arcadiasim.models.time import SimulationTime
 from .arcadiasim.arcadia.liquidation_engine import LiquidationEngine
 from .arcadiasim.arcadia.liquidator import Liquidator
 from .arcadiasim.pipeline.utils import create_market_price_feed
-from .utils import chain_to_pydantic
+from .utils import chain_to_pydantic, get_risk_factors
 from uuid import uuid4
 # from .arcadiasim.entities.asset import weth
 
@@ -250,22 +252,28 @@ def task__arcadia__metric_snapshot():
         total_collateral_weth=str(total_collateral_weth),
     )
 
-@shared_task(name="task__arcadia__sim_weth")
-def task__arcadia__sim_weth():
-    # let's run sims only for WETH pool
-    start_timestamp = 1716805523
-    end_timestamp = 1716891923
+def sim(
+        start_timestamp,
+        end_timestamp,
+        numeraire_address,
+        pool_address,
+    ):
+
+    pool_address = Web3.to_checksum_address(pool_address)
+
     account_assets = AccountAssets.objects.filter(
         ~Q(debt_usd=0),
-        numeraire__iexact="0x4200000000000000000000000000000000000006",
+        numeraire__iexact=numeraire_address,
     )
-    weth = ERC20.objects.get(contract_address__iexact="0x4200000000000000000000000000000000000006")
-    base = weth.chain
-    weth = erc20_to_pydantic(weth)
+    numeraire = ERC20.objects.get(contract_address__iexact=numeraire_address)
+    base = numeraire.chain
+    w3 = Web3(Web3.HTTPProvider(base.rpc))
+    numeraire = erc20_to_pydantic(numeraire)
 
     sim_accounts = []
     all_erc20_assets = dict()
     all_lp_assets = list()
+    liquidation_factors_dict = dict()
     for account in account_assets:
         price_weth = (int(account.weth_value) / 1e18) / (int(account.usdc_value) / 1e6)
         debt_amount_numeraire = price_weth * float(account.debt_usd) * 1e18
@@ -275,7 +283,7 @@ def task__arcadia__sim_weth():
         sim_account = MarginAccount(
             address=account.account,
             debt=debt_amount_numeraire,
-            numeraire=weth,
+            numeraire=numeraire,
             assets=[],
         )
         include_account = True
@@ -291,6 +299,12 @@ def task__arcadia__sim_weth():
                 else:
                     all_erc20_assets[asset.contract_address.lower()] = asset
                 amount = account.asset_details[2][index]
+                if asset.contract_address.lower() not in liquidation_factors_dict:
+                    _, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address], [0])
+                    liquidation_factor = liquidation_factors[0]/1e4
+                    liquidation_factors_dict[asset.contract_address.lower()] = liquidation_factor
+                else:
+                    liquidation_factor = liquidation_factors_dict[asset.contract_address.lower()]
                 asset_in_margin_account = AssetsInMarginAccount(
                     asset=asset,
                     metadata=AssetMetadata(
@@ -298,7 +312,7 @@ def task__arcadia__sim_weth():
                         current_amount=amount,
                         risk_metadata=AssetValueAndRiskFactors(
                             collateral_factor=0,
-                            liquidation_factor=0.5,
+                            liquidation_factor=liquidation_factor,
                             exposure=0,
                         ),
                     ),
@@ -306,6 +320,13 @@ def task__arcadia__sim_weth():
             else:
                 asset = get_or_create_uniswap_lp(account.asset_details[0][index], base, account.asset_details[1][index])
                 asset = erc20_to_pydantic(asset)
+                if asset.contract_address.lower() not in liquidation_factors_dict:
+                    _, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address], [int(asset.token_id)])
+                    liquidation_factor = liquidation_factors[0]/1e4
+                    liquidation_factors_dict[asset.contract_address.lower()] = liquidation_factor
+                else:
+                    liquidation_factor = liquidation_factors_dict[asset.contract_address.lower()]
+                liquidation_factor = liquidation_factors[0]/1e4
                 asset_in_margin_account = AssetsInMarginAccount(
                     asset=asset,
                     metadata=AssetMetadata(
@@ -313,7 +334,7 @@ def task__arcadia__sim_weth():
                         current_amount=1,
                         risk_metadata=AssetValueAndRiskFactors(
                             collateral_factor=0,
-                            liquidation_factor=0.5,
+                            liquidation_factor=liquidation_factor,
                             exposure=0,
                         ),
                     ),
@@ -328,7 +349,7 @@ def task__arcadia__sim_weth():
             sim_accounts.append(sim_account)
     assets = list(all_erc20_assets.values()) + all_lp_assets
     pydantic_base = chain_to_pydantic(base)
-    prices = create_market_price_feed(assets, weth, pydantic_base, start_timestamp, end_timestamp)
+    prices = create_market_price_feed(assets, numeraire, pydantic_base, start_timestamp, end_timestamp)
 
     sim_time = SimulationTime(
         timestamp=start_timestamp,
@@ -369,9 +390,17 @@ def task__arcadia__sim_weth():
         liquidation_engine=liquidation_engine,
         liquidators=[liquidator],
         accounts=sim_accounts,
-        numeraire=weth,
+        numeraire=numeraire,
         orchestrator_id=unique_id,
         pipeline_id=unique_id
     )
 
     pipeline.event_loop()
+    print(unique_id)
+
+def test_sim():
+    start_timestamp = 1716805523
+    end_timestamp = 1716891923
+    numeraire_address = "0x4200000000000000000000000000000000000006"
+    pool_address = "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2"
+    sim(start_timestamp, end_timestamp, numeraire_address, pool_address)

@@ -89,3 +89,19 @@ def get_or_create_uniswap_lp(contract_address: str, chain: Chain, token_id: str 
         )
         asset.save()
     return asset
+
+def update_uniswap_lp(asset: UniswapLPPosition):
+    # asset = UniswapLPPosition.objects.get(contract_address__iexact=contract_address, chain=chain, token_id=str(token_id))
+    w3 = Web3(Web3.HTTPProvider(asset.chain.rpc))
+    position_details = get_positions_details(
+        asset.contract_address,
+        w3,
+        int(asset.token_id)
+    )
+    asset.liquidity = str(position_details["liquidity"]),
+    asset.tickLower = str(position_details["tickLower"]),
+    asset.tickUpper = str(position_details["tickUpper"]),
+    asset.token1 = ERC20.objects.get(contract_address__iexact=position_details["token1"]),
+    asset.token0 = ERC20.objects.get(contract_address__iexact=position_details["token0"]),
+    asset.save()
+    return asset

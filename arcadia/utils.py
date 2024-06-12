@@ -309,7 +309,43 @@ def erc20_to_pydantic(asset: ERC20 | UniswapLPPosition):
     if isinstance(asset, UniswapLPPosition):
         response["token0"] = erc20_to_pydantic(asset.token0)
         response["token1"] = erc20_to_pydantic(asset.token1)
-        response["name"] = ""
-        response["symbol"] = ""
+        response["name"] = asset.name
+        response["symbol"] = asset.symbol
         return SimCoreUniswapLPPosition(**response)
     return Asset(**response)
+
+def get_risk_factors(web3, creditor, asset_addresses, asset_ids, contract_address="0xd0690557600eb8Be8391D1d97346e2aab5300d5f"):
+    # ABI for the getRiskFactors function
+    abi = [
+        {
+            "constant": True,
+            "inputs": [
+                {"name": "creditor", "type": "address"},
+                {"name": "assetAddresses", "type": "address[]"},
+                {"name": "assetIds", "type": "uint256[]"}
+            ],
+            "name": "getRiskFactors",
+            "outputs": [
+                {"name": "collateralFactors", "type": "uint16[]"},
+                {"name": "liquidationFactors", "type": "uint16[]"}
+            ],
+            "payable": False,
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ]
+    
+    # Convert the contract address to a checksum address
+    contract_address = Web3.to_checksum_address(contract_address)
+    
+    # Create a contract instance
+    contract = web3.eth.contract(address=contract_address, abi=abi)
+    
+    # Call the getRiskFactors function
+    collateral_factors, liquidation_factors = contract.functions.getRiskFactors(
+        Web3.to_checksum_address(creditor),
+        [Web3.to_checksum_address(addr) for addr in asset_addresses],
+        asset_ids
+    ).call()
+    
+    return collateral_factors, liquidation_factors
