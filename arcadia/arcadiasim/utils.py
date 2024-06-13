@@ -10,7 +10,7 @@ MONGODB_CONNECTION_STRING = os.getenv("MONGODB_CONNECTION_STRING")
 
 def get_mongodb_db():
     database_name = "arcadiasim"
-    client = pymongo.MongoClient(MONGODB_CONNECTION_STRING)
+    client = pymongo.MongoClient(MONGODB_CONNECTION_STRING, uuidRepresentation='standard')
     collections = [
         "PARAMS",
         "ACCOUNTS",

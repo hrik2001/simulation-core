@@ -66,3 +66,33 @@ class MetricSnapshot(BaseModel):
 
     def __str__(self):
         return f"Snapshot @ {self.created_at}"
+
+class SimSnapshot(BaseModel):
+    sim_id = models.TextField(unique=True)
+    prices = models.JSONField()
+    timestamp = models.IntegerField()
+    total_non_liquidated_accounts = models.IntegerField()
+    total_active_auctions = models.IntegerField()
+    total_fully_liquidated_accounts = models.IntegerField()
+    total_outstanding_debt = models.TextField()
+    bad_debt_per_asset = models.JSONField()
+    total_exposure_per_asset = models.JSONField()
+    total_insolvent_value = models.TextField()
+    total_protocol_revenue = models.TextField()
+    position_weighted_collateral_ratio = models.TextField()
+    protocol_revenue_per_asset = models.JSONField()
+    start_timestamp = models.IntegerField()
+    end_timestamp = models.IntegerField()
+    pool_address = models.TextField()
+    numeraire = models.TextField()
+    liquidation_factors = models.JSONField()
+    description = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'sim_snapshot'
+        indexes = [
+            models.Index(fields=['sim_id']),
+        ]
+
+    def __str__(self):
+        return f'SimSnapshot {self.sim_id}'

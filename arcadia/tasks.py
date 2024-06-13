@@ -1,7 +1,7 @@
 from typing import Optional, Dict
 from web3 import Web3
 from sim_core.utils import parquet_files_to_process, update_timestamp
-from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot
+from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot, SimSnapshot
 from core.models import CryoLogsMetadata, ERC20, UniswapLPPosition
 from core.utils import get_or_create_erc20, get_or_create_uniswap_lp
 from celery import shared_task
@@ -26,6 +26,7 @@ from .arcadiasim.models.time import SimulationTime
 from .arcadiasim.arcadia.liquidation_engine import LiquidationEngine
 from .arcadiasim.arcadia.liquidator import Liquidator
 from .arcadiasim.pipeline.utils import create_market_price_feed
+from .arcadiasim.utils import get_mongodb_db
 from .utils import chain_to_pydantic, get_risk_factors
 from uuid import uuid4
 # from .arcadiasim.entities.asset import weth
@@ -312,7 +313,8 @@ def sim(
                         current_amount=amount,
                         risk_metadata=AssetValueAndRiskFactors(
                             collateral_factor=0,
-                            liquidation_factor=liquidation_factor,
+                            liquidation_factor = 0.5,
+                            # liquidation_factor=liquidation_factor,
                             exposure=0,
                         ),
                     ),
@@ -334,12 +336,13 @@ def sim(
                         current_amount=1,
                         risk_metadata=AssetValueAndRiskFactors(
                             collateral_factor=0,
-                            liquidation_factor=liquidation_factor,
+                            liquidation_factor = 0.5,
+                            # liquidation_factor=liquidation_factor,
                             exposure=0,
                         ),
                     ),
                 )
-                if asset.tickLower.startswith("-") or asset.tickUpper.startswith("-"):
+                if int(asset.liquidity) == 0:
                     include_account = False
                     break
                 all_lp_assets.append(asset)
@@ -396,11 +399,25 @@ def sim(
     )
 
     pipeline.event_loop()
-    print(unique_id)
+    db = get_mongodb_db()
+    print(f"{unique_id=}")
+    cumulative_metric = db.METRICS.find_one({"orchestrator_id": str(unique_id)}, sort=[("data.timestamp", -1)])
+    result_metric = {
+        **cumulative_metric["data"],
+        "sim_id": unique_id,
+        "start_timestamp": start_timestamp,
+        "end_timestamp": end_timestamp,
+        "pool_address": pool_address,
+        "numeraire": numeraire.contract_address,
+        "liquidation_factors": liquidation_factors_dict,
+    }
+    sim_snapshot = SimSnapshot(**result_metric)
+    sim_snapshot.save()
+    return str(unique_id)
 
 def test_sim():
     start_timestamp = 1716805523
     end_timestamp = 1716891923
     numeraire_address = "0x4200000000000000000000000000000000000006"
     pool_address = "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2"
-    sim(start_timestamp, end_timestamp, numeraire_address, pool_address)
+    return sim(start_timestamp, end_timestamp, numeraire_address, pool_address)
