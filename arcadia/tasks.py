@@ -411,6 +411,8 @@ def sim(
         "numeraire": numeraire.contract_address,
         "liquidation_factors": liquidation_factors_dict,
     }
+    result_metric["total_outstanding_debt"] = result_metric["total_outstanding_debt"]/(10**(numeraire.decimals))
+
     sim_snapshot = SimSnapshot(**result_metric)
     sim_snapshot.save()
     return str(unique_id)
