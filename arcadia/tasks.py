@@ -258,6 +258,7 @@ def sim(
         end_timestamp,
         numeraire_address,
         pool_address,
+        description = None
     ):
 
     pool_address = Web3.to_checksum_address(pool_address)
@@ -410,6 +411,7 @@ def sim(
         "pool_address": pool_address,
         "numeraire": numeraire.contract_address,
         "liquidation_factors": liquidation_factors_dict,
+        "description": description
     }
     result_metric["total_outstanding_debt"] = result_metric["total_outstanding_debt"]/(10**(numeraire.decimals))
 
@@ -417,9 +419,19 @@ def sim(
     sim_snapshot.save()
     return str(unique_id)
 
-def test_sim():
-    start_timestamp = 1716805523
-    end_timestamp = 1716891923
-    numeraire_address = "0x4200000000000000000000000000000000000006"
-    pool_address = "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2"
-    return sim(start_timestamp, end_timestamp, numeraire_address, pool_address)
+# def test_sim():
+    # start_timestamp = 1716805523
+    # end_timestamp = 1716891923
+    # numeraire_address = "0x4200000000000000000000000000000000000006"
+    # pool_address = "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2"
+    # return sim(start_timestamp, end_timestamp, numeraire_address, pool_address)
+
+@shared_task
+def task__arcadia__sim(
+        start_timestamp: int,
+        end_timestamp: int,
+        numeraire_address: str,
+        pool_address: str,
+        description = None
+    ):
+    return sim(start_timestamp, end_timestamp, numeraire_address, pool_address, description)
