@@ -5,7 +5,8 @@ from .models import (
     Borrow,
     Repay,
     AccountAssets,
-    MetricSnapshot
+    MetricSnapshot,
+    SimSnapshot
 )
 
 admin.site.register(AuctionStarted)
@@ -14,3 +15,4 @@ admin.site.register(Borrow)
 admin.site.register(Repay)
 admin.site.register(AccountAssets)
 admin.site.register(MetricSnapshot)
+admin.site.register(SimSnapshot)

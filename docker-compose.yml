@@ -8,11 +8,15 @@ services:
       MEDIA_DIR: 'media'
       REDIS_URL: 'redis://localhost:6379/0'
       ENVIRONMENT: 'local'
+
       POSTGRES_DB: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
       POSTGRES_USER: 'postgres'
       POSTGRES_PORT: 5432
       POSTGRES_HOST: 'postgres'
+
+      MONGODB_CONNECTION_STRING: 'mongodb://mongo:27017/'
+
       TIMEOUT: 9
     build:
       context: .
@@ -43,6 +47,17 @@ services:
     volumes:
           - pgdata:/var/lib/postgresql/data
 
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    # environment:
+      # MONGO_INITDB_ROOT_USERNAME: test
+      # MONGO_INITDB_ROOT_PASSWORD: test
+    volumes:
+      - mongodata:/data/db
+
 volumes:
   pgdata:
   media:
+  mongodata:

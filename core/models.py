@@ -37,3 +37,27 @@ class Transaction(BaseModel):
 
     class Meta:
         abstract = True
+
+class ERC20(BaseModel):
+    chain = models.ForeignKey(Chain, on_delete=models.CASCADE, null=False)
+    symbol = models.CharField(null=True, max_length=59, blank=True)
+    name = models.CharField(null=True, max_length=50, blank=True)
+    decimals = models.IntegerField(default=0)
+    contract_address = models.CharField(null=False, max_length=50)
+    pricing_metadata = models.JSONField(null=False, blank=True, default=dict())
+
+    def __str__(self):
+        return f"{self.name}-{self.chain}"
+
+class UniswapLPPosition(ERC20):
+    token0 = models.ForeignKey(ERC20, on_delete=models.CASCADE, null=True, related_name="erc_token0", blank=True)
+    token1 = models.ForeignKey(ERC20, on_delete=models.CASCADE, null=True, related_name="erc_token1", blank=True)
+    # large numbers hence it's charfield
+    tickLower = models.CharField(max_length=50, null=True, blank=True)
+    tickUpper = models.CharField(max_length=50, null=True, blank=True)
+    liquidity = models.CharField(max_length=50, null=True, blank=True)
+    token_id = models.CharField(max_length=50, null=True)
+
+
+    def __str__(self):
+        return f"{self.token0}-{self.token1}-{self.token_id}"

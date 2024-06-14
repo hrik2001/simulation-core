@@ -1,8 +1,8 @@
 from datetime import datetime
 import graphene
 from graphene import ObjectType, String, Int, UUID
-from .models import Borrow, AuctionStarted, AuctionFinished, Repay, MetricSnapshot
-from .types import arcadia__Borrow, arcadia__AuctionStarted, arcadia__AuctionFinished, arcadia__Repay, arcadia__MetricSnapshot
+from .models import Borrow, AuctionStarted, AuctionFinished, Repay, MetricSnapshot, SimSnapshot
+from .types import arcadia__Borrow, arcadia__AuctionStarted, arcadia__AuctionFinished, arcadia__Repay, arcadia__MetricSnapshot, arcadia__SimSnapshot
 
 class Query(ObjectType):
     all_borrows = graphene.List(arcadia__Borrow, pool_address=String(), account=String(), by=String(), to=String())
@@ -10,6 +10,7 @@ class Query(ObjectType):
     all_auctions_finished = graphene.List(arcadia__AuctionFinished, pool_address=String(), account=String(), creditor=String())
     all_repays = graphene.List(arcadia__Repay, pool_address=String(), account=String(), from_address=String())
     all_snapshots = graphene.List(arcadia__MetricSnapshot, start_time=Int(), end_time=Int())
+    all_sim_snapshots = graphene.List(arcadia__SimSnapshot, sim_id=String(), start_time=Int(), end_time=Int())
 
     def resolve_all_snapshots(self, info, start_time=None, end_time=None):
         queryset = MetricSnapshot.objects.all()
@@ -60,5 +61,15 @@ class Query(ObjectType):
         if from_address:
             queryset = queryset.filter(from_address=from_address)
         return queryset.order_by('block_number')
+
+    def resolve_all_sim_snapshots(self, info, sim_id=None, start_time=None, end_time=None):
+        queryset = SimSnapshot.objects.all()
+        if start_time:
+            queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(created_at__lte=datetime.fromtimestamp(end_time))
+        if sim_id:
+            queryset = queryset.filter(sim_id=sim_id)
+        return queryset.order_by('created_at')
 
 schema = graphene.Schema(query=Query)

@@ -4,7 +4,8 @@ from .models import (
     AuctionStarted,
     AuctionFinished,
     Repay,
-    MetricSnapshot
+    MetricSnapshot,
+    SimSnapshot,
 )
 
 class arcadia__Borrow(DjangoObjectType):
@@ -30,4 +31,9 @@ class arcadia__Repay(DjangoObjectType):
 class arcadia__MetricSnapshot(DjangoObjectType):
     class Meta:
         model = MetricSnapshot
+        fields = "__all__"
+
+class arcadia__SimSnapshot(DjangoObjectType):
+    class Meta:
+        model = SimSnapshot
         fields = "__all__"
