@@ -96,3 +96,15 @@ class SimSnapshot(BaseModel):
 
     def __str__(self):
         return f'SimSnapshot {self.sim_id}'
+
+class OracleSnapshot(BaseModel):
+    comp_in_usd = models.FloatField()
+    dai_in_usd = models.FloatField()
+    eth_in_usd = models.FloatField()
+    usdc_in_usd = models.FloatField()
+    cbeth_in_usd = models.FloatField()
+    reth_in_eth = models.FloatField()
+    stg_in_usd = models.FloatField()
+    wsteth_in_eth = models.FloatField()
+
+    # Track the active oracles by using get_oracle_information from utils.py

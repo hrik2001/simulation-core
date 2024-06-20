@@ -112,6 +112,65 @@ lending_pool_abi = [
 
 web3 = Web3(Web3.HTTPProvider(Chain.objects.get(chain_name="Base").rpc))
 
+# ABI and contract address configuration
+ORACLE_CONTRACT_ADDRESS = Web3.to_checksum_address("0x6a5485E3ce6913890ae5e8bDc08a868D432eEB31")
+ORACLE_INFO_ABI = [{
+    "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "name": "oracleInformation",
+    "outputs": [
+        {"internalType": "uint32", "name": "cutOffTime", "type": "uint32"},
+        {"internalType": "uint64", "name": "unitCorrection", "type": "uint64"},
+        {"internalType": "address", "name": "oracle", "type": "address"},
+    ],
+    "stateMutability": "view",
+    "type": "function",
+}]
+ORACLE_DESC_ABI = [{
+    "inputs": [],
+    "name": "description",
+    "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+    "stateMutability": "view",
+    "type": "function",
+}]
+
+def get_oracle_information(oracle_count: int):
+
+    # get_oracle_information helps to track the oracles listed under 0x6a5485E3ce6913890ae5e8bDc08a868D432eEB31.
+    # get_oracle_information generates a list of dict with all relevant info about the oracles being used.
+
+    def get_oracle_description(oracle_address: str):
+        try:
+            address = Web3.to_checksum_address(oracle_address)
+            contract = web3.eth.contract(address=address, abi=ORACLE_DESC_ABI)
+            return contract.functions.description().call()
+        except Exception as e:
+            print(f"Error calling description function for address {oracle_address}: {e}")
+            return None
+
+    def get_oracle_address_from_id(oracle_id: int):
+        try:
+            contract = web3.eth.contract(address=ORACLE_CONTRACT_ADDRESS, abi=ORACLE_INFO_ABI)
+            oracle_info = contract.functions.oracleInformation(oracle_id).call()
+            return oracle_info[2]  # Returning the oracle address
+        except Exception as e:
+            print(f"Error calling oracleInformation function for oracle ID {oracle_id}: {e}")
+            return None
+
+    oracle_info_list = []
+
+    for i in range(oracle_count):
+        oracle_address = get_oracle_address_from_id(i)
+        if oracle_address:
+            oracle_description = get_oracle_description(oracle_address)
+            oracle_dict = {
+                "oracleId": i,
+                "oracleAddress": oracle_address,
+                "oracleDesc": oracle_description
+            }
+            oracle_info_list.append(oracle_dict)
+
+    return oracle_info_list
+
 def get_debt(lending_pool, account):
     contract_address = Web3.to_checksum_address(lending_pool)
     account = Web3.to_checksum_address(account)

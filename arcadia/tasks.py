@@ -1,9 +1,9 @@
 from typing import Optional, Dict
 from web3 import Web3
 from sim_core.utils import parquet_files_to_process, update_timestamp
-from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot, SimSnapshot
-from core.models import CryoLogsMetadata, ERC20, UniswapLPPosition
-from core.utils import get_or_create_erc20, get_or_create_uniswap_lp
+from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot, SimSnapshot, OracleSnapshot
+from core.models import CryoLogsMetadata, ERC20, UniswapLPPosition, Chain
+from core.utils import get_or_create_erc20, get_or_create_uniswap_lp, get_oracle_lastround_price
 from celery import shared_task
 import os
 from django.conf import settings
@@ -435,3 +435,57 @@ def task__arcadia__sim(
         description = None
     ):
     return sim(start_timestamp, end_timestamp, numeraire_address, pool_address, description)
+
+@shared_task
+def task__arcadia__oracle_snapshot():
+
+    ORACLE_DATA = [
+    {'oracleId': 0,
+    'oracleAddress': '0x9DDa783DE64A9d1A60c49ca761EbE528C35BA428',
+    'oracleDesc': 'COMP / USD'},
+    {'oracleId': 1,
+    'oracleAddress': '0x591e79239a7d679378eC8c847e5038150364C78F',
+    'oracleDesc': 'DAI / USD'},
+    {'oracleId': 2,
+    'oracleAddress': '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70',
+    'oracleDesc': 'ETH / USD'},
+    {'oracleId': 3,
+    'oracleAddress': '0x7e860098F58bBFC8648a4311b374B1D669a2bc6B',
+    'oracleDesc': 'USDC / USD'},
+    {'oracleId': 4,
+    'oracleAddress': '0xd7818272B9e248357d13057AAb0B417aF31E817d',
+    'oracleDesc': 'CBETH / USD'},
+    {'oracleId': 5,
+    'oracleAddress': '0xf397bF97280B488cA19ee3093E81C0a77F02e9a5',
+    'oracleDesc': 'RETH / ETH'},
+    {'oracleId': 6,
+    'oracleAddress': '0x63Af8341b62E683B87bB540896bF283D96B4D385',
+    'oracleDesc': 'STG / USD'},
+    {'oracleId': 7,
+    'oracleAddress': '0xa669E5272E60f78299F4824495cE01a3923f4380',
+    'oracleDesc': 'wstETH-ETH Exchange Rate'}
+    ]
+
+    # base_chain = Chain.objects.get(chain_name__iexact='base')
+
+    # w3 = Web3(Web3.HTTPProvider(base_chain.rpc))
+
+    w3 = Web3(Web3.HTTPProvider(f"https://base-mainnet.g.alchemy.com/v2/evDGxoGxabiFsvDOwwJbk0Z7LYICE8Xs"))
+    price_list = []
+
+    for oracle in ORACLE_DATA:
+        price_list = price_list.append(get_oracle_lastround_price(oracle['oracleAddress'],w3))
+
+    # Create and save the metric snapshot    
+    OracleSnapshot.objects.create(
+        comp_in_usd = price_list[0],
+        dai_in_usd = price_list[1],
+        eth_in_usd = price_list[2],
+        usdc_in_usd = price_list[3],
+        cbeth_in_usd = price_list[4],
+        reth_in_eth = price_list[5],
+        stg_in_usd = price_list[6],
+        wsteth_in_eth = price_list[7],
+    )
+
+    # TODO: Complete this function
