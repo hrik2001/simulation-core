@@ -3,7 +3,7 @@ from web3 import Web3
 from sim_core.utils import parquet_files_to_process, update_timestamp
 from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot, SimSnapshot, OracleSnapshot
 from core.models import CryoLogsMetadata, ERC20, UniswapLPPosition, Chain
-from core.utils import get_or_create_erc20, get_or_create_uniswap_lp, get_oracle_lastround_price
+from core.utils import get_or_create_erc20, get_or_create_uniswap_lp, get_oracle_lastround_price, price_defillama
 from celery import shared_task
 import os
 from django.conf import settings
@@ -30,6 +30,7 @@ from .arcadiasim.utils import get_mongodb_db
 from .utils import chain_to_pydantic, get_risk_factors
 from uuid import uuid4
 # from .arcadiasim.entities.asset import weth
+from datetime import datetime
 
 # Hex cleaner function
 def hex_cleaner(param):
@@ -200,6 +201,21 @@ def task__arcadia__update_account_assets():
                     update_all_data(account)
                 else:
                     update_amounts(account, asset_record)
+            
+@shared_task
+def task__arcadia__create_assets():# code for asset entries
+    account_assets = AccountAssets.objects.filter(
+        ~Q(debt_usd=0),
+    )
+    for asset_record in account_assets:
+        base = Chain.objects.get(chain_id=8453)
+        for index, value in enumerate(asset_record.asset_details[1]):
+            # here value above is asset ID, if it's 0 then it's an ERC20
+            if not value:
+                # case when it's an ERC20 Asset
+                asset = get_or_create_erc20(asset_record.asset_details[0][index], base)
+            else:
+                asset = get_or_create_uniswap_lp(asset_record.asset_details[0][index], base, asset_record.asset_details[1][index])
 
 @shared_task
 def task__arcadia__metric_snapshot():
@@ -314,8 +330,8 @@ def sim(
                         current_amount=amount,
                         risk_metadata=AssetValueAndRiskFactors(
                             collateral_factor=0,
-                            liquidation_factor = 0.5,
-                            # liquidation_factor=liquidation_factor,
+                            # liquidation_factor = 0.5,
+                            liquidation_factor=liquidation_factor,
                             exposure=0,
                         ),
                     ),
@@ -337,8 +353,8 @@ def sim(
                         current_amount=1,
                         risk_metadata=AssetValueAndRiskFactors(
                             collateral_factor=0,
-                            liquidation_factor = 0.5,
-                            # liquidation_factor=liquidation_factor,
+                            # liquidation_factor = 0.5,
+                            liquidation_factor=liquidation_factor,
                             exposure=0,
                         ),
                     ),
@@ -438,7 +454,6 @@ def task__arcadia__sim(
 
 @shared_task
 def task__arcadia__oracle_snapshot():
-
     ORACLE_DATA = [
     {'oracleId': 0,
     'oracleAddress': '0x9DDa783DE64A9d1A60c49ca761EbE528C35BA428',
@@ -466,26 +481,79 @@ def task__arcadia__oracle_snapshot():
     'oracleDesc': 'wstETH-ETH Exchange Rate'}
     ]
 
-    # base_chain = Chain.objects.get(chain_name__iexact='base')
+    base_chain = Chain.objects.get(chain_name__iexact='base')
 
-    # w3 = Web3(Web3.HTTPProvider(base_chain.rpc))
+    w3 = Web3(Web3.HTTPProvider(base_chain.rpc))
+    
+    all_assets = ERC20.objects.filter(uniswaplpposition__isnull=True)
 
-    w3 = Web3(Web3.HTTPProvider(f"https://base-mainnet.g.alchemy.com/v2/evDGxoGxabiFsvDOwwJbk0Z7LYICE8Xs"))
-    price_list = []
+    feed_mapping = {
+        "0x4200000000000000000000000000000000000006".lower() : "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", #Ethereum
+        "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22".lower() : "0xd7818272B9e248357d13057AAb0B417aF31E817d", #cbETH
+        "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c".lower() : "0xf397bF97280B488cA19ee3093E81C0a77F02e9a5", #rocketpool eth
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".lower() : "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", #USDC
+        "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA".lower() : "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", #USDbC
+        "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452".lower() : None # custom strategy for wstETH
+    }
 
-    for oracle in ORACLE_DATA:
-        price_list = price_list.append(get_oracle_lastround_price(oracle['oracleAddress'],w3))
-
-    # Create and save the metric snapshot    
-    OracleSnapshot.objects.create(
-        comp_in_usd = price_list[0],
-        dai_in_usd = price_list[1],
-        eth_in_usd = price_list[2],
-        usdc_in_usd = price_list[3],
-        cbeth_in_usd = price_list[4],
-        reth_in_eth = price_list[5],
-        stg_in_usd = price_list[6],
-        wsteth_in_eth = price_list[7],
+    chainlink_prices = {}
+    spot_prices = {}
+    missed_assets = []
+    for asset in all_assets:
+        if asset.contract_address.lower() in feed_mapping:
+            if feed_mapping[asset.contract_address.lower()] is not None:
+                chainlink_prices[asset.contract_address.lower()] = {
+                    "price": get_oracle_lastround_price(feed_mapping[asset.contract_address.lower()], w3),
+                    "name": asset.name,
+                    "symbol": asset.symbol,
+                }
+            elif asset.contract_address.lower() == "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452".lower():
+                # wstETH/WETH price
+                price = get_oracle_lastround_price("0xa669E5272E60f78299F4824495cE01a3923f4380", w3) * get_oracle_lastround_price("0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", w3)
+                chainlink_prices[asset.contract_address.lower()] = {
+                    "price": price,
+                    "name": asset.name,
+                    "symbol": asset.symbol,
+                }
+            # spot price
+            timestamp = datetime.now().timestamp()
+            price = price_defillama("base", asset.contract_address, str(int(timestamp)))
+            spot_prices[asset.contract_address.lower()] = {
+                "price": price,
+                "name": asset.name,
+                "symbol": asset.symbol
+            }
+        else:
+            missed_assets.append({
+                "name": asset.name,
+                "symbol": asset.symbol
+            })
+        
+    # print(f"{chainlink_prices=} {spot_prices=} {missed_assets=}")
+    oracle_snapshot = OracleSnapshot(
+        chainlink_prices=chainlink_prices,
+        spot_prices=spot_prices,
+        missed_assets=missed_assets
     )
+
+    oracle_snapshot.save()
+
+
+    # price_list = []
+
+    # for oracle in ORACLE_DATA:
+        # price_list = price_list.append(get_oracle_lastround_price(oracle['oracleAddress'],w3))
+
+    # # Create and save the metric snapshot    
+    # OracleSnapshot.objects.create(
+        # comp_in_usd = price_list[0],
+        # dai_in_usd = price_list[1],
+        # eth_in_usd = price_list[2],
+        # usdc_in_usd = price_list[3],
+        # cbeth_in_usd = price_list[4],
+        # reth_in_eth = price_list[5],
+        # stg_in_usd = price_list[6],
+        # wsteth_in_eth = price_list[7],
+    # )
 
     # TODO: Complete this function

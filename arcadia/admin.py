@@ -6,7 +6,8 @@ from .models import (
     Repay,
     AccountAssets,
     MetricSnapshot,
-    SimSnapshot
+    SimSnapshot,
+    OracleSnapshot
 )
 
 admin.site.register(AuctionStarted)
@@ -16,3 +17,4 @@ admin.site.register(Repay)
 admin.site.register(AccountAssets)
 admin.site.register(MetricSnapshot)
 admin.site.register(SimSnapshot)
+admin.site.register(OracleSnapshot)

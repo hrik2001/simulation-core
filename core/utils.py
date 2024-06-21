@@ -1,6 +1,9 @@
+import requests
 from web3 import Web3
 from core.models import ERC20, Chain, UniswapLPPosition
 from core.pricing.univ3 import get_positions_details
+from datetime import datetime
+from time import sleep
 
 # Define a minimal ABI to interact with an ERC20 token
 erc20_abi = [
@@ -141,3 +144,14 @@ def get_oracle_lastround_price(oracle_address,w3):
       print(f"Error calling function: {e}")
 
     return data[1]/pow(10,decimal)
+
+def price_defillama(chain_name: str, contract_address: str, timestamp: str):
+    url = f"https://coins.llama.fi/prices/current/{chain_name}:{contract_address}"
+    data = requests.get(url).json()
+    try:
+        if contract_address.startswith("0x"):
+            contract_address = Web3.to_checksum_address(contract_address)
+        price = data["coins"][f"{chain_name}:{contract_address}"]["price"]
+    except KeyError:
+        raise Exception(f"{data=} {chain_name=} {contract_address=}")
+    return price

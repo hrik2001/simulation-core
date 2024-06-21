@@ -98,13 +98,8 @@ class SimSnapshot(BaseModel):
         return f'SimSnapshot {self.sim_id}'
 
 class OracleSnapshot(BaseModel):
-    comp_in_usd = models.FloatField()
-    dai_in_usd = models.FloatField()
-    eth_in_usd = models.FloatField()
-    usdc_in_usd = models.FloatField()
-    cbeth_in_usd = models.FloatField()
-    reth_in_eth = models.FloatField()
-    stg_in_usd = models.FloatField()
-    wsteth_in_eth = models.FloatField()
-
-    # Track the active oracles by using get_oracle_information from utils.py
+    # Both are JSON fields and not hardcoded assets so that we can index new assets
+    # That arcadia might add
+    spot_prices = models.JSONField(null=False)
+    chainlink_prices = models.JSONField(null=False)
+    missed_assets = models.JSONField(null=True)
