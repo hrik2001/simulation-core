@@ -96,3 +96,10 @@ class SimSnapshot(BaseModel):
 
     def __str__(self):
         return f'SimSnapshot {self.sim_id}'
+
+class OracleSnapshot(BaseModel):
+    # Both are JSON fields and not hardcoded assets so that we can index new assets
+    # That arcadia might add
+    spot_prices = models.JSONField(null=False)
+    chainlink_prices = models.JSONField(null=False)
+    missed_assets = models.JSONField(null=True)

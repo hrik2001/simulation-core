@@ -1,8 +1,8 @@
 from datetime import datetime
 import graphene
 from graphene import ObjectType, String, Int, UUID
-from .models import Borrow, AuctionStarted, AuctionFinished, Repay, MetricSnapshot, SimSnapshot
-from .types import arcadia__Borrow, arcadia__AuctionStarted, arcadia__AuctionFinished, arcadia__Repay, arcadia__MetricSnapshot, arcadia__SimSnapshot
+from .models import Borrow, AuctionStarted, AuctionFinished, Repay, MetricSnapshot, SimSnapshot, OracleSnapshot
+from .types import arcadia__Borrow, arcadia__AuctionStarted, arcadia__AuctionFinished, arcadia__Repay, arcadia__MetricSnapshot, arcadia__SimSnapshot, arcadia__OracleSnapshot
 
 class Query(ObjectType):
     all_borrows = graphene.List(arcadia__Borrow, pool_address=String(), account=String(), by=String(), to=String())
@@ -11,6 +11,7 @@ class Query(ObjectType):
     all_repays = graphene.List(arcadia__Repay, pool_address=String(), account=String(), from_address=String())
     all_snapshots = graphene.List(arcadia__MetricSnapshot, start_time=Int(), end_time=Int())
     all_sim_snapshots = graphene.List(arcadia__SimSnapshot, sim_id=String(), start_time=Int(), end_time=Int())
+    all_oracle_snapshots = graphene.List(arcadia__OracleSnapshot, start_time=Int(), end_time=Int())
 
     def resolve_all_snapshots(self, info, start_time=None, end_time=None):
         queryset = MetricSnapshot.objects.all()
@@ -70,6 +71,14 @@ class Query(ObjectType):
             queryset = queryset.filter(created_at__lte=datetime.fromtimestamp(end_time))
         if sim_id:
             queryset = queryset.filter(sim_id=sim_id)
+        return queryset.order_by('created_at')
+
+    def resolve_all_oracle_snapshots(self, info, start_time=None, end_time=None):
+        queryset = OracleSnapshot.objects.all()
+        if start_time:
+            queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(created_at__lte=datetime.fromtimestamp(end_time))
         return queryset.order_by('created_at')
 
 schema = graphene.Schema(query=Query)

@@ -1,6 +1,9 @@
+import requests
 from web3 import Web3
 from core.models import ERC20, Chain, UniswapLPPosition
 from core.pricing.univ3 import get_positions_details
+from datetime import datetime
+from time import sleep
 
 # Define a minimal ABI to interact with an ERC20 token
 erc20_abi = [
@@ -105,3 +108,50 @@ def update_uniswap_lp(asset: UniswapLPPosition):
     asset.token0 = ERC20.objects.get(contract_address__iexact=position_details["token0"]),
     asset.save()
     return asset
+
+def get_oracle_lastround_price(oracle_address,w3):
+
+    abi = [{
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+        "stateMutability": "view",
+        "type": "function",
+      },
+      {
+        "inputs": [],
+        "name": "latestRoundData",
+        "outputs": [
+            {"internalType": "uint80", "name": "roundId", "type": "uint80"},
+            {"internalType": "int256", "name": "answer", "type": "int256"},
+            {"internalType": "uint256", "name": "startedAt", "type": "uint256"},
+            {"internalType": "uint256", "name": "updatedAt", "type": "uint256"},
+            {"internalType": "uint80", "name": "answeredInRound", "type": "uint80"},
+        ],
+        "stateMutability": "view",
+        "type": "function",
+    }]
+
+    address = Web3.to_checksum_address(oracle_address)
+
+    contract = w3.eth.contract(address=address, abi=abi)
+
+    try:
+      data = contract.functions.latestRoundData().call()
+      decimal = contract.functions.decimals().call()
+
+    except Exception as e:
+      print(f"Error calling function: {e}")
+
+    return data[1]/pow(10,decimal)
+
+def price_defillama(chain_name: str, contract_address: str, timestamp: str):
+    url = f"https://coins.llama.fi/prices/current/{chain_name}:{contract_address}"
+    data = requests.get(url).json()
+    try:
+        if contract_address.startswith("0x"):
+            contract_address = Web3.to_checksum_address(contract_address)
+        price = data["coins"][f"{chain_name}:{contract_address}"]["price"]
+    except KeyError:
+        raise Exception(f"{data=} {chain_name=} {contract_address=}")
+    return price
