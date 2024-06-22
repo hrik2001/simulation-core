@@ -9,8 +9,9 @@ import os
 from django.conf import settings
 from django.db import transaction
 import pandas as pd
-from .utils import get_account_value, call_generate_asset_data, update_all_data, update_amounts, usdc_address, weth_address, erc20_to_pydantic
-from django.db.models import Sum, F, FloatField, Q, Max
+from .utils import get_account_value, call_generate_asset_data, update_all_data, update_amounts, usdc_address, \
+    weth_address, erc20_to_pydantic
+from django.db.models import Sum, F, FloatField, Q, Max, JSONField, Func
 from django.db.models.functions import Cast
 from .arcadiasim.models.arcadia import (
     LiquidationConfig,
@@ -29,6 +30,9 @@ from .arcadiasim.pipeline.utils import create_market_price_feed
 from .arcadiasim.utils import get_mongodb_db
 from .utils import chain_to_pydantic, get_risk_factors
 from uuid import uuid4
+from collections import defaultdict
+
+
 # from .arcadiasim.entities.asset import weth
 from datetime import datetime
 
@@ -39,10 +43,10 @@ def hex_cleaner(param):
     elif isinstance(param, str):
         return param.lower()
 
+
 # Arcadia events ingestion tasks:
 @shared_task(name="task__arcadia__borrow_events")
 def task__arcadia__borrow(label: str, pool_address: str):
-
     metadata = CryoLogsMetadata.objects.get(label=label)
     files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
 
@@ -52,7 +56,6 @@ def task__arcadia__borrow(label: str, pool_address: str):
             file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
             df = pd.read_parquet(file_path)
             for index, row in df.iterrows():
-
                 borrow_event = Borrow(
                     pool_address=pool_address,
                     account=hex_cleaner(row["event__account"]),
@@ -75,9 +78,9 @@ def task__arcadia__borrow(label: str, pool_address: str):
 
     update_timestamp(metadata.chain, Borrow.objects.filter(timestamp=None), Borrow)
 
+
 @shared_task(name="task__arcadia__auction_started_events")
 def task__arcadia__auction_started(label: str, pool_address: str):
-
     metadata = CryoLogsMetadata.objects.get(label=label)
     files, after_ingestion = parquet_files_to_process(metadata.ingested, label)
 
@@ -87,7 +90,6 @@ def task__arcadia__auction_started(label: str, pool_address: str):
             file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
             df = pd.read_parquet(file_path)
             for index, row in df.iterrows():
-
                 auction_started_event = AuctionStarted(
                     pool_address=pool_address,
                     account=hex_cleaner(row["event__account"]),
@@ -107,6 +109,7 @@ def task__arcadia__auction_started(label: str, pool_address: str):
 
     update_timestamp(metadata.chain, AuctionStarted.objects.filter(timestamp=None), AuctionStarted)
 
+
 @shared_task(name="task__arcadia__auction_finished_events")
 def task__arcadia__auction_finished(label: str, pool_address: str):
     metadata = CryoLogsMetadata.objects.get(label=label)
@@ -118,7 +121,6 @@ def task__arcadia__auction_finished(label: str, pool_address: str):
             file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
             df = pd.read_parquet(file_path)
             for index, row in df.iterrows():
-
                 auction_finished_event = AuctionFinished(
                     pool_address=pool_address,
                     account=hex_cleaner(row["event__account"]),
@@ -143,6 +145,7 @@ def task__arcadia__auction_finished(label: str, pool_address: str):
 
     update_timestamp(metadata.chain, AuctionFinished.objects.filter(timestamp=None), AuctionFinished)
 
+
 @shared_task(name="task__arcadia__repay_events")
 def task__arcadia__repay(label: str, pool_address: str):
     metadata = CryoLogsMetadata.objects.get(label=label)
@@ -154,7 +157,6 @@ def task__arcadia__repay(label: str, pool_address: str):
             file_path = os.path.join(settings.MEDIA_ROOT, f"logs__{label}", i)
             df = pd.read_parquet(file_path)
             for index, row in df.iterrows():
-
                 repay_event = Repay(
                     pool_address=pool_address,
                     account=hex_cleaner(row["event__account"]),
@@ -174,9 +176,9 @@ def task__arcadia__repay(label: str, pool_address: str):
 
     update_timestamp(metadata.chain, Repay.objects.filter(timestamp=None), Repay)
 
+
 @shared_task
 def task__arcadia__update_account_assets():
-
     accounts = Borrow.objects.values_list('account', flat=True).distinct()
     with transaction.atomic():
         for account in accounts:
@@ -190,7 +192,8 @@ def task__arcadia__update_account_assets():
                 created = True
             usdc_is_zero = asset_record.usdc_value == '0' if asset_record.usdc_value else True
 
-            latest_borrow_time = Borrow.objects.filter(account=account).aggregate(Max('created_at'))['created_at__max'] or 0
+            latest_borrow_time = Borrow.objects.filter(account=account).aggregate(Max('created_at'))[
+                                     'created_at__max'] or 0
             needs_update = created or (asset_record.updated_at < latest_borrow_time)
 
             if usdc_is_zero:
@@ -217,12 +220,19 @@ def task__arcadia__create_assets():# code for asset entries
             else:
                 asset = get_or_create_uniswap_lp(asset_record.asset_details[0][index], base, asset_record.asset_details[1][index])
 
+
+# Custom expression to extract JSON values as a set of numeric values
+class JSONValues(Func):
+    function = 'JSON_EXTRACT'
+    template = "%(function)s(%(expressions)s, '$.*')"
+    output_field = FloatField()
+
 @shared_task
 def task__arcadia__metric_snapshot():
     # Annotate and cast debt and collateral for all accounts in a single query
     annotated_assets = AccountAssets.objects.annotate(
         debt_float=Cast('debt_usd', FloatField()),
-        collateral_float=Cast('collateral_value_usd', FloatField())
+        collateral_float=Cast('collateral_value_usd', FloatField()),
     )
 
     # Calculate total debt and collateral
@@ -253,6 +263,15 @@ def task__arcadia__metric_snapshot():
     total_collateral_weth = weth_aggregates['total_collateral_weth'] or 0.0
     weighted_cr_weth = (total_debt_weth / total_collateral_weth) if total_collateral_weth else 0
 
+    borrowers = AccountAssets.objects.filter(~Q(debt_usd=0))
+
+
+    collateral_distribution = defaultdict(float)
+
+    for account in borrowers:
+        for asset, value in account.asset_details_usd.items():
+            collateral_distribution[asset] += value
+
     # Create and save the metric snapshot
     MetricSnapshot.objects.create(
         weighted_cr=weighted_cr,
@@ -267,16 +286,17 @@ def task__arcadia__metric_snapshot():
         total_collateral=str(total_collateral),
         total_collateral_usdc=str(total_collateral_usdc),
         total_collateral_weth=str(total_collateral_weth),
+        collateral_distribution=collateral_distribution,
     )
+
 
 def sim(
         start_timestamp,
         end_timestamp,
         numeraire_address,
         pool_address,
-        description = None
-    ):
-
+        description=None
+):
     pool_address = Web3.to_checksum_address(pool_address)
 
     account_assets = AccountAssets.objects.filter(
@@ -319,7 +339,7 @@ def sim(
                 amount = account.asset_details[2][index]
                 if asset.contract_address.lower() not in liquidation_factors_dict:
                     _, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address], [0])
-                    liquidation_factor = liquidation_factors[0]/1e4
+                    liquidation_factor = liquidation_factors[0] / 1e4
                     liquidation_factors_dict[asset.contract_address.lower()] = liquidation_factor
                 else:
                     liquidation_factor = liquidation_factors_dict[asset.contract_address.lower()]
@@ -340,12 +360,13 @@ def sim(
                 asset = get_or_create_uniswap_lp(account.asset_details[0][index], base, account.asset_details[1][index])
                 asset = erc20_to_pydantic(asset)
                 if asset.contract_address.lower() not in liquidation_factors_dict:
-                    _, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address], [int(asset.token_id)])
-                    liquidation_factor = liquidation_factors[0]/1e4
+                    _, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address],
+                                                              [int(asset.token_id)])
+                    liquidation_factor = liquidation_factors[0] / 1e4
                     liquidation_factors_dict[asset.contract_address.lower()] = liquidation_factor
                 else:
                     liquidation_factor = liquidation_factors_dict[asset.contract_address.lower()]
-                liquidation_factor = liquidation_factors[0]/1e4
+                liquidation_factor = liquidation_factors[0] / 1e4
                 asset_in_margin_account = AssetsInMarginAccount(
                     asset=asset,
                     metadata=AssetMetadata(
@@ -401,7 +422,7 @@ def sim(
         liquidation_engine=liquidation_engine,
         balance=5000,  # balance in terms of USDT (numeraire)
         sim_time=sim_time,
-        liquidator_address= "0xLiquidator"
+        liquidator_address="0xLiquidator"
     )
 
     unique_id = uuid4()
@@ -429,18 +450,19 @@ def sim(
         "liquidation_factors": liquidation_factors_dict,
         "description": description
     }
-    result_metric["total_outstanding_debt"] = result_metric["total_outstanding_debt"]/(10**(numeraire.decimals))
+    result_metric["total_outstanding_debt"] = result_metric["total_outstanding_debt"] / (10 ** (numeraire.decimals))
 
     sim_snapshot = SimSnapshot(**result_metric)
     sim_snapshot.save()
     return str(unique_id)
 
+
 # def test_sim():
-    # start_timestamp = 1716805523
-    # end_timestamp = 1716891923
-    # numeraire_address = "0x4200000000000000000000000000000000000006"
-    # pool_address = "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2"
-    # return sim(start_timestamp, end_timestamp, numeraire_address, pool_address)
+# start_timestamp = 1716805523
+# end_timestamp = 1716891923
+# numeraire_address = "0x4200000000000000000000000000000000000006"
+# pool_address = "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2"
+# return sim(start_timestamp, end_timestamp, numeraire_address, pool_address)
 
 @shared_task
 def task__arcadia__sim(
@@ -448,8 +470,8 @@ def task__arcadia__sim(
         end_timestamp: int,
         numeraire_address: str,
         pool_address: str,
-        description = None
-    ):
+        description=None
+):
     return sim(start_timestamp, end_timestamp, numeraire_address, pool_address, description)
 
 @shared_task
