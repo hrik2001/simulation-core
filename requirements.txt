@@ -20,6 +20,7 @@ cron-descriptor==1.4.3
 cytoolz==0.12.3
 Django==5.0.3
 django-celery-beat==2.6.0
+django-celery-results==2.5.1
 django-cors-headers==4.3.1
 django-filebrowser-no-grappelli==4.0.2
 django-sql-explorer==4.0.2

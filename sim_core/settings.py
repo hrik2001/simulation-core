@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'arcadia',
     "django_celery_beat",  # for scheduling tasks
     "graphene_django",
+    "django_celery_results",
 ]
 EXPLORER_CONNECTIONS = { 'Default': 'default' }
 EXPLORER_DEFAULT_CONNECTION = 'default'
@@ -196,7 +197,9 @@ STATICFILES_FINDERS = (
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT = (BASE_DIR / Path(os.environ.get("MEDIA_DIR"))).resolve().as_posix()
 CELERY_BROKER_URL = os.environ["REDIS_URL"]
-CELERY_RESULT_BACKEND = os.environ["REDIS_URL"]
+# CELERY_RESULT_BACKEND = os.environ["REDIS_URL"]
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_RESULT_EXTENDED = True
 
 FILEBROWSER_DIRECTORY = ''
 DIRECTORY = ''
