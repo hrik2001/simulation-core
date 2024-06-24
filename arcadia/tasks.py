@@ -220,13 +220,6 @@ def task__arcadia__create_assets():# code for asset entries
             else:
                 asset = get_or_create_uniswap_lp(asset_record.asset_details[0][index], base, asset_record.asset_details[1][index])
 
-
-# Custom expression to extract JSON values as a set of numeric values
-class JSONValues(Func):
-    function = 'JSON_EXTRACT'
-    template = "%(function)s(%(expressions)s, '$.*')"
-    output_field = FloatField()
-
 @shared_task
 def task__arcadia__metric_snapshot():
     # Annotate and cast debt and collateral for all accounts in a single query
