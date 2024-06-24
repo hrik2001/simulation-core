@@ -50,12 +50,6 @@ class AccountAssets(BaseModel):
     def __str__(self):
         return f"Account={self.account} Debt={self.debt_usd} Collateral={self.collateral_value_usd}"
 
-class AccountSnapshot(BaseModel):
-    account_assets = models.ManyToManyField('AccountAssets', related_name='snapshots')
-
-    def __str__(self):
-        return f"{self.created_at} Snapshot"
-
 class MetricSnapshot(BaseModel):
     weighted_cr = models.FloatField()
     weighted_cr_usdc = models.FloatField()

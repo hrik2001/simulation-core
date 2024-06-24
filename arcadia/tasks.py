@@ -1,7 +1,7 @@
 from typing import Optional, Dict
 from web3 import Web3
 from sim_core.utils import parquet_files_to_process, update_timestamp
-from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot, SimSnapshot, OracleSnapshot, AccountSnapshot
+from .models import Borrow, AuctionStarted, AuctionFinished, Repay, AccountAssets, MetricSnapshot, SimSnapshot, OracleSnapshot
 from core.models import CryoLogsMetadata, ERC20, UniswapLPPosition, Chain
 from core.utils import get_or_create_erc20, get_or_create_uniswap_lp, get_oracle_lastround_price, price_defillama
 from celery import shared_task
@@ -557,32 +557,3 @@ def task__arcadia__oracle_snapshot():
     # )
 
     # TODO: Complete this function
-    
-# @shared_task
-# def task__arcadia__account_snapshot():
-#     # Create a new snapshot instance
-#     new_snapshot = AccountSnapshot.objects.create()
-
-#     # Fetch all current AccountAssets
-#     current_assets = AccountAssets.objects.all()
-
-#     # Associate current assets with the new snapshot
-#     new_snapshot.account_assets.set(current_assets)
-
-#     # Save the snapshot to finalize the associations
-#     new_snapshot.save()
-
-#     return f"Snapshot created with ID: {new_snapshot.id}"
-def task__arcadia__account_snapshot():
-    with transaction.atomic():
-        # Create a new snapshot instance
-        new_snapshot = AccountSnapshot.objects.create()
-
-        # Fetch all current AccountAssets
-        current_assets = AccountAssets.objects.select_for_update().all()
-
-        # Associate current assets with the new snapshot
-        new_snapshot.account_assets.set(current_assets)
-
-        # The transaction ensures all or nothing is committed to the database
-    return f"Snapshot created with ID: {new_snapshot.id}"
