@@ -1,8 +1,8 @@
 from datetime import datetime
 import graphene
 from graphene import ObjectType, String, Int, UUID
-from .models import Borrow, AuctionStarted, AuctionFinished, Repay, MetricSnapshot, SimSnapshot, OracleSnapshot
-from .types import arcadia__Borrow, arcadia__AuctionStarted, arcadia__AuctionFinished, arcadia__Repay, arcadia__MetricSnapshot, arcadia__SimSnapshot, arcadia__OracleSnapshot
+from .models import Borrow, AuctionStarted, AuctionFinished, Repay, MetricSnapshot, SimSnapshot, OracleSnapshot, AccountSnapshot
+from .types import arcadia__Borrow, arcadia__AuctionStarted, arcadia__AuctionFinished, arcadia__Repay, arcadia__MetricSnapshot, arcadia__SimSnapshot, arcadia__OracleSnapshot, arcadia__AccountSnapshot
 
 class Query(ObjectType):
     all_borrows = graphene.List(arcadia__Borrow, pool_address=String(), account=String(), by=String(), to=String(), limit=Int(), sort_by=String())
@@ -12,7 +12,8 @@ class Query(ObjectType):
     all_snapshots = graphene.List(arcadia__MetricSnapshot, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
     all_sim_snapshots = graphene.List(arcadia__SimSnapshot, sim_id=String(), start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
     all_oracle_snapshots = graphene.List(arcadia__OracleSnapshot, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
-
+    all_account_snapshots = graphene.List(arcadia__AccountSnapshot, id=UUID(), limit=Int(), sort_by=String())
+    
     def resolve_all_borrows(self, info, pool_address=None, account=None, by=None, to=None, limit=None, sort_by=None):
         queryset = Borrow.objects.all()
         if pool_address:
@@ -123,4 +124,20 @@ class Query(ObjectType):
             queryset = queryset[:limit]
         return queryset
 
+    def resolve_all_account_snapshots(self, info, id=None, limit=None, sort_by=None):
+        queryset = AccountSnapshot.objects.all()
+        if id:
+            queryset = queryset.filter(id=id)
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('-created_at')  # Assuming newest first
+        if limit:
+            queryset = queryset[:limit]
+
+        # Prefetch related assets
+        queryset = queryset.prefetch_related('account_assets')
+
+        return queryset
+    
 schema = graphene.Schema(query=Query)
