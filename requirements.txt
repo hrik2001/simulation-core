@@ -76,6 +76,7 @@ regex==2024.4.16
 requests==2.31.0
 rlp==4.0.0
 rpds-py==0.18.0
+sentry-sdk==2.6.0
 six==1.16.0
 sqlparse==0.4.4
 text-unidecode==1.3
