@@ -78,6 +78,8 @@ def get_or_create_uniswap_lp(contract_address: str, chain: Chain, token_id: str 
             w3,
             int(token_id)
         )
+        if position_details is None:
+            return None
         asset = UniswapLPPosition(
             contract_address = Web3.to_checksum_address(contract_address),
             token_id = str(token_id),
