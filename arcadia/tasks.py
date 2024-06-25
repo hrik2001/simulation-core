@@ -338,6 +338,9 @@ def sim(
                 )
             else:
                 asset = get_or_create_uniswap_lp(account.asset_details[0][index], base, account.asset_details[1][index])
+                if asset is None:
+                    include_account = False
+                    break
                 asset = erc20_to_pydantic(asset)
                 if asset.contract_address.lower() not in liquidation_factors_dict:
                     _, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address], [int(asset.token_id)])

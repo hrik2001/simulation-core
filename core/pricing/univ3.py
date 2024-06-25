@@ -1,5 +1,6 @@
 import math
 from web3 import Web3
+import web3
 
 
 def mul_div(a, b, denominator):
@@ -343,7 +344,10 @@ dummy_abi = [
 def get_positions_details(contract_address, w3, token_id):
     contract_address = Web3.to_checksum_address(contract_address)
     contract = w3.eth.contract(address=contract_address, abi=dummy_abi)
-    result = contract.functions.positions(token_id).call()
+    try:
+        result = contract.functions.positions(token_id).call()
+    except web3.exceptions.ContractLogicError:
+        return None
     
     details = {
         "nonce": result[0],
