@@ -7,6 +7,7 @@ from .models import (
     MetricSnapshot,
     SimSnapshot,
     OracleSnapshot,
+    AccountAssets
 )
 
 class arcadia__Borrow(DjangoObjectType):
@@ -42,4 +43,9 @@ class arcadia__SimSnapshot(DjangoObjectType):
 class arcadia__OracleSnapshot(DjangoObjectType):
     class Meta:
         model = OracleSnapshot
+        fields = "__all__"
+        
+class arcadia__AccountAssets(DjangoObjectType):
+    class Meta:
+        model = AccountAssets
         fields = "__all__"
