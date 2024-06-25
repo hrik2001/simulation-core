@@ -92,7 +92,7 @@ def task__arcadia__auction_started(label: str, pool_address: str):
                     pool_address=pool_address,
                     account=hex_cleaner(row["event__account"]),
                     creditor=str(row["event__creditor"]),
-                    open_debt=str(row["event__open_debt"]),
+                    open_debt=str(row["event__openDebt_string"]),
                     transaction_hash=hex_cleaner(row["transaction_hash"]),
                     transaction_index=row["transaction_index"],
                     log_index=row["log_index"],
