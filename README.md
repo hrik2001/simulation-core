@@ -55,4 +55,28 @@ kindly check out `task__uniswap_pair_created` task to get an idea on how to writ
 
 At `uniswap/schema.py` you can check out how to write graphql queries. You can try running [this](http://127.0.0.1:8000/protocols/uniswap/graphql/#query=query%20%7B%0A%20%20searchPairs%20%7B%0A%20%20%20%20token0%0A%20%20%20%20token1%0A%20%20%20%20pair%0A%20%20%7D%0A%7D%0A) right off the bat once the TL task has been run
 
+### Executing a task from the command line
 
+To execute a task from the command line, run the following command:
+```bash
+# docker-compose exec web celery -A sim_core call <task_name>
+docker-compose exec web celery -A sim_core call arcadia.tasks.task__arcadia__metric_snapshot
+```
+
+## Contributing
+
+### Adding a field to an existing model (or creating a new model)
+
+Add the field to the model in the appropriate app's `models.py` file (ie `uniswap/models.py`)
+
+Update the relevant tasks in the `tasks` directory (ie unideswap/tasks.py) to construct the updated model
+
+Run the following command to apply the changes to the database:
+```bash
+# First ensure that the web container is running
+docker-compose build && docker-compose up
+
+# Then run the following command to apply the changes to the database
+docker-compose exec web python manage.py makemigrations
+docker-compose exec web python manage.py migrate
+```
