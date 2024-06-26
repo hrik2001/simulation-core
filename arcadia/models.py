@@ -63,6 +63,7 @@ class MetricSnapshot(BaseModel):
     total_collateral = models.TextField()
     total_collateral_usdc = models.TextField()
     total_collateral_weth = models.TextField()
+    collateral_distribution = models.JSONField()
 
     def __str__(self):
         return f"Snapshot @ {self.created_at}"
