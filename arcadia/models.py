@@ -46,6 +46,9 @@ class AccountAssets(BaseModel):
     collateral_value_usd = models.TextField()
     asset_details = models.JSONField()
     asset_details_usd = models.JSONField()
+    liquidation_value = models.TextField(null=True)
+    used_margin = models.TextField(null=True)
+    healthy = models.BooleanField(null=True)
 
     def __str__(self):
         return f"Account={self.account} Debt={self.debt_usd} Collateral={self.collateral_value_usd}"

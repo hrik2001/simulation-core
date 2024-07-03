@@ -171,4 +171,4 @@ pipeline_logs/
 *.sqlite3
 *.rdb
 *.db
-investigation.py
+.docker-compose.yml
