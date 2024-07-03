@@ -85,8 +85,51 @@ minimal_abi = [
         "payable": False,
         "stateMutability": "view",
         "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "getLiquidationValue",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "getUsedMargin",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "isAccountUnhealthy",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
     }
 ]
+
 
 lending_pool_abi = [
     {
@@ -184,6 +227,16 @@ def get_account_value(account, numeraire):
     contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
     return contract.functions.getAccountValue(numeraire).call()
 
+def get_liquidation_value(account):
+    contract_address = Web3.to_checksum_address(account)
+    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    return contract.functions.getLiquidationValue().call()
+
+def get_used_margin_value(account):
+    contract_address = Web3.to_checksum_address(account)
+    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    return contract.functions.getUsedMargin().call()
+
 # Function to call generateAssetData
 def call_generate_asset_data(account):
     contract_address = Web3.to_checksum_address(account)
@@ -200,6 +253,10 @@ def get_collateral_value(account):
     contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
     return contract.functions.getCollateralValue().call()
 
+def get_health_status(account):
+    contract_address = Web3.to_checksum_address(account)
+    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    return not contract.functions.isAccountUnhealthy().call()
 
 def get_price_defillama(labels, search_width=4):
     result = defaultdict(int)
@@ -233,9 +290,12 @@ def update_amounts(account: str, asset_record: AccountAssets):
         weth_value = get_account_value(account, weth_address)
     # asset_data = call_generate_asset_data(account)
     asset_data = asset_record.asset_details
-    collateral_value = get_collateral_value(account)
+    # collateral_value = get_collateral_value(account)
     # numeraire = get_numeraire_address(account)
     numeraire = asset_record.numeraire
+    liquidation_value = get_liquidation_value(account)
+    used_margin = get_used_margin_value(account)
+    healthy = get_health_status(account)
 
     labels = list(set(asset_data[0]))
     prices = get_price_defillama([f"base:{i}" for i in labels])
@@ -253,14 +313,18 @@ def update_amounts(account: str, asset_record: AccountAssets):
         if numeraire.lower() == weth_address.lower():
             price_weth = (weth_value / 1e18) / (usdc_value / 1e6)
             price_weth = 1/price_weth
-            collateral_value_usd = (collateral_value / 1e18) * price_weth
+            # collateral_value_usd = (collateral_value / 1e18) * price_weth
             debt = get_debt(weth_lending_pool_address, account)
             debt_usd = (debt/1e18) * price_weth
+            collateral_value = weth_value
+            collateral_value_usd = usdc_value/1e6
         else:
+            collateral_value = usdc_value
             collateral_value_usd = collateral_value/1e6
             debt = get_debt(usdc_lending_pool_address, account)
             debt_usd = (debt/1e6)
     else:
+        collateral_value = 0
         collateral_value_usd = 0
         debt_usd = 0
 
@@ -287,7 +351,10 @@ def update_amounts(account: str, asset_record: AccountAssets):
             'collateral_value': str(collateral_value),
             'collateral_value_usd': str(collateral_value_usd),
             'debt_usd': str(debt_usd),
-            'asset_details_usd': asset_data_usd
+            'asset_details_usd': asset_data_usd,
+            'liquidation_value': liquidation_value,
+            'used_margin': used_margin,
+            "healthy": healthy
         }
     )
 def update_all_data(account):
@@ -297,8 +364,11 @@ def update_all_data(account):
     else:
         weth_value = get_account_value(account, weth_address)
     asset_data = call_generate_asset_data(account)
-    collateral_value = get_collateral_value(account)
+    # collateral_value = get_collateral_value(account)
     numeraire = get_numeraire_address(account)
+    liquidation_value = get_liquidation_value(account)
+    used_margin = get_used_margin_value(account)
+    healthy = get_health_status(account)
 
     labels = list(set(asset_data[0]))
     prices = get_price_defillama([f"base:{i}" for i in labels])
@@ -316,14 +386,18 @@ def update_all_data(account):
         if numeraire.lower() == weth_address.lower():
             price_weth = (weth_value / 1e18) / (usdc_value / 1e6)
             price_weth = 1/price_weth
-            collateral_value_usd = (collateral_value / 1e18) * price_weth
+            # collateral_value_usd = (collateral_value / 1e18) * price_weth
             debt = get_debt(weth_lending_pool_address, account)
             debt_usd = (debt/1e18) * price_weth
+            collateral_value = weth_value
+            collateral_value_usd = usdc_value/1e6
         else:
+            collateral_value = usdc_value
             collateral_value_usd = collateral_value/1e6
             debt = get_debt(usdc_lending_pool_address, account)
             debt_usd = (debt/1e6)
     else:
+        collateral_value = 0
         collateral_value_usd = 0
         debt_usd = 0
 
@@ -350,7 +424,10 @@ def update_all_data(account):
             'collateral_value': str(collateral_value),
             'collateral_value_usd': str(collateral_value_usd),
             'debt_usd': str(debt_usd),
-            'asset_details_usd': asset_data_usd
+            'asset_details_usd': asset_data_usd,
+            'liquidation_value': liquidation_value,
+            'used_margin': used_margin,
+            "healthy": healthy
         }
     )
 
