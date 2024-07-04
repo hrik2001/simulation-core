@@ -150,6 +150,20 @@ lending_pool_abi = [
         "payable": False,
         "stateMutability": "view",
         "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
     }
 ]
 
@@ -220,6 +234,11 @@ def get_debt(lending_pool, account):
     contract = web3.eth.contract(address=contract_address, abi=lending_pool_abi)
     return contract.functions.getOpenPosition(account).call()
 # The contract address. Replace with the actual contract address.
+
+def get_total_supply(lending_pool):
+    contract_address = Web3.to_checksum_address(lending_pool)
+    contract = web3.eth.contract(address=contract_address, abi=lending_pool_abi)
+    return contract.functions.totalSupply().call()
 
 # Function to get the account value
 def get_account_value(account, numeraire):
