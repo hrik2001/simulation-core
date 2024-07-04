@@ -67,6 +67,8 @@ class MetricSnapshot(BaseModel):
     total_collateral_usdc = models.TextField()
     total_collateral_weth = models.TextField()
     collateral_distribution = models.JSONField(null=True)
+    total_supply_weth = models.BigIntegerField(null=True)
+    total_supply_usdc = models.BigIntegerField(null=True)
 
     def __str__(self):
         return f"Snapshot @ {self.created_at}"
