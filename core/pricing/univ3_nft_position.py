@@ -315,6 +315,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
         nft_positions_details = get_nft_positions_details(nft_contract_address=nft_contract, w3=w3, token_id=asset_data[1][i])
         
         if not nft_positions_details:
+            add_or_update_dict(result, nft_contract, 0) # Records the NFT if it doesnot belong to Uniswap
             continue  # Skip if nft_positions_details could not be fetched
         
         # Extracting and normalizing token0 and token1 from nft_positions_details
@@ -324,6 +325,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
         # Finding the matching pool using the lookup dictionary
         matching_pool = pool_lookup.get((token0, token1))
         if not matching_pool:
+            add_or_update_dict(result, nft_contract, 0) # Records the NFT if it doesnot belong to the Mapping
             continue  # Skip if no matching pool is found
         
         slot0 = get_uniswap_slot0(pool_address=matching_pool["pool"], w3=w3)

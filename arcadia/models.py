@@ -46,6 +46,7 @@ class AccountAssets(BaseModel):
     collateral_value_usd = models.TextField()
     asset_details = models.JSONField()
     asset_details_usd = models.JSONField()
+    position_distribution = models.JSONField(null=True)
     liquidation_value = models.TextField(null=True)
     used_margin = models.TextField(null=True)
     healthy = models.BooleanField(null=True)

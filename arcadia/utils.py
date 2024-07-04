@@ -7,6 +7,7 @@ from collections import defaultdict
 from time import sleep
 from arcadia.arcadiasim.models.asset import Asset, SimCoreUniswapLPPosition
 from arcadia.arcadiasim.models.chain import Chain as ArcadiaChain
+from core.pricing.univ3_nft_position import get_arcadia_account_nft_position
 
 usdc_address = Web3.to_checksum_address("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")
 weth_address = Web3.to_checksum_address("0x4200000000000000000000000000000000000006")
@@ -398,6 +399,9 @@ def update_all_data(account):
         weth_value = get_account_value(account, weth_address)
     asset_data = call_generate_asset_data(account)
     # collateral_value = get_collateral_value(account)
+    
+    position_distribution = get_arcadia_account_nft_position(asset_data, w3=web3)
+    
     numeraire = get_numeraire_address(account)
     liquidation_value = get_liquidation_value(account)
     used_margin = get_used_margin_value(account)
@@ -453,6 +457,7 @@ def update_all_data(account):
             'usdc_value': str(usdc_value),
             'weth_value': str(weth_value),
             'asset_details': asset_data,
+            'position_distribution': position_distribution,
             'numeraire': numeraire,
             'collateral_value': str(collateral_value),
             'collateral_value_usd': str(collateral_value_usd),
