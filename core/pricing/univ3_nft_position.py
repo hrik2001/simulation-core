@@ -264,7 +264,7 @@ def get_account_data(account_address, w3):
         return f'Error fetching pool_oracle: {e}'
     
 
-def get_arcadia_account_nft_position(asset_data,w3):
+def get_arcadia_account_nft_position(asset_data, w3):
     """
     Sample asset_data:
     [
@@ -277,20 +277,20 @@ def get_arcadia_account_nft_position(asset_data,w3):
     """
     POOL_NFT_MAPPINGS = [
         {
-        "name": "wETH-USDC",
-        "pool": "0xd0b53D9277642d899DF5C87A3966A349A798F224",
-        "token0": "0x4200000000000000000000000000000000000006",
-        "token1": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        "decimal0": 18,
-        "decimal1": 6
+            "name": "wETH-USDC",
+            "pool": "0xd0b53D9277642d899DF5C87A3966A349A798F224",
+            "token0": "0x4200000000000000000000000000000000000006",
+            "token1": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "decimal0": 18,
+            "decimal1": 6
         },
         {
-        "name": "wETH-USDbC",
-        "pool": "0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18",
-        "token0": "0x4200000000000000000000000000000000000006",
-        "token1": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
-        "decimal0": 18,
-        "decimal1": 6
+            "name": "wETH-USDbC",
+            "pool": "0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18",
+            "token0": "0x4200000000000000000000000000000000000006",
+            "token1": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
+            "decimal0": 18,
+            "decimal1": 6
         }
     ]
     
@@ -298,57 +298,37 @@ def get_arcadia_account_nft_position(asset_data,w3):
     non_zero_indices = [index for index, value in enumerate(asset_data[1]) if value != 0]
 
     result = defaultdict(int)
+
+    # Creating a lookup dictionary for quick access with normalized tokens
+    pool_lookup = {}
+    for pool in POOL_NFT_MAPPINGS:
+        token0 = pool["token0"].lower()
+        token1 = pool["token1"].lower()
+        pool_lookup[(token0, token1)] = pool
+        pool_lookup[(token1, token0)] = pool  # To handle reversed token order
+
     for i in zero_indices:
         add_or_update_dict(result, asset_data[0][i], asset_data[2][i])
     
     for i in non_zero_indices:
         nft_contract = asset_data[0][i]
         nft_positions_details = get_nft_positions_details(nft_contract_address=nft_contract, w3=w3, token_id=asset_data[1][i])
-        """
-        sample output from get_nft_positions_details function
-        details = {
-            "nonce": result[0],
-            "operator": result[1],
-            "token0": result[2],
-            "token1": result[3],
-            "fee": result[4],
-            "tickLower": result[5],
-            "tickUpper": result[6],
-            "liquidity": result[7],
-            "feeGrowthInside0LastX128": result[8],
-            "feeGrowthInside1LastX128": result[9],
-            "tokensOwed0": result[10],
-            "tokensOwed1": result[11],
-        }
-        """
-        # Creating a lookup dictionary for quick access with normalized tokens
-        pool_lookup = {}
-        for pool in POOL_NFT_MAPPINGS:
-            token0 = pool["token0"].lower()
-            token1 = pool["token1"].lower()
-            pool_lookup[(token0, token1)] = pool
-            pool_lookup[(token1, token0)] = pool  # To handle reversed token order
-
+        
+        if not nft_positions_details:
+            continue  # Skip if nft_positions_details could not be fetched
+        
         # Extracting and normalizing token0 and token1 from nft_positions_details
         token0 = nft_positions_details["token0"].lower()
         token1 = nft_positions_details["token1"].lower()
 
         # Finding the matching pool using the lookup dictionary
         matching_pool = pool_lookup.get((token0, token1))
+        if not matching_pool:
+            continue  # Skip if no matching pool is found
         
         slot0 = get_uniswap_slot0(pool_address=matching_pool["pool"], w3=w3)
-        """
-        sample output from get_uniswap_slot0 function
-        details = {
-            "sqrtPriceX96": result[0],
-            "tick": result[1],
-            "observationIndex": result[2],
-            "observationCardinality": result[3],
-            "observationCardinalityNext": result[4],
-            "feeProtocol": result[5],
-            "unlocked": result[6]
-        }
-        """
+        if not slot0:
+            continue  # Skip if slot0 details could not be fetched
         
         current_tick = slot0["tick"]
         lower_tick = nft_positions_details["tickLower"]
