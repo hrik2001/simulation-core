@@ -164,6 +164,15 @@ lending_pool_abi = [
         "payable": False,
         "stateMutability": "view",
         "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalLiquidity",
+        "outputs": [
+            {"internalType": "uint256", "name": "totalLiquidity_", "type": "uint256"}
+        ],
+        "stateMutability": "view",
+        "type": "function",
     }
 ]
 
@@ -239,6 +248,11 @@ def get_total_supply(lending_pool):
     contract_address = Web3.to_checksum_address(lending_pool)
     contract = web3.eth.contract(address=contract_address, abi=lending_pool_abi)
     return contract.functions.totalSupply().call()
+
+def get_total_liquidity(lending_pool):
+    contract_address = Web3.to_checksum_address(lending_pool)
+    contract = web3.eth.contract(address=contract_address, abi=lending_pool_abi)
+    return contract.functions.totalLiquidity().call()
 
 # Function to get the account value
 def get_account_value(account, numeraire):

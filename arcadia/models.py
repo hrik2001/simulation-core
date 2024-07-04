@@ -69,6 +69,8 @@ class MetricSnapshot(BaseModel):
     collateral_distribution = models.JSONField(null=True)
     total_supply_weth = models.DecimalField(max_digits=30, decimal_places=5, null=True)
     total_supply_usdc = models.DecimalField(max_digits=30, decimal_places=5, null=True)
+    total_liquidity_weth = models.DecimalField(max_digits=30, decimal_places=5, null=True)
+    total_liquidity_usdc = models.DecimalField(max_digits=30, decimal_places=5, null=True)
 
     def __str__(self):
         return f"Snapshot @ {self.created_at}"
