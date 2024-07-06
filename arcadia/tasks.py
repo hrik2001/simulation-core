@@ -10,7 +10,7 @@ from django.conf import settings
 from django.db import transaction
 import pandas as pd
 from .utils import get_account_value, call_generate_asset_data, update_all_data, update_amounts, usdc_address, \
-    weth_address, erc20_to_pydantic, get_total_supply, usdc_lending_pool_address, weth_lending_pool_address
+    weth_address, erc20_to_pydantic, get_total_supply, get_total_liquidity, usdc_lending_pool_address, weth_lending_pool_address
 from django.db.models import Sum, F, FloatField, Q, Max, JSONField, Func
 from django.db.models.functions import Cast
 from .arcadiasim.models.arcadia import (
@@ -249,7 +249,10 @@ def task__arcadia__metric_snapshot():
 
     total_supply_weth = get_total_supply(weth_lending_pool_address)/1e18
     total_supply_usdc = get_total_supply(usdc_lending_pool_address)/1e6
-
+    
+    total_liquidity_weth = get_total_liquidity(weth_lending_pool_address)/1e18
+    total_liquidity_usdc = get_total_liquidity(usdc_lending_pool_address)/1e6
+    
     # Extract sums for USDC and WETH
     total_debt_usdc = usdc_aggregates['total_debt_usdc'] or 0.0
     total_collateral_usdc = usdc_aggregates['total_collateral_usdc'] or 0.0
@@ -285,6 +288,8 @@ def task__arcadia__metric_snapshot():
         collateral_distribution=collateral_distribution,
         total_supply_usdc=total_supply_usdc,
         total_supply_weth=total_supply_weth,
+        total_liquidity_usdc=total_liquidity_usdc,
+        total_liquidity_weth=total_liquidity_weth,
     )
 
 
