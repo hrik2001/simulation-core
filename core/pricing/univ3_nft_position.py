@@ -236,7 +236,7 @@ def get_uniswap_slot0(pool_address, w3):
 
 def get_account_data(account_address, w3):
     
-    account_abi = {
+    account_abi = [{
         "inputs": [],
         "name": "generateAssetData",
         "outputs": [
@@ -250,7 +250,7 @@ def get_account_data(account_address, w3):
         ],
         "stateMutability": "view",
         "type": "function",
-    }
+    }]
     
     try:
         # Pool contract
