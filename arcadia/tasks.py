@@ -481,6 +481,91 @@ def task__arcadia__sim(
     return sim(start_timestamp, end_timestamp, numeraire_address, pool_address, description)
 
 @shared_task
+def task__arcadia__risk_params(
+        pool_address: str,
+        numeraire_address: str
+    ):
+
+    pool_address = Web3.to_checksum_address(pool_address)
+    numeraire_address = Web3.to_checksum_address(numeraire_address)
+    account_assets = AccountAssets.objects.filter(
+        ~Q(debt_usd=0),
+        numeraire__iexact=numeraire_address,
+    )
+
+    numeraire = ERC20.objects.get(contract_address__iexact=numeraire_address)
+    base = numeraire.chain
+    w3 = Web3(Web3.HTTPProvider(base.rpc))
+    numeraire = erc20_to_pydantic(numeraire)
+
+    liquidation_factors_dict = dict()
+    collateral_factors_dict = dict()
+
+    all_erc20_assets = dict()
+
+    for account in account_assets:
+         for index, value in enumerate(account.asset_details[1]):
+            if not value:
+                asset = get_or_create_erc20(account.asset_details[0][index], base)
+                asset = erc20_to_pydantic(asset)
+                if asset.contract_address.lower() in all_erc20_assets:
+                    asset = all_erc20_assets[asset.contract_address.lower()]
+                else:
+                    all_erc20_assets[asset.contract_address.lower()] = asset
+                if asset.contract_address.lower() not in liquidation_factors_dict:
+                    collateral_factors, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address], [0])
+                    liquidation_factor = liquidation_factors[0] / 1e4
+                    collateral_factor = collateral_factors[0] / 1e4
+                    liquidation_factors_dict[asset.contract_address.lower()] = liquidation_factor
+                    collateral_factors_dict[asset.contract_address.lower()] = collateral_factor
+                else:
+                    liquidation_factor = liquidation_factors_dict[asset.contract_address.lower()]
+                    collateral_factor = collateral_factors_dict[asset.contract_address.lower()]
+            else:
+                asset = get_or_create_uniswap_lp(account.asset_details[0][index], base, account.asset_details[1][index])
+                if asset is None:
+                    break
+                asset = erc20_to_pydantic(asset)
+                if asset.contract_address.lower() not in liquidation_factors_dict:
+                    collateral_factors, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address],
+                                                              [int(asset.token_id)])
+                    liquidation_factor = liquidation_factors[0] / 1e4
+                    collateral_factor = collateral_factors[0] / 1e4
+                    liquidation_factors_dict[asset.contract_address.lower()] = liquidation_factor
+                    collateral_factors_dict[asset.contract_address.lower()] = collateral_factor
+                else:
+                    liquidation_factor = liquidation_factors_dict[asset.contract_address.lower()]
+                    collateral_factor = collateral_factors_dict[asset.contract_address.lower()]
+
+    # return collateral_factors_dict, liquidation_factors_dict
+    result = dict()
+    for address in collateral_factors_dict.keys():
+        asset = ERC20.objects.filter(
+            contract_address__iexact=address,
+            chain=base
+        ).first()
+        
+        chain_id = base.chain_id
+        name = asset.name
+        symbol = asset.symbol
+        collateral_factor = collateral_factors_dict[address]
+        liquidation_factor = liquidation_factors_dict[address]
+        if address.lower() not in result:
+            result[address.lower()] = {
+                "contract_address": address,
+                "chain_id": chain_id,
+                "name": name,
+                "symbol": symbol,
+                "risk_params": {
+                    "collateral_factor": collateral_factor,
+                    "liquidation_factor": liquidation_factor
+                }
+
+            }
+    return list(result.values())
+
+
+@shared_task
 def task__arcadia__oracle_snapshot():
     ORACLE_DATA = [
     {'oracleId': 0,
