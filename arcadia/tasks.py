@@ -31,10 +31,8 @@ from .arcadiasim.utils import get_mongodb_db
 from .utils import chain_to_pydantic, get_risk_factors
 from uuid import uuid4
 from collections import defaultdict
-
-
-# from .arcadiasim.entities.asset import weth
 from datetime import datetime
+from django.core.cache import cache
 
 # Hex cleaner function
 def hex_cleaner(param):
@@ -479,6 +477,111 @@ def task__arcadia__sim(
         description=None
 ):
     return sim(start_timestamp, end_timestamp, numeraire_address, pool_address, description)
+
+def get_pool_risk_params(
+        pool_address: str,
+        numeraire_address: str
+    ):
+
+    pool_address = Web3.to_checksum_address(pool_address)
+    numeraire_address = Web3.to_checksum_address(numeraire_address)
+    account_assets = AccountAssets.objects.filter(
+        ~Q(debt_usd=0),
+        numeraire__iexact=numeraire_address,
+    )
+
+    numeraire = ERC20.objects.get(contract_address__iexact=numeraire_address)
+    base = numeraire.chain
+    w3 = Web3(Web3.HTTPProvider(base.rpc))
+    numeraire = erc20_to_pydantic(numeraire)
+
+    liquidation_factors_dict = dict()
+    collateral_factors_dict = dict()
+
+    all_erc20_assets = dict()
+
+    for account in account_assets:
+         for index, value in enumerate(account.asset_details[1]):
+            if not value:
+                asset = get_or_create_erc20(account.asset_details[0][index], base)
+                asset = erc20_to_pydantic(asset)
+                if asset.contract_address.lower() in all_erc20_assets:
+                    asset = all_erc20_assets[asset.contract_address.lower()]
+                else:
+                    all_erc20_assets[asset.contract_address.lower()] = asset
+                if asset.contract_address.lower() not in liquidation_factors_dict:
+                    collateral_factors, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address], [0])
+                    liquidation_factor = liquidation_factors[0] / 1e4
+                    collateral_factor = collateral_factors[0] / 1e4
+                    liquidation_factors_dict[asset.contract_address.lower()] = liquidation_factor
+                    collateral_factors_dict[asset.contract_address.lower()] = collateral_factor
+                else:
+                    liquidation_factor = liquidation_factors_dict[asset.contract_address.lower()]
+                    collateral_factor = collateral_factors_dict[asset.contract_address.lower()]
+            else:
+                asset = get_or_create_uniswap_lp(account.asset_details[0][index], base, account.asset_details[1][index])
+                if asset is None:
+                    break
+                asset = erc20_to_pydantic(asset)
+                if asset.contract_address.lower() not in liquidation_factors_dict:
+                    collateral_factors, liquidation_factors = get_risk_factors(w3, pool_address, [asset.contract_address],
+                                                              [int(asset.token_id)])
+                    liquidation_factor = liquidation_factors[0] / 1e4
+                    collateral_factor = collateral_factors[0] / 1e4
+                    liquidation_factors_dict[asset.contract_address.lower()] = liquidation_factor
+                    collateral_factors_dict[asset.contract_address.lower()] = collateral_factor
+                else:
+                    liquidation_factor = liquidation_factors_dict[asset.contract_address.lower()]
+                    collateral_factor = collateral_factors_dict[asset.contract_address.lower()]
+
+    # return collateral_factors_dict, liquidation_factors_dict
+    result = dict()
+    for address in collateral_factors_dict.keys():
+        asset = ERC20.objects.filter(
+            contract_address__iexact=address,
+            chain=base
+        ).first()
+        
+        chain_id = base.chain_id
+        name = asset.name
+        symbol = asset.symbol
+        collateral_factor = collateral_factors_dict[address]
+        liquidation_factor = liquidation_factors_dict[address]
+        if address.lower() not in result:
+            result[address.lower()] = {
+                "contract_address": address,
+                "chain_id": chain_id,
+                "name": name,
+                "symbol": symbol,
+                "pool_address": pool_address,
+                "risk_params": {
+                    "collateral_factor": collateral_factor,
+                    "liquidation_factor": liquidation_factor
+                }
+
+            }
+    return list(result.values())
+
+@shared_task
+def task__arcadia__cache_risk_params(refresh=False):
+    cache_key = f'risk_params'
+    response = cache.get(cache_key)
+
+    if (not response) or refresh:
+        params = [
+            {"pool_address": "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2", "numeraire_address": "0x4200000000000000000000000000000000000006"},
+            {"pool_address": "0x3ec4a293Fb906DD2Cd440c20dECB250DeF141dF1", "numeraire_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"},
+        ]
+
+        response = list()
+
+        for param in params:
+            response += get_pool_risk_params(**param)
+
+        cache.set(cache_key, response, 86400)  # Cache for 1 day (86400 seconds)
+
+    return response
+
 
 @shared_task
 def task__arcadia__oracle_snapshot():
