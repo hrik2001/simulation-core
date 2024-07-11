@@ -506,7 +506,10 @@ def task__arcadia__oracle_snapshot():
     'oracleDesc': 'STG / USD'},
     {'oracleId': 7,
     'oracleAddress': '0xa669E5272E60f78299F4824495cE01a3923f4380',
-    'oracleDesc': 'wstETH-ETH Exchange Rate'}
+    'oracleDesc': 'wstETH-ETH Exchange Rate'},
+    {'oracleId': 8,
+    'oracleAddress': '0x4EC5970fC728C5f65ba413992CD5fF6FD70fcfF0',
+    'oracleDesc': 'AERO / USD'}
     ]
 
     base_chain = Chain.objects.get(chain_name__iexact='base')
@@ -521,6 +524,7 @@ def task__arcadia__oracle_snapshot():
         "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c".lower() : "0xf397bF97280B488cA19ee3093E81C0a77F02e9a5", #rocketpool eth
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".lower() : "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", #USDC
         "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA".lower() : "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", #USDbC
+        "0x940181a94A35A4569E4529A3CDfB74e38FD98631".lower() : "0x4EC5970fC728C5f65ba413992CD5fF6FD70fcfF0", #AERO
         "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452".lower() : None # custom strategy for wstETH
     }
 
