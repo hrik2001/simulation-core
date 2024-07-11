@@ -205,10 +205,19 @@ CELERY_RESULT_EXTENDED = True
 FILEBROWSER_DIRECTORY = ''
 DIRECTORY = ''
 
+# CACHES = {
+    # 'default': {
+        # 'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        # 'LOCATION': 'unique-snowflake',
+    # }
+# }
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379'),  # Use REDIS_URL from the environment, default to localhost
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
     }
 }
 

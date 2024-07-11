@@ -31,10 +31,8 @@ from .arcadiasim.utils import get_mongodb_db
 from .utils import chain_to_pydantic, get_risk_factors
 from uuid import uuid4
 from collections import defaultdict
-
-
-# from .arcadiasim.entities.asset import weth
 from datetime import datetime
+from django.core.cache import cache
 
 # Hex cleaner function
 def hex_cleaner(param):
@@ -480,8 +478,7 @@ def task__arcadia__sim(
 ):
     return sim(start_timestamp, end_timestamp, numeraire_address, pool_address, description)
 
-@shared_task
-def task__arcadia__risk_params(
+def get_pool_risk_params(
         pool_address: str,
         numeraire_address: str
     ):
@@ -556,6 +553,7 @@ def task__arcadia__risk_params(
                 "chain_id": chain_id,
                 "name": name,
                 "symbol": symbol,
+                "pool_address": pool_address,
                 "risk_params": {
                     "collateral_factor": collateral_factor,
                     "liquidation_factor": liquidation_factor
@@ -563,6 +561,26 @@ def task__arcadia__risk_params(
 
             }
     return list(result.values())
+
+@shared_task
+def task__arcadia__cache_risk_params():
+    cache_key = f'risk_params'
+    response = cache.get(cache_key)
+
+    if not response:
+        params = [
+            {"pool_address": "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2", "numeraire_address": "0x4200000000000000000000000000000000000006"},
+            {"pool_address": "0x3ec4a293Fb906DD2Cd440c20dECB250DeF141dF1", "numeraire_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"},
+        ]
+
+        response = list()
+
+        for param in params:
+            response += get_pool_risk_params(**param)
+
+        cache.set(cache_key, response, 86400)  # Cache for 1 day (86400 seconds)
+
+    return response
 
 
 @shared_task
