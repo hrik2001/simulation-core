@@ -563,11 +563,11 @@ def get_pool_risk_params(
     return list(result.values())
 
 @shared_task
-def task__arcadia__cache_risk_params():
+def task__arcadia__cache_risk_params(refresh=False):
     cache_key = f'risk_params'
     response = cache.get(cache_key)
 
-    if not response:
+    if (not response) or refresh:
         params = [
             {"pool_address": "0x803ea69c7e87D1d6C86adeB40CB636cC0E6B98E2", "numeraire_address": "0x4200000000000000000000000000000000000006"},
             {"pool_address": "0x3ec4a293Fb906DD2Cd440c20dECB250DeF141dF1", "numeraire_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"},
