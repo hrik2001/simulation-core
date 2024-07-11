@@ -291,6 +291,14 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token1": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
             "decimal0": 18,
             "decimal1": 6
+        },
+        {
+            "name": "wETH-wstETH",
+            "pool": "0x20E068D76f9E90b90604500B84c7e19dCB923e7e",
+            "token0": "0x4200000000000000000000000000000000000006",
+            "token1": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+            "decimal0": 18,
+            "decimal1": 18
         }
     ]
     
