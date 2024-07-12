@@ -69,6 +69,7 @@ class MetricSnapshot(BaseModel):
     total_collateral_usdc = models.TextField()
     total_collateral_weth = models.TextField()
     collateral_distribution = models.JSONField(null=True)
+    collateral_distribution2 = models.JSONField(null=True)
     total_supply_weth = models.DecimalField(max_digits=30, decimal_places=5, null=True)
     total_supply_usdc = models.DecimalField(max_digits=30, decimal_places=5, null=True)
     total_liquidity_weth = models.DecimalField(max_digits=30, decimal_places=5, null=True)
