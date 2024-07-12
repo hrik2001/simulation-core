@@ -47,6 +47,7 @@ class AccountAssets(BaseModel):
     asset_details = models.JSONField()
     asset_details_usd = models.JSONField()
     position_distribution = models.JSONField(null=True)
+    position_distribution_usd = models.JSONField(null=True)
     liquidation_value = models.TextField(null=True)
     used_margin = models.TextField(null=True)
     healthy = models.BooleanField(null=True)

@@ -410,6 +410,17 @@ def update_all_data(account):
     labels = list(set(asset_data[0]))
     prices = get_price_defillama([f"base:{i}" for i in labels])
     asset_data_usd = defaultdict(int)
+    
+    position_distribution_usd = defaultdict(int)
+    listed_asset_usd = 0
+    
+    for asset in position_distribution:
+        p = prices[f"base:{asset}"]
+        if p != 0:
+            usd = position_distribution[asset] / (10 ** p["decimals"]) * (p["price"])
+            position_distribution_usd[asset] = usd
+            listed_asset_usd += usd
+            
     usd_value_without_nft = 0
     for i, asset in enumerate(asset_data[0]):
         p = prices[f"base:{asset}"]
@@ -439,6 +450,7 @@ def update_all_data(account):
         debt_usd = 0
 
     asset_data_usd["NFT"] = (collateral_value_usd) - usd_value_without_nft
+    position_distribution_usd["others"] = (collateral_value_usd) - listed_asset_usd
 
     print({
             'usdc_value': str(usdc_value),
@@ -458,6 +470,7 @@ def update_all_data(account):
             'weth_value': str(weth_value),
             'asset_details': asset_data,
             'position_distribution': position_distribution,
+            'position_distribution_usd': position_distribution_usd,
             'numeraire': numeraire,
             'collateral_value': str(collateral_value),
             'collateral_value_usd': str(collateral_value_usd),
