@@ -585,7 +585,8 @@ def task__arcadia__cache_risk_params(refresh=False):
         for param in params:
             response += get_pool_risk_params(**param)
 
-        cache.set(cache_key, response, 86400)  # Cache for 1 day (86400 seconds)
+        cache.set(cache_key, response, None)  # Cache for 1 day (86400 seconds)
+        # cache.set(cache_key, response, 86400)  # Cache for 1 day (86400 seconds)
 
     return response
 

@@ -217,7 +217,8 @@ CACHES = {
         'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379'),  # Use REDIS_URL from the environment, default to localhost
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+        },
+        'CACHE': None,
     }
 }
 
