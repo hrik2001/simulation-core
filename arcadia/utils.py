@@ -341,8 +341,18 @@ def update_amounts(account: str, asset_record: AccountAssets):
             usd = asset_data[2][i] / (10 ** p["decimals"]) * (p["price"])
             asset_data_usd[asset] = usd
             usd_value_without_nft += usd
-    
-    
+
+    position_distribution = get_arcadia_account_nft_position(asset_data, w3=web3)
+    position_distribution_usd = defaultdict(int)
+
+    listed_asset_usd = 0
+    for asset in position_distribution:
+        p = prices[f"base:{asset}"]
+        if p != 0:
+            usd = position_distribution[asset] / (10 ** p["decimals"]) * (p["price"])
+            position_distribution_usd[asset] = usd
+            listed_asset_usd += usd
+
     if usdc_value != 0:
         if numeraire.lower() == weth_address.lower():
             price_weth = (weth_value / 1e18) / (usdc_value / 1e6)
@@ -363,6 +373,7 @@ def update_amounts(account: str, asset_record: AccountAssets):
         debt_usd = 0
 
     asset_data_usd["NFT"] = (collateral_value_usd) - usd_value_without_nft
+    position_distribution_usd["others"] = (collateral_value_usd) - listed_asset_usd
 
     print({
             'usdc_value': str(usdc_value),
@@ -386,11 +397,14 @@ def update_amounts(account: str, asset_record: AccountAssets):
             'collateral_value_usd': str(collateral_value_usd),
             'debt_usd': str(debt_usd),
             'asset_details_usd': asset_data_usd,
+            'position_distribution': position_distribution,
+            'position_distribution_usd': position_distribution_usd,
             'liquidation_value': liquidation_value,
             'used_margin': used_margin,
             "healthy": healthy
         }
     )
+
 def update_all_data(account):
     usdc_value = get_account_value(account, usdc_address)
     if usdc_value == 0:
