@@ -362,6 +362,15 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "decimal0": 18,
             "decimal1": 18
         },
+        {
+            "name": "cbETH-wETH",
+            "pool": "0x10648BA41B8565907Cfa1496765fA4D95390aa0d",
+            "nft": "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1",
+            "token0": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
+            "token1": "0x4200000000000000000000000000000000000006",
+            "decimal0": 18,
+            "decimal1": 18
+        },
         
         # Aerodrome Pools
         {
