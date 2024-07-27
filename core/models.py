@@ -61,3 +61,21 @@ class UniswapLPPosition(ERC20):
 
     def __str__(self):
         return f"{self.token0}-{self.token1}-{self.token_id}"
+
+class DexQuote(BaseModel):
+    network = models.IntegerField()
+    dex_aggregator = models.CharField(max_length=50)
+    src = models.CharField(max_length=42)  # Ethereum addresses
+    src_decimals = models.IntegerField()
+    dst = models.CharField(max_length=42)  # Ethereum addresses
+    dest_decimals = models.IntegerField()
+    in_amount_usd = models.FloatField()
+    in_amount = models.TextField()  # Storing large fixed-point number as text
+    out_amount = models.TextField()  # Storing large fixed-point number as text
+    market_price = models.FloatField()
+    price = models.FloatField()
+    price_impact = models.FloatField()
+    timestamp = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.dex_aggregator} quote on network {self.network}"
