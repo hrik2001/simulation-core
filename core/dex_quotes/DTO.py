@@ -1,0 +1,362 @@
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True, order=True)
+class chainDTO:
+    """
+    Data Transfer Object to store relevant
+    chain data.
+    """
+
+    network: str
+    network_id: int
+
+@dataclass(frozen=True, order=True)
+class TokenDTO:
+    """
+    Data Transfer Object to store relevant
+    token data.
+    """
+
+    # TODO DTO min/max trade sizes should be dynamic
+    address: str
+    name: str
+    symbol: str
+    decimals: int
+    network: chainDTO
+    min_trade_size: float  # min amt_in for 1inch quotes
+    max_trade_size: float  # max amt_in for 1inch quotes
+
+
+######################### Chain Declaration ###############################
+
+OPTIMISM_DTO = chainDTO(
+    network="Optimism",
+    network_id=10
+    
+) 
+
+ARIBTRUM_DTO = chainDTO(
+    network="Arbitrum",
+    network_id=42161
+    
+) 
+
+network_mapping = {
+    OPTIMISM_DTO.network_id: OPTIMISM_DTO,
+    ARIBTRUM_DTO.network_id: ARIBTRUM_DTO
+    # Add more chainDTO instances as needed
+}
+
+
+######################### Token Declaration ###############################
+CRVUSD_OP = "0xC52D7F23a2e460248Db6eE192Cb23dD12bDDCbf6"
+USDC_OP = "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+USDT_OP = "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58"
+DAI_OP = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+FRAX_OP = "0x2e3d870790dc77a83dd1d18184acc7439a53f475"
+
+CRVUSD_ARB = "0x498Bf2B1e120FeD3ad3D42EA2165E9b73f99C1e5"
+USDC_ARB = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+USDT_ARB = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+DAI_ARB= "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1" # same
+FRAX_ARB = "0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F"
+
+
+
+## Collateral 
+WETH_OP = "0x4200000000000000000000000000000000000006"
+WSTETH_OP = "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb"
+WBTC_OP = "0x68f180fcCe6836688e9084f035309E29Bf0A2095"
+OP = "0x4200000000000000000000000000000000000042"
+
+
+WETH_ARB = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+WSTETH_ARB = "0x5979D7b546E38E414F7E9822514be443A4800529"
+WBTC_ARB = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
+ARB = "0x912ce59144191c1204e64559fe8253a0e49e6548"
+GMX = "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a"
+PENDLE = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8"
+RDNT = "0x3082CC23568eA640225c2467653dB90e9250AaA0"
+
+
+STABLES = [USDC_OP, USDC_ARB, USDT_OP, USDT_ARB, CRVUSD_OP, CRVUSD_ARB, DAI_OP, DAI_OP, FRAX_OP, FRAX_ARB]
+COLLATERAL = [WETH_OP, WETH_ARB, WSTETH_OP, WSTETH_ARB, WBTC_OP, WBTC_ARB, OP, ARB, GMX, PENDLE, RDNT]
+ADDRESSES = STABLES + COLLATERAL
+
+# Coingecko Helpers
+COINGECKO_IDS = {
+    USDC_OP: "usd-coin",
+    USDC_ARB: "usd-coin",
+    USDT_OP: "tether",
+    USDT_ARB: "tether",
+    CRVUSD_OP: "crvusd",
+    CRVUSD_ARB: "crvusd", 
+    DAI_OP: "dai", 
+    DAI_ARB: "dai", 
+    FRAX_OP: "frax", 
+    FRAX_ARB: "frax",
+
+    WETH_OP: "weth",
+    WETH_ARB: "weth", 
+    WSTETH_OP: "wrapped-steth",
+    WSTETH_ARB: "wrapped-steth",
+    WBTC_OP: "wrapped-bitcoin",
+    WBTC_ARB:  "wrapped-bitcoin",
+    OP: "optimism",
+    ARB: "arbitrum", 
+    GMX: "gmx", 
+    PENDLE: "pendle", 
+    RDNT: "radiant-capital"
+}
+STABLE_CG_IDS = [COINGECKO_IDS[coin] for coin in STABLES]
+COINGECKO_IDS_INV = {v: k for k, v in COINGECKO_IDS.items()}
+
+# TODO script to update these with new tokens
+
+# DTOs
+CRVUSD_OP_DTO = TokenDTO(
+    address=CRVUSD_OP,
+    name="Curve.Fi USD Stablecoin (Optimism)",
+    symbol="crvUSD",
+    decimals=18,
+    network = OPTIMISM_DTO,
+    min_trade_size=1e3,
+    max_trade_size=300_000,
+)  # NOTE don't add to TOKEN_DTOs
+
+CRVUSD_ARB_DTO = TokenDTO(
+    address=CRVUSD_ARB,
+    name="Curve.Fi USD Stablecoin (Arbitrum)",
+    symbol="crvUSD",
+    decimals=18,
+    network=ARIBTRUM_DTO, 
+    min_trade_size=1e3,
+    max_trade_size=1_100_000,
+)  # NOTE don't add to TOKEN_DTOs
+
+USDC_OP_DTO = TokenDTO(
+    address=USDC_OP,
+    name="USD Coin (Optimism)",
+    symbol="USDC",
+    decimals=6,
+    network=OPTIMISM_DTO, 
+    min_trade_size=1e2,
+    max_trade_size=1_500_000,
+)
+
+USDC_ARB_DTO = TokenDTO(
+    address=USDC_ARB,
+    name="USD Coin (Arbitrum)",
+    symbol="USDC",
+    decimals=6,
+    network=ARIBTRUM_DTO,
+    min_trade_size=1e2,
+    max_trade_size=4_500_000,
+)
+
+USDT_OP_DTO = TokenDTO(
+    address=USDT_OP,
+    name="Tether USD (Optimism)" ,
+    symbol="USDT",
+    decimals=6,
+    network=OPTIMISM_DTO, 
+    min_trade_size=1e2,
+    max_trade_size=3_500_000,
+)
+
+USDT_ARB_DTO = TokenDTO(
+    address=USDT_ARB,
+    name="Tether USD (Arbitrum)",
+    symbol="USDT",
+    decimals=6,
+    network=ARIBTRUM_DTO,
+    min_trade_size=1e2,
+    max_trade_size=3_500_000,
+)
+
+DAI_OP_DTO = TokenDTO(
+    address=DAI_OP,
+    name="DAI Stablecoin (Optimism)",
+    symbol="DAI",
+    decimals=18,
+    network=OPTIMISM_DTO,
+    min_trade_size=1e2,
+    max_trade_size=3_500_000,
+)
+
+DAI_ARB_DTO = TokenDTO(
+    address=DAI_ARB,
+    name="DAI Stablecoin (Arbitrum)",
+    symbol="DAI",
+    decimals=18,
+    network=ARIBTRUM_DTO,
+    min_trade_size=1e2,
+    max_trade_size=5_500_000,
+)
+
+FRAX_OP_DTO =  TokenDTO(
+    address=FRAX_OP,
+    name="Frax Stablecoin (Optimism)",
+    symbol="FRAX",
+    decimals=18,
+    network=OPTIMISM_DTO,
+    min_trade_size=1e2,
+    max_trade_size=500_000,
+)
+
+FRAX_ARB_DTO =  TokenDTO(
+    address=FRAX_ARB,
+    name="Frax Stablecoin (Arbitrum)",
+    symbol="FRAX",
+    decimals=18,
+    network=ARIBTRUM_DTO,
+    min_trade_size=1e2,
+    max_trade_size=1_500_000,
+)
+
+
+WETH_OP_DTO = TokenDTO(
+    address=WETH_OP,
+    name="Wrapped Ether (Optimism)",
+    symbol="WETH",
+    decimals=18,
+    network=OPTIMISM_DTO,
+    min_trade_size=0.1,
+    max_trade_size=30000,
+)
+
+WETH_ARB_DTO = TokenDTO(
+    address=WETH_ARB,
+    name="Wrapped Ether (Arbitrum)",
+    symbol="WETH",
+    decimals=18,
+    network=ARIBTRUM_DTO,
+    min_trade_size=0.1,
+    max_trade_size=40000,
+)
+
+WSTETH_OP_DTO = TokenDTO(
+    address=WSTETH_OP,
+    name="Wrapped liquid staked Ether 2.0 (Optimism)",
+    symbol="wstETH",
+    decimals=18,
+    network=OPTIMISM_DTO,
+    min_trade_size=0.5,
+    max_trade_size=3500,
+)
+
+WSTETH_ARB_DTO = TokenDTO(
+    address=WSTETH_ARB,
+    name="Wrapped liquid staked Ether 2.0 (Arbitrum)",
+    symbol="wstETH",
+    decimals=18,
+    network=ARIBTRUM_DTO,
+    min_trade_size=0.5,
+    max_trade_size=2500,
+)
+
+
+WBTC_OP_DTO = TokenDTO(
+    address=WBTC_OP,
+    name="Wrapped BTC (Optimism)",
+    symbol="WBTC",
+    decimals=8,
+    network=OPTIMISM_DTO,
+    min_trade_size=0.03,
+    max_trade_size=20,
+)
+
+WBTC_ARB_DTO = TokenDTO(
+    address=WBTC_ARB,
+    name="Wrapped BTC (Arbitrum)",
+    symbol="WBTC",
+    decimals=8,
+    network=ARIBTRUM_DTO,
+    min_trade_size=0.03,
+    max_trade_size=250,
+)
+
+OP_DTO = TokenDTO(
+    address=OP,
+    name="Optimism",
+    symbol="OP",
+    decimals=18,
+    network=OPTIMISM_DTO,
+    min_trade_size=10,
+    max_trade_size=1_000_000,
+)
+
+ARB_DTO = TokenDTO(
+    address=ARB,
+    name="Arbitrum",
+    symbol="ARB",
+    decimals=18,
+    network=ARIBTRUM_DTO,
+    min_trade_size=10,
+    max_trade_size=8_100_000,
+)
+
+GMX_DTO = TokenDTO(
+    address=GMX,
+    name="GMX",
+    symbol="GMX",
+    decimals=18,
+    network=ARIBTRUM_DTO,
+    min_trade_size=1,
+    max_trade_size=60_000,
+)
+
+PENDLE_DTO = TokenDTO(
+    address=PENDLE,
+    name="Pendle Finance",
+    symbol="PENDLE",
+    decimals=18,
+    network=ARIBTRUM_DTO,
+    min_trade_size=10,
+    max_trade_size=1_000_000,
+)
+
+RDNT_DTO = TokenDTO(
+    address=RDNT,
+    name="Radiant Capital",
+    symbol="RDNT",
+    decimals=18,
+    network=ARIBTRUM_DTO,
+    min_trade_size=500,
+    max_trade_size=5_000_000,
+)
+
+TOKEN_DTOs = {
+
+    "Optimism": {
+        CRVUSD_OP: CRVUSD_OP_DTO,
+        USDC_OP: USDC_OP_DTO,
+        USDT_OP: USDT_OP_DTO,
+        FRAX_OP: FRAX_OP_DTO,
+        DAI_OP: DAI_OP_DTO, 
+
+        WETH_OP: WETH_OP_DTO, 
+        WSTETH_OP: WSTETH_OP_DTO, 
+        WBTC_OP: WBTC_OP_DTO, 
+        OP: OP_DTO, 
+
+
+
+                },
+    "Arbitrum":{
+        CRVUSD_ARB: CRVUSD_ARB_DTO,
+        USDC_ARB: USDC_ARB_DTO,
+        USDT_ARB: USDT_ARB_DTO, 
+        FRAX_ARB: FRAX_ARB_DTO, 
+        DAI_ARB: DAI_ARB_DTO, 
+
+        WETH_ARB: WETH_ARB_DTO, 
+        WSTETH_ARB: WSTETH_ARB_DTO, 
+        WBTC_ARB: WBTC_ARB_DTO, 
+        ARB: ARB_DTO, 
+        GMX: GMX_DTO, 
+        PENDLE: PENDLE_DTO, 
+        RDNT:RDNT_DTO
+    }
+}
