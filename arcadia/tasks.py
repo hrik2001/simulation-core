@@ -266,14 +266,16 @@ def task__arcadia__metric_snapshot():
     collateral_distribution = defaultdict(float)
 
     for account in borrowers:
-        for asset, value in account.asset_details_usd.items():
-            collateral_distribution[asset] += value
+        if account.asset_details_usd:
+            for asset, value in account.asset_details_usd.items():
+                collateral_distribution[asset] += value
             
     collateral_distribution2 = defaultdict(float)
 
     for account in borrowers:
-        for asset, value in account.position_distribution_usd.items():
-            collateral_distribution2[asset] += value
+        if account.position_distribution_usd:
+            for asset, value in account.position_distribution_usd.items():
+                collateral_distribution2[asset] += value
 
     # Create and save the metric snapshot
     MetricSnapshot.objects.create(
