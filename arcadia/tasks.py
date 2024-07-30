@@ -467,6 +467,13 @@ def sim(
 
     sim_snapshot = SimSnapshot(**result_metric)
     sim_snapshot.save()
+
+    # Delete data from MongoDB
+    db.PARAMS.delete_many({"orchestrator_id": str(unique_id)})
+    db.ACCOUNTS.delete_many({"orchestrator_id": str(unique_id)})
+    db.BID.delete_many({"orchestrator_id": str(unique_id)})
+    db.STATE.delete_many({"orchestrator_id": str(unique_id)})
+    db.METRICS.delete_many({"orchestrator_id": str(unique_id)})
     return str(unique_id)
 
 
