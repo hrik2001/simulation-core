@@ -3,8 +3,8 @@
 # Function to start the backend server
 start_backend() {
     echo "Migrating Database..."
+    python3 manage.py collectstatic
     python3 manage.py migrate
-    # python3 manage.py collectstatic
 
     echo "Starting Django backend..."
     gunicorn --timeout $TIMEOUT --bind 0.0.0.0:$PORT --workers=1 --access-logfile - sim_core.wsgi:application
