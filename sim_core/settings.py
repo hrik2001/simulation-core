@@ -27,10 +27,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-tf1!one#d4d^o*g#4a0307009xcw9nm7656u72$z^@1uye2%39'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-if os.getenv("ENVIRONMENT", None) != "production":
-    DEBUG = True
-else:
-    DEBUG = False
+# if os.getenv("ENVIRONMENT", None) != "production":
+    # DEBUG = True
+# else:
+    # DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['data-core.up.railway.app', "127.0.0.1", "localhost", "api.llamarisk.com"]
 CSRF_TRUSTED_ORIGINS = ['https://data-core.up.railway.app', 'https://api.llamarisk.com']
