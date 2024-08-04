@@ -78,7 +78,7 @@ def paraswap_job(
                     print(f"Failed to save entry to DB: {e}")
 
                 # Early stopping criteria 
-                if stopping_criteria > -0.99: 
+                if stopping_criteria > 0.99: 
                     break
                 else:
                     # Sleep for a short duration to avoid hitting the rate limit of the API
@@ -154,7 +154,7 @@ def kyperswap_job(
                     print(f"Failed to save entry to DB: {e}")
 
                 # Early stopping criteria 
-                if stopping_criteria > -0.99: 
+                if stopping_criteria > 0.99: 
                     break
                 else:
                     # Sleep for a short duration to avoid hitting the rate limit of the API
