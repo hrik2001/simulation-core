@@ -4,6 +4,7 @@ from .models import DexQuote
 
 class DexQuoteListView(ListView):
     model = DexQuote
+    MAX_ROWS = 34560
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -13,7 +14,6 @@ class DexQuoteListView(ListView):
         if start_timestamp:
             try:
                 start_timestamp = int(start_timestamp)
-                # queryset = queryset.filter(timestamp__gte=start_timestamp, timestamp__lte=end_timestamp)
                 queryset = queryset.filter(timestamp__gte=start_timestamp)
             except ValueError:
                 return queryset.none()
@@ -23,6 +23,11 @@ class DexQuoteListView(ListView):
                 queryset = queryset.filter(timestamp__lte=end_timestamp)
             except ValueError:
                 return queryset.none()
+
+        # Limit the number of rows to MAX_ROWS
+        if queryset.count() > self.MAX_ROWS:
+            queryset = queryset[:self.MAX_ROWS]
+
         return queryset
 
     def render_to_response(self, context, **response_kwargs):
