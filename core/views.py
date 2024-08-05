@@ -10,6 +10,9 @@ class DexQuoteListView(ListView):
         queryset = super().get_queryset()
         start_timestamp = self.request.GET.get('start')
         end_timestamp = self.request.GET.get('end')
+        src = self.request.GET.get("src")
+        dst = self.request.GET.get("dst")
+        dex_aggregator = self.request.GET.get("dex_aggregator")
 
         if start_timestamp:
             try:
@@ -21,6 +24,21 @@ class DexQuoteListView(ListView):
             try:
                 end_timestamp = int(end_timestamp)
                 queryset = queryset.filter(timestamp__lte=end_timestamp)
+            except ValueError:
+                return queryset.none()
+        if src:
+            try:
+                queryset = queryset.filter(src__iexact=src)
+            except ValueError:
+                return queryset.none()
+        if dst:
+            try:
+                queryset = queryset.filter(dst__iexact=dst)
+            except ValueError:
+                return queryset.none()
+        if dex_aggregator:
+            try:
+                queryset = queryset.filter(dex_aggregator__iexact=dex_aggregator)
             except ValueError:
                 return queryset.none()
 
