@@ -35,8 +35,7 @@ def paraswap_job(
             price = get_current_price(sell_token.address, sell_token.network.network.lower())
 
             # Iterate through the generated amounts and fetch quotes
-            for i in range(0, len(amounts), 3):
-                query_amounts = amounts[i:i+3]
+            for amount in amounts:
                 # if len(query_amounts) < 2:
                 #     query_amounts.append(query_amounts[0])  # Ensure we have two amounts
 
@@ -61,7 +60,7 @@ def paraswap_job(
                         src_decimals=sell_token.decimals, 
                         dest_token=buy_token.address, 
                         dest_decimals=buy_token.decimals, 
-                        usd_amount=query_amounts[1], 
+                        usd_amount=amount, 
                         market_price=price,
                         network_id=sell_token.network.network_id
                     )
@@ -111,8 +110,7 @@ def kyperswap_job(
             price = get_current_price(sell_token.address, sell_token.network.network.lower())
 
             # Iterate through the generated amounts and fetch quotes
-            for i in range(0, len(amounts), 3):
-                query_amounts = amounts[i:i+3]
+            for amount in amounts:
                 # if len(query_amounts) < 2:
                 #     query_amounts.append(query_amounts[0])  # Ensure we have two amounts
 
@@ -125,7 +123,7 @@ def kyperswap_job(
                         src_decimals=sell_token.decimals, 
                         dest_token=buy_token.address, 
                         dest_decimals=buy_token.decimals, 
-                        usd_amount=query_amounts[0], 
+                        usd_amount=amount, 
                         market_price=price,
                         network_id=sell_token.network.network_id
                     )
