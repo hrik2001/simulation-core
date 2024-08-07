@@ -20,7 +20,7 @@ def get_current_price(token_address: str, network: str) -> Optional[float]:
         Optional[float]: The current price of the token or None if an error occurs.
     """
     base_url = "https://coins.llama.fi/prices/current"
-    url = f"{base_url}/{network}:{token_address}?searchWidth=1h"
+    url = f"{base_url}/{network}:{token_address}?searchWidth=6h"
 
     print(url)
     
