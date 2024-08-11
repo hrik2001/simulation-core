@@ -177,8 +177,6 @@ lending_pool_abi = [
     }
 ]
 
-web3 = Web3(Web3.HTTPProvider(Chain.objects.get(chain_name="Base").rpc))
-
 # ABI and contract address configuration
 ORACLE_CONTRACT_ADDRESS = Web3.to_checksum_address("0x6a5485E3ce6913890ae5e8bDc08a868D432eEB31")
 ORACLE_INFO_ABI = [{

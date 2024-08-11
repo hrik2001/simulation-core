@@ -147,8 +147,13 @@ def get_oracle_lastround_price(oracle_address,w3):
 
     return data[1]/pow(10,decimal)
 
-def price_defillama(chain_name: str, contract_address: str, timestamp: str):
-    url = f"https://coins.llama.fi/prices/current/{chain_name}:{contract_address}"
+def price_defillama(chain_name: str, contract_address: str, timestamp: int = None):
+    base_url = "https://coins.llama.fi/prices"
+    coins_url = f"{chain_name}:{contract_address}"
+    if timestamp is None:
+        url = f"{base_url}/current/{coins_url}"
+    else:
+        url = f"{base_url}/historical/{timestamp}/{coins_url}"
     data = requests.get(url).json()
     try:
         if contract_address.startswith("0x"):

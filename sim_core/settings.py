@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'core',
     'uniswap',
     'arcadia',
+    'ethena',
     "django_celery_beat",  # for scheduling tasks
     "graphene_django",
     "django_celery_results",
@@ -196,8 +197,8 @@ STATICFILES_FINDERS = (
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-MEDIA_ROOT = (BASE_DIR / Path(os.environ.get("MEDIA_DIR"))).resolve().as_posix()
-CELERY_BROKER_URL = os.environ["REDIS_URL"]
+MEDIA_ROOT = (BASE_DIR / Path("media")).resolve().as_posix()
+CELERY_BROKER_URL = os.environ.get("REDIS_URL")
 # CELERY_RESULT_BACKEND = os.environ["REDIS_URL"]
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_RESULT_EXTENDED = True

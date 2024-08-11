@@ -29,8 +29,8 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-          - .:/code
-          - media:/code/media
+      - .:/code
+      - media:/code/media
   
   # redis:
     # image: redis:latest
