@@ -50,6 +50,7 @@ network_mapping = {
 
 
 ######################### Token Declaration ###############################
+## Stables 
 CRVUSD_OP = "0xC52D7F23a2e460248Db6eE192Cb23dD12bDDCbf6"
 USDC_OP = "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
 USDT_OP = "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58"
@@ -69,6 +70,7 @@ WETH_OP = "0x4200000000000000000000000000000000000006"
 WSTETH_OP = "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb"
 WBTC_OP = "0x68f180fcCe6836688e9084f035309E29Bf0A2095"
 OP = "0x4200000000000000000000000000000000000042"
+VELO = "0x9560e827af36c94d2ac33a39bce1fe78631088db"
 
 
 WETH_ARB = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
@@ -81,7 +83,7 @@ RDNT = "0x3082CC23568eA640225c2467653dB90e9250AaA0"
 
 
 STABLES = [USDC_OP, USDC_ARB, USDT_OP, USDT_ARB, CRVUSD_OP, CRVUSD_ARB, DAI_OP, DAI_OP, FRAX_OP, FRAX_ARB]
-COLLATERAL = [WETH_OP, WETH_ARB, WSTETH_OP, WSTETH_ARB, WBTC_OP, WBTC_ARB, OP, ARB, GMX, PENDLE, RDNT]
+COLLATERAL = [WETH_OP, WETH_ARB, WSTETH_OP, WSTETH_ARB, WBTC_OP, WBTC_ARB, OP, ARB, GMX, PENDLE, RDNT, VELO]
 ADDRESSES = STABLES + COLLATERAL
 
 # Coingecko Helpers
@@ -107,7 +109,8 @@ COINGECKO_IDS = {
     ARB: "arbitrum", 
     GMX: "gmx", 
     PENDLE: "pendle", 
-    RDNT: "radiant-capital"
+    RDNT: "radiant-capital",
+    VELO: 'velodrome-finance'
 }
 STABLE_CG_IDS = [COINGECKO_IDS[coin] for coin in STABLES]
 COINGECKO_IDS_INV = {v: k for k, v in COINGECKO_IDS.items()}
@@ -287,6 +290,16 @@ OP_DTO = TokenDTO(
     max_trade_size=1_000_000,
 )
 
+VELO_DTO = TokenDTO(
+    address=VELO,
+    name="Velodrome Finance",
+    symbol="VELO",
+    decimals=18,
+    network=OPTIMISM_DTO,
+    min_trade_size=10,
+    max_trade_size=1_000_000,
+)
+
 ARB_DTO = TokenDTO(
     address=ARB,
     name="Arbitrum",
@@ -340,6 +353,7 @@ TOKEN_DTOs = {
         WSTETH_OP: WSTETH_OP_DTO, 
         WBTC_OP: WBTC_OP_DTO, 
         OP: OP_DTO, 
+        VELO: VELO_DTO
 
 
 
@@ -360,3 +374,4 @@ TOKEN_DTOs = {
         RDNT:RDNT_DTO
     }
 }
+
