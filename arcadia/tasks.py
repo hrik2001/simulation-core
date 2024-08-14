@@ -599,113 +599,113 @@ def task__arcadia__cache_risk_params(refresh=False):
 
     return response
 
-#
-# @shared_task
-# def task__arcadia__oracle_snapshot():
-#     ORACLE_DATA = [
-#     {'oracleId': 0,
-#     'oracleAddress': '0x9DDa783DE64A9d1A60c49ca761EbE528C35BA428',
-#     'oracleDesc': 'COMP / USD'},
-#     {'oracleId': 1,
-#     'oracleAddress': '0x591e79239a7d679378eC8c847e5038150364C78F',
-#     'oracleDesc': 'DAI / USD'},
-#     {'oracleId': 2,
-#     'oracleAddress': '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70',
-#     'oracleDesc': 'ETH / USD'},
-#     {'oracleId': 3,
-#     'oracleAddress': '0x7e860098F58bBFC8648a4311b374B1D669a2bc6B',
-#     'oracleDesc': 'USDC / USD'},
-#     {'oracleId': 4,
-#     'oracleAddress': '0xd7818272B9e248357d13057AAb0B417aF31E817d',
-#     'oracleDesc': 'CBETH / USD'},
-#     {'oracleId': 5,
-#     'oracleAddress': '0xf397bF97280B488cA19ee3093E81C0a77F02e9a5',
-#     'oracleDesc': 'RETH / ETH'},
-#     {'oracleId': 6,
-#     'oracleAddress': '0x63Af8341b62E683B87bB540896bF283D96B4D385',
-#     'oracleDesc': 'STG / USD'},
-#     {'oracleId': 7,
-#     'oracleAddress': '0xa669E5272E60f78299F4824495cE01a3923f4380',
-#     'oracleDesc': 'wstETH-ETH Exchange Rate'},
-#     {'oracleId': 8,
-#     'oracleAddress': '0x4EC5970fC728C5f65ba413992CD5fF6FD70fcfF0',
-#     'oracleDesc': 'AERO / USD'}
-#     ]
-#
-#     base_chain = Chain.objects.get(chain_name_erns = getattr(self.urlconf_module, "urlpatterns", self.urlconf__iexact='base')
-#
-#     w3 = Web3(Web3.HTTPProvider(base_chain.rpc))
-#
-#     all_assets = ERC20.objects.filter(uniswaplpposition__isnull=True)
-#
-#     feed_mapping = {
-#         "0x4200000000000000000000000000000000000006".lower() : "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", #Ethereum
-#         "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22".lower() : "0xd7818272B9e248357d13057AAb0B417aF31E817d", #cbETH
-#         "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c".lower() : "0xf397bF97280B488cA19ee3093E81C0a77F02e9a5", #rocketpool eth
-#         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".lower() : "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", #USDC
-#         "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA".lower() : "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", #USDbC
-#         "0x940181a94A35A4569E4529A3CDfB74e38FD98631".lower() : "0x4EC5970fC728C5f65ba413992CD5fF6FD70fcfF0", #AERO
-#         "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452".lower() : None # custom strategy for wstETH
-#     }
-#
-#     chainlink_prices = {}
-#     spot_prices = {}
-#     missed_assets = []
-#     for asset in all_assets:
-#         if asset.contract_address.lower() in feed_mapping:
-#             if feed_mapping[asset.contract_address.lower()] is not None:
-#                 chainlink_prices[asset.contract_address.lower()] = {
-#                     "price": get_oracle_lastround_price(feed_mapping[asset.contract_address.lower()], w3),
-#                     "name": asset.name,
-#                     "symbol": asset.symbol,
-#                 }
-#             elif asset.contract_address.lower() == "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452".lower():
-#                 # wstETH/WETH price
-#                 price = get_oracle_lastround_price("0xa669E5272E60f78299F4824495cE01a3923f4380", w3) * get_oracle_lastround_price("0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", w3)
-#                 chainlink_prices[asset.contract_address.lower()] = {
-#                     "price": price,
-#                     "name": asset.name,
-#                     "symbol": asset.symbol,
-#                 }
-#             # spot price
-#             timestamp = datetime.now().timestamp()
-#             price = price_defillama("base", asset.contract_address)
-#             spot_prices[asset.contract_address.lower()] = {
-#                 "price": price,
-#                 "name": asset.name,
-#                 "symbol": asset.symbol
-#             }
-#         else:
-#             missed_assets.append({
-#                 "name": asset.name,
-#                 "symbol": asset.symbol
-#             })
-#
-#     # print(f"{chainlink_prices=} {spot_prices=} {missed_assets=}")
-#     oracle_snapshot = OracleSnapshot(
-#         chainlink_prices=chainlink_prices,
-#         spot_prices=spot_prices,
-#         missed_assets=missed_assets
-#     )
-#
-#     oracle_snapshot.save()
-#
-#
-#     # price_list = []
-#
-#     # for oracle in ORACLE_DATA:
-#         # price_list = price_list.append(get_oracle_lastround_price(oracle['oracleAddress'],w3))
-#
-#     # # Create and save the metric snapshot
-#     # OracleSnapshot.objects.create(
-#         # comp_in_usd = price_list[0],
-#         # dai_in_usd = price_list[1],
-#         # eth_in_usd = price_list[2],
-#         # usdc_in_usd = price_list[3],
-#         # cbeth_in_usd = price_list[4],
-#         # reth_in_eth = price_list[5],
-#         # stg_in_usd = price_list[6],
-#         # wsteth_in_eth = price_list[7],
-#     # )
-#
-#     # TODO: Complete this function
+
+@shared_task
+def task__arcadia__oracle_snapshot():
+    ORACLE_DATA = [
+    {'oracleId': 0,
+    'oracleAddress': '0x9DDa783DE64A9d1A60c49ca761EbE528C35BA428',
+    'oracleDesc': 'COMP / USD'},
+    {'oracleId': 1,
+    'oracleAddress': '0x591e79239a7d679378eC8c847e5038150364C78F',
+    'oracleDesc': 'DAI / USD'},
+    {'oracleId': 2,
+    'oracleAddress': '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70',
+    'oracleDesc': 'ETH / USD'},
+    {'oracleId': 3,
+    'oracleAddress': '0x7e860098F58bBFC8648a4311b374B1D669a2bc6B',
+    'oracleDesc': 'USDC / USD'},
+    {'oracleId': 4,
+    'oracleAddress': '0xd7818272B9e248357d13057AAb0B417aF31E817d',
+    'oracleDesc': 'CBETH / USD'},
+    {'oracleId': 5,
+    'oracleAddress': '0xf397bF97280B488cA19ee3093E81C0a77F02e9a5',
+    'oracleDesc': 'RETH / ETH'},
+    {'oracleId': 6,
+    'oracleAddress': '0x63Af8341b62E683B87bB540896bF283D96B4D385',
+    'oracleDesc': 'STG / USD'},
+    {'oracleId': 7,
+    'oracleAddress': '0xa669E5272E60f78299F4824495cE01a3923f4380',
+    'oracleDesc': 'wstETH-ETH Exchange Rate'},
+    {'oracleId': 8,
+    'oracleAddress': '0x4EC5970fC728C5f65ba413992CD5fF6FD70fcfF0',
+    'oracleDesc': 'AERO / USD'}
+    ]
+
+    base_chain = Chain.objects.get(chain_name__iexact='base')
+
+    w3 = Web3(Web3.HTTPProvider(base_chain.rpc))
+    
+    all_assets = ERC20.objects.filter(uniswaplpposition__isnull=True)
+
+    feed_mapping = {
+        "0x4200000000000000000000000000000000000006".lower() : "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", #Ethereum
+        "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22".lower() : "0xd7818272B9e248357d13057AAb0B417aF31E817d", #cbETH
+        "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c".lower() : "0xf397bF97280B488cA19ee3093E81C0a77F02e9a5", #rocketpool eth
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".lower() : "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", #USDC
+        "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA".lower() : "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", #USDbC
+        "0x940181a94A35A4569E4529A3CDfB74e38FD98631".lower() : "0x4EC5970fC728C5f65ba413992CD5fF6FD70fcfF0", #AERO
+        "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452".lower() : None # custom strategy for wstETH
+    }
+
+    chainlink_prices = {}
+    spot_prices = {}
+    missed_assets = []
+    for asset in all_assets:
+        if asset.contract_address.lower() in feed_mapping:
+            if feed_mapping[asset.contract_address.lower()] is not None:
+                chainlink_prices[asset.contract_address.lower()] = {
+                    "price": get_oracle_lastround_price(feed_mapping[asset.contract_address.lower()], w3),
+                    "name": asset.name,
+                    "symbol": asset.symbol,
+                }
+            elif asset.contract_address.lower() == "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452".lower():
+                # wstETH/WETH price
+                price = get_oracle_lastround_price("0xa669E5272E60f78299F4824495cE01a3923f4380", w3) * get_oracle_lastround_price("0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", w3)
+                chainlink_prices[asset.contract_address.lower()] = {
+                    "price": price,
+                    "name": asset.name,
+                    "symbol": asset.symbol,
+                }
+            # spot price
+            timestamp = datetime.now().timestamp()
+            price = price_defillama("base", asset.contract_address, str(int(timestamp)))
+            spot_prices[asset.contract_address.lower()] = {
+                "price": price,
+                "name": asset.name,
+                "symbol": asset.symbol
+            }
+        else:
+            missed_assets.append({
+                "name": asset.name,
+                "symbol": asset.symbol
+            })
+        
+    # print(f"{chainlink_prices=} {spot_prices=} {missed_assets=}")
+    oracle_snapshot = OracleSnapshot(
+        chainlink_prices=chainlink_prices,
+        spot_prices=spot_prices,
+        missed_assets=missed_assets
+    )
+
+    oracle_snapshot.save()
+
+
+    # price_list = []
+
+    # for oracle in ORACLE_DATA:
+        # price_list = price_list.append(get_oracle_lastround_price(oracle['oracleAddress'],w3))
+
+    # # Create and save the metric snapshot    
+    # OracleSnapshot.objects.create(
+        # comp_in_usd = price_list[0],
+        # dai_in_usd = price_list[1],
+        # eth_in_usd = price_list[2],
+        # usdc_in_usd = price_list[3],
+        # cbeth_in_usd = price_list[4],
+        # reth_in_eth = price_list[5],
+        # stg_in_usd = price_list[6],
+        # wsteth_in_eth = price_list[7],
+    # )
+
+    # TODO: Complete this function
