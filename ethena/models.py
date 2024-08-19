@@ -25,3 +25,12 @@ class CollateralMetrics(BaseModel):
 class ReserveFundMetrics(BaseModel):
     timestamp = models.DateTimeField(null=False)
     value = models.TextField(null=False)
+
+
+class ReserveFundBreakdown(BaseModel):
+    tokens = models.JSONField(null=False)
+    positions = models.JSONField(null=False)
+
+    tokens_usd_value = models.TextField(null=False)
+    positions_usd_value = models.TextField(null=False)
+    total_usd_value = models.TextField(null=False)
