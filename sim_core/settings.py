@@ -223,6 +223,9 @@ CACHES = {
     }
 }
 
+# external API keys
+MORALIS_KEY = os.environ.get("MORALIS_KEY")
+
 if os.getenv("ENVIRONMENT", "").lower() == "production":
     if os.getenv("SENTRY_DSN") is not None:
         sentry_sdk.init(

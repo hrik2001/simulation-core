@@ -1,5 +1,6 @@
 from graphene_django import DjangoObjectType
-from .models import ChainMetrics, CollateralMetrics, ReserveFundMetrics
+from .models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown
+
 
 class ChainMetricsType(DjangoObjectType):
     class Meta:
@@ -12,3 +13,7 @@ class CollateralMetricsType(DjangoObjectType):
 class ReserveFundMetricsType(DjangoObjectType):
     class Meta:
         model = ReserveFundMetrics
+
+class ReserveFundBreakdownType(DjangoObjectType):
+    class Meta:
+        model = ReserveFundBreakdown

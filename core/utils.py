@@ -147,14 +147,19 @@ def get_oracle_lastround_price(oracle_address,w3):
 
     return data[1]/pow(10,decimal)
 
-def price_defillama(chain_name: str, contract_address: str, timestamp: int = None):
+
+def _price_defillama_api(coins_url: str, timestamp: int | None):
     base_url = "https://coins.llama.fi/prices"
-    coins_url = f"{chain_name}:{contract_address}"
     if timestamp is None:
         url = f"{base_url}/current/{coins_url}"
     else:
         url = f"{base_url}/historical/{timestamp}/{coins_url}"
     data = requests.get(url).json()
+    return data
+
+def price_defillama(chain_name: str, contract_address: str | list[str], timestamp: int = None):
+    coins_url = f"{chain_name}:{contract_address}"
+    data = _price_defillama_api(coins_url, timestamp)
     try:
         if contract_address.startswith("0x"):
             contract_address = Web3.to_checksum_address(contract_address)
@@ -162,3 +167,15 @@ def price_defillama(chain_name: str, contract_address: str, timestamp: int = Non
     except KeyError:
         raise Exception(f"{data=} {chain_name=} {contract_address=}")
     return price
+
+def price_defillama_multi(chain_name: str, contract_addresses: list[str], timestamp: int = None):
+    coins_url = ",".join(f"{chain_name}:{address}" for address in contract_addresses)
+    data = _price_defillama_api(coins_url, timestamp)
+    prices = {}
+    try:
+        for address in contract_addresses:
+            price = data["coins"][f"{chain_name}:{address}"]["price"]
+            prices[address] = price
+    except KeyError:
+        raise Exception(f"{data=} {chain_name=} {contract_addresses=}")
+    return prices
