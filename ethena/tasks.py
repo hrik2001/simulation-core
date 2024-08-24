@@ -9,8 +9,11 @@ from web3 import Web3, HTTPProvider
 
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
-from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown
-from sim_core.settings import MORALIS_KEY
+from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapStats
+from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY
+
+RAY = 10 ** 27
+SECONDS_IN_YEAR = 365 * 24 * 60 * 60
 
 USDE_ADDRESS = Web3.to_checksum_address("0x4c9edd5852cd905f086c759e8383e09bff1e68b3")
 USDE_ABI = [
@@ -60,6 +63,72 @@ SUSDE_ABI = [
     }
 ]
 
+POT_ADDRESS = Web3.to_checksum_address("0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7")
+POT_ABI = [
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "dsr",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
+SDAI_ADDRESS = Web3.to_checksum_address("0x83f20f44975d03b1b09e64809b757c47f942beea")
+SDAI_ABI = [
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
+UNISWAP_QUERY = """\
+{
+  poolDayDatas(
+    first: 1
+    orderBy: date
+    where: {pool: "0x435664008f38b0650fbc1c9fc971d0a3bc2f1e47"}
+    orderDirection: desc
+  ) {
+    tvlUSD
+    volumeUSD
+    txCount
+    pool {
+      totalValueLockedToken0
+      token0 {
+        id
+        symbol
+      }
+      totalValueLockedToken1
+      token1 {
+        id
+        symbol
+      }
+    }
+    id
+    feesUSD
+  }
+}
+"""
+
 ETHENA_COLLATERAL_API = "https://app.ethena.fi/api/positions/current/collateral"
 ETHENA_RESERVE_FUND_API = "https://app.ethena.fi/api/solvency/reserve-fund"
 
@@ -74,6 +143,8 @@ def update_chain_metrics():
     web3 = Web3(HTTPProvider(eth_chain.rpc))
     usde_contract = web3.eth.contract(address=USDE_ADDRESS, abi=USDE_ABI)
     susde_contract = web3.eth.contract(address=SUSDE_ADDRESS, abi=SUSDE_ABI)
+    sdai_contract = web3.eth.contract(address=SDAI_ADDRESS, abi=SDAI_ABI)
+    pot_contract = web3.eth.contract(address=POT_ADDRESS, abi=POT_ABI)
 
     latest_block_number = web3.eth.get_block("latest")["number"]
     try:
@@ -92,9 +163,14 @@ def update_chain_metrics():
             usde_supply = usde_contract.functions.totalSupply().call(block_identifier=block_number)
             susde_supply = susde_contract.functions.totalSupply().call(block_identifier=block_number)
             susde_staked = susde_contract.functions.totalAssets().call(block_identifier=block_number)
+            sdai_supply = sdai_contract.functions.totalSupply().call(block_identifier=block_number)
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
+            sdai_price = price_defillama("ethereum", SDAI_ADDRESS, timestamp)
+
+            dsr = pot_contract.functions.dsr().call(block_identifier=block_number)
+            dsr_rate = 100 * ((dsr / RAY) ** SECONDS_IN_YEAR) - 100
 
             chain_metrics = ChainMetrics(
                 block_hash=block["hash"].hex(),
@@ -106,6 +182,9 @@ def update_chain_metrics():
                 total_susde_supply=str(susde_supply),
                 usde_price=str(usde_price),
                 susde_price=str(susde_price),
+                total_sdai_supply=str(sdai_supply),
+                sdai_price=str(sdai_price),
+                dsr_rate=str(dsr_rate),
             )
             chain_metrics.save()
         except ValueError:
@@ -248,6 +327,14 @@ def update_reserve_fund_breakdown():
     breakdown.save()
 
 
+def update_uniswap_stats():
+    uniswap_url = f"https://gateway.thegraph.com/api/{SUBGRAPH_KEY}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV"
+    response = requests.post(uniswap_url, json={"query": UNISWAP_QUERY})
+    data = response.json()["data"]["poolDayDatas"][0]
+    uniswap_stats = UniswapStats(data=data)
+    uniswap_stats.save()
+
+
 @shared_task
 def task__ethena__metric_snapshot():
     logger.info("running task to update ethena metrics")
@@ -260,3 +347,10 @@ def task__ethena__metric_snapshot():
     logger.info("update reserve fund breakdown")
     update_reserve_fund_breakdown()
     logger.info("ethena metrics update task completed successfully")
+
+
+@shared_task
+def task__ethena__uniswap_stats():
+    logger.info("running task to update uniswap stats")
+    update_uniswap_stats()
+    logger.info("updating uniswap stats")

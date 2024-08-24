@@ -17,6 +17,10 @@ class ChainMetrics(BaseModel):
     usde_price = models.TextField(null=False)
     susde_price = models.TextField(null=False)
 
+    sdai_price = models.TextField(null=False, default="0")
+    total_sdai_supply = models.TextField(null=False, default="0")
+    dsr_rate = models.TextField(null=False, default="0")
+
 
 class CollateralMetrics(BaseModel):
     collateral = models.JSONField(null=False)
@@ -34,3 +38,7 @@ class ReserveFundBreakdown(BaseModel):
     tokens_usd_value = models.TextField(null=False)
     positions_usd_value = models.TextField(null=False)
     total_usd_value = models.TextField(null=False)
+
+
+class UniswapStats(BaseModel):
+    data = models.JSONField(null=False)
