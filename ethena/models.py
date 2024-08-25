@@ -17,9 +17,14 @@ class ChainMetrics(BaseModel):
     usde_price = models.TextField(null=False)
     susde_price = models.TextField(null=False)
 
+    total_dai_supply = models.TextField(null=False, default="0")
     sdai_price = models.TextField(null=False, default="0")
     total_sdai_supply = models.TextField(null=False, default="0")
     dsr_rate = models.TextField(null=False, default="0")
+    total_dai_staked = models.TextField(null=False, default="0")
+
+    usdt_balance = models.TextField(null=False, default="0")
+
 
 
 class CollateralMetrics(BaseModel):

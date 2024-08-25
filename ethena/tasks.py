@@ -1,8 +1,6 @@
-import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
-from email.policy import default
 
 import requests
 from celery import shared_task
@@ -19,53 +17,38 @@ from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY
 RAY = 10 ** 27
 SECONDS_IN_YEAR = 365 * 24 * 60 * 60
 
+supply_function = {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+assets_function = {
+    "inputs": [],
+    "name": "totalAssets",
+    "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+
 USDE_ADDRESS = Web3.to_checksum_address("0x4c9edd5852cd905f086c759e8383e09bff1e68b3")
-USDE_ABI = [
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
+USDE_ABI = [supply_function]
 
 SUSDE_ADDRESS = Web3.to_checksum_address("0x9d39a5de30e57443bff2a8307a4256c8797a3497")
-SUSDE_ABI = [
-    {
-        "inputs": [],
-        "name": "totalAssets",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
+SUSDE_ABI = [supply_function, assets_function]
 
 POT_ADDRESS = Web3.to_checksum_address("0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7")
 POT_ABI = [
@@ -87,22 +70,32 @@ POT_ABI = [
 ]
 
 SDAI_ADDRESS = Web3.to_checksum_address("0x83f20f44975d03b1b09e64809b757c47f942beea")
-SDAI_ABI = [
+SDAI_ABI = [supply_function, assets_function]
+
+DAI_ADDRESS = Web3.to_checksum_address("0x6b175474e89094c44da98b954eedeac495271d0f")
+DAI_ABI = [supply_function]
+
+USDT_ADDRESS = Web3.to_checksum_address("0xdac17f958d2ee523a2206206994597c13d831ec7")
+USDT_ABI = [
     {
-        "constant": True,
-        "inputs": [],
-        "name": "totalSupply",
+        "inputs": [
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "balances",
         "outputs": [
             {
                 "name": "",
                 "type": "uint256"
             }
         ],
-        "payable": False,
         "stateMutability": "view",
         "type": "function"
     }
 ]
+ETHENA_USDT_ADDRESS = Web3.to_checksum_address("0xe3490297a08d6fC8Da46Edb7B6142E4F461b62D3")
 
 UNISWAP_QUERY = """\
 {
@@ -160,8 +153,10 @@ def update_chain_metrics():
     web3 = Web3(HTTPProvider(eth_chain.rpc))
     usde_contract = web3.eth.contract(address=USDE_ADDRESS, abi=USDE_ABI)
     susde_contract = web3.eth.contract(address=SUSDE_ADDRESS, abi=SUSDE_ABI)
+    dai_contract = web3.eth.contract(address=DAI_ADDRESS, abi=DAI_ABI)
     sdai_contract = web3.eth.contract(address=SDAI_ADDRESS, abi=SDAI_ABI)
     pot_contract = web3.eth.contract(address=POT_ADDRESS, abi=POT_ABI)
+    usdt_contract = web3.eth.contract(address=USDT_ADDRESS, abi=USDT_ABI)
 
     latest_block_number = web3.eth.get_block("latest")["number"]
     try:
@@ -180,7 +175,10 @@ def update_chain_metrics():
             usde_supply = usde_contract.functions.totalSupply().call(block_identifier=block_number)
             susde_supply = susde_contract.functions.totalSupply().call(block_identifier=block_number)
             susde_staked = susde_contract.functions.totalAssets().call(block_identifier=block_number)
+            dai_supply = dai_contract.functions.totalSupply().call(block_identifier=block_number)
             sdai_supply = sdai_contract.functions.totalSupply().call(block_identifier=block_number)
+            sdai_staked = sdai_contract.functions.totalAssets().call(block_identifier=block_number)
+            usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(block_identifier=block_number)
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
@@ -202,6 +200,9 @@ def update_chain_metrics():
                 total_sdai_supply=str(sdai_supply),
                 sdai_price=str(sdai_price),
                 dsr_rate=str(dsr_rate),
+                total_dai_supply=str(dai_supply),
+                total_dai_staked=str(sdai_staked),
+                usdt_balance=str(usdt_balance)
             )
             chain_metrics.save()
         except ValueError:
