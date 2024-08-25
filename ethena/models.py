@@ -58,4 +58,5 @@ class CurvePoolSnapshots(BaseModel):
     chain = models.ForeignKey(Chain, on_delete=models.CASCADE)
     block_number = models.IntegerField(null=False)
     timestamp = models.DateTimeField(null=False)
-    snapshots = models.JSONField(null=False)
+    address = models.TextField(null=False, default="")
+    snapshot = models.JSONField(null=False)

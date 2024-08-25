@@ -377,9 +377,6 @@ def update_curve_pool_snapshots():
         last_reserve_fund_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
     start = max(end - timedelta(hours=4), last_reserve_fund_timestamp)
 
-    blocks = defaultdict(list)
-    timestamps = defaultdict(int)
-
     for address in CURVE_POOL_ADDRESSES:
         snapshots_url = f"{CURVE_BASE_URL}/snapshots/{chain_name}/{address}/tvl"
         response = requests.get(snapshots_url, params={
@@ -390,21 +387,17 @@ def update_curve_pool_snapshots():
 
         for snapshot in response["data"]:
             timestamp = snapshot.pop("timestamp")
+            timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
             block_number = snapshot.pop("block_number")
-            timestamps[block_number] = timestamp
-            snapshot["address"] = address
-            blocks[block_number].append(snapshot)
 
-    block_numbers = sorted(list(blocks.keys()))
-    for block_number in block_numbers:
-        timestamp = datetime.fromtimestamp(timestamps[block_number], tz=timezone.utc)
-        pool_snapshot = CurvePoolSnapshots(
-            chain=chain,
-            block_number=block_number,
-            timestamp=timestamp,
-            snapshots=blocks[block_number]
-        )
-        pool_snapshot.save()
+            pool_snapshot = CurvePoolSnapshots(
+                chain=chain,
+                block_number=block_number,
+                timestamp=timestamp,
+                address=address,
+                snapshot=snapshot
+            )
+            pool_snapshot.save()
 
 
 @shared_task
