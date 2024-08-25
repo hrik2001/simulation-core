@@ -1,5 +1,8 @@
+import json
 import logging
-from datetime import datetime, timezone
+from collections import defaultdict
+from datetime import datetime, timezone, timedelta
+from email.policy import default
 
 import requests
 from celery import shared_task
@@ -9,7 +12,8 @@ from web3 import Web3, HTTPProvider
 
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
-from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapStats
+from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapMetrics, \
+    CurvePoolMetrics, CurvePoolSnapshots
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY
 
 RAY = 10 ** 27
@@ -131,9 +135,22 @@ UNISWAP_QUERY = """\
 
 ETHENA_COLLATERAL_API = "https://app.ethena.fi/api/positions/current/collateral"
 ETHENA_RESERVE_FUND_API = "https://app.ethena.fi/api/solvency/reserve-fund"
+CURVE_BASE_URL = "https://prices.curve.fi/v1"
 
 RESERVE_FUND_ADDRESS = "0x2b5ab59163a6e93b4486f6055d33ca4a115dd4d5"
 WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+CURVE_POOL_ADDRESSES = [
+    "0x5dc1bf6f1e983c0b21efb003c105133736fa0743",
+    "0x167478921b907422f8e88b43c4af2b8bea278d3a",
+    "0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72",
+    "0xf36a4ba50c603204c3fc6d2da8b78a7b69cbc67d",
+    "0xf55b0f6f2da5ffddb104b58a60f2862745960442",
+    "0x670a72e6d22b0956c0d2573288f82dcc5d6e3a61",
+    "0xf8db2accdef8e7a26b0e65c3980adc8ce11671a4",
+    "0x1ab3d612ea7df26117554dddd379764ebce1a5ad",
+    "0x964573b560da1ce5b10dd09a4723c5ccbe9f9688",
+    "0x57064f49ad7123c92560882a45518374ad982e85"
+]
 
 logger = logging.getLogger(__name__)
 
@@ -331,8 +348,62 @@ def update_uniswap_stats():
     uniswap_url = f"https://gateway.thegraph.com/api/{SUBGRAPH_KEY}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV"
     response = requests.post(uniswap_url, json={"query": UNISWAP_QUERY})
     data = response.json()["data"]["poolDayDatas"][0]
-    uniswap_stats = UniswapStats(data=data)
+    uniswap_stats = UniswapMetrics(metrics=data)
     uniswap_stats.save()
+
+
+def update_curve_pool_metrics():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name
+    data = []
+    for address in CURVE_POOL_ADDRESSES:
+        metrics_url = f"{CURVE_BASE_URL}/pools/{chain_name}/{address}"
+        response = requests.get(metrics_url).json()
+        data.append(response)
+    curve_pool_metrics = CurvePoolMetrics(chain=chain, metrics=data)
+    curve_pool_metrics.save()
+
+
+def update_curve_pool_snapshots():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name
+
+    end = datetime.now(tz=timezone.utc)
+    try:
+        last_pool_snapshot = CurvePoolSnapshots.objects.latest("timestamp")
+        last_reserve_fund_timestamp = last_pool_snapshot.timestamp
+    except ObjectDoesNotExist:
+        last_reserve_fund_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
+    start = max(end - timedelta(hours=4), last_reserve_fund_timestamp)
+
+    blocks = defaultdict(list)
+    timestamps = defaultdict(int)
+
+    for address in CURVE_POOL_ADDRESSES:
+        snapshots_url = f"{CURVE_BASE_URL}/snapshots/{chain_name}/{address}/tvl"
+        response = requests.get(snapshots_url, params={
+            "start": int(start.timestamp()),
+            "end": int(end.timestamp()),
+            "unit": "none"
+        }).json()
+
+        for snapshot in response["data"]:
+            timestamp = snapshot.pop("timestamp")
+            block_number = snapshot.pop("block_number")
+            timestamps[block_number] = timestamp
+            snapshot["address"] = address
+            blocks[block_number].append(snapshot)
+
+    block_numbers = sorted(list(blocks.keys()))
+    for block_number in block_numbers:
+        timestamp = datetime.fromtimestamp(timestamps[block_number], tz=timezone.utc)
+        pool_snapshot = CurvePoolSnapshots(
+            chain=chain,
+            block_number=block_number,
+            timestamp=timestamp,
+            snapshots=blocks[block_number]
+        )
+        pool_snapshot.save()
 
 
 @shared_task
@@ -354,3 +425,17 @@ def task__ethena__uniswap_stats():
     logger.info("running task to update uniswap stats")
     update_uniswap_stats()
     logger.info("updating uniswap stats")
+
+
+@shared_task
+def task__ethena__curve_metrics():
+    logger.info("running task to update curve pool metrics")
+    update_curve_pool_metrics()
+    logger.info("updating curve pool metrics")
+
+
+@shared_task
+def task__ethena__curve_pool_snapshots():
+    logger.info("running task to update curve pool snapshots")
+    update_curve_pool_snapshots()
+    logger.info("updating curve pool snapshots")
