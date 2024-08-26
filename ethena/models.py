@@ -17,9 +17,14 @@ class ChainMetrics(BaseModel):
     usde_price = models.TextField(null=False)
     susde_price = models.TextField(null=False)
 
+    total_dai_supply = models.TextField(null=False, default="0")
     sdai_price = models.TextField(null=False, default="0")
     total_sdai_supply = models.TextField(null=False, default="0")
     dsr_rate = models.TextField(null=False, default="0")
+    total_dai_staked = models.TextField(null=False, default="0")
+
+    usdt_balance = models.TextField(null=False, default="0")
+
 
 
 class CollateralMetrics(BaseModel):
@@ -40,5 +45,18 @@ class ReserveFundBreakdown(BaseModel):
     total_usd_value = models.TextField(null=False)
 
 
-class UniswapStats(BaseModel):
-    data = models.JSONField(null=False)
+class UniswapMetrics(BaseModel):
+    metrics = models.JSONField(null=False)
+
+
+class CurvePoolMetrics(BaseModel):
+    chain = models.ForeignKey(Chain, on_delete=models.CASCADE)
+    metrics = models.JSONField(null=False)
+
+
+class CurvePoolSnapshots(BaseModel):
+    chain = models.ForeignKey(Chain, on_delete=models.CASCADE)
+    block_number = models.IntegerField(null=False)
+    timestamp = models.DateTimeField(null=False)
+    address = models.TextField(null=False, default="")
+    snapshot = models.JSONField(null=False)

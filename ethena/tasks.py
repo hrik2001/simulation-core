@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime, timezone
+from collections import defaultdict
+from datetime import datetime, timezone, timedelta
 
 import requests
 from celery import shared_task
@@ -9,59 +10,45 @@ from web3 import Web3, HTTPProvider
 
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
-from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapStats
+from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapMetrics, \
+    CurvePoolMetrics, CurvePoolSnapshots
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY
 
 RAY = 10 ** 27
 SECONDS_IN_YEAR = 365 * 24 * 60 * 60
 
+supply_function = {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+assets_function = {
+    "inputs": [],
+    "name": "totalAssets",
+    "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+
 USDE_ADDRESS = Web3.to_checksum_address("0x4c9edd5852cd905f086c759e8383e09bff1e68b3")
-USDE_ABI = [
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
+USDE_ABI = [supply_function]
 
 SUSDE_ADDRESS = Web3.to_checksum_address("0x9d39a5de30e57443bff2a8307a4256c8797a3497")
-SUSDE_ABI = [
-    {
-        "inputs": [],
-        "name": "totalAssets",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
+SUSDE_ABI = [supply_function, assets_function]
 
 POT_ADDRESS = Web3.to_checksum_address("0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7")
 POT_ABI = [
@@ -83,22 +70,32 @@ POT_ABI = [
 ]
 
 SDAI_ADDRESS = Web3.to_checksum_address("0x83f20f44975d03b1b09e64809b757c47f942beea")
-SDAI_ABI = [
+SDAI_ABI = [supply_function, assets_function]
+
+DAI_ADDRESS = Web3.to_checksum_address("0x6b175474e89094c44da98b954eedeac495271d0f")
+DAI_ABI = [supply_function]
+
+USDT_ADDRESS = Web3.to_checksum_address("0xdac17f958d2ee523a2206206994597c13d831ec7")
+USDT_ABI = [
     {
-        "constant": True,
-        "inputs": [],
-        "name": "totalSupply",
+        "inputs": [
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "balances",
         "outputs": [
             {
                 "name": "",
                 "type": "uint256"
             }
         ],
-        "payable": False,
         "stateMutability": "view",
         "type": "function"
     }
 ]
+ETHENA_USDT_ADDRESS = Web3.to_checksum_address("0xe3490297a08d6fC8Da46Edb7B6142E4F461b62D3")
 
 UNISWAP_QUERY = """\
 {
@@ -131,9 +128,22 @@ UNISWAP_QUERY = """\
 
 ETHENA_COLLATERAL_API = "https://app.ethena.fi/api/positions/current/collateral"
 ETHENA_RESERVE_FUND_API = "https://app.ethena.fi/api/solvency/reserve-fund"
+CURVE_BASE_URL = "https://prices.curve.fi/v1"
 
 RESERVE_FUND_ADDRESS = "0x2b5ab59163a6e93b4486f6055d33ca4a115dd4d5"
 WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+CURVE_POOL_ADDRESSES = [
+    "0x5dc1bf6f1e983c0b21efb003c105133736fa0743",
+    "0x167478921b907422f8e88b43c4af2b8bea278d3a",
+    "0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72",
+    "0xf36a4ba50c603204c3fc6d2da8b78a7b69cbc67d",
+    "0xf55b0f6f2da5ffddb104b58a60f2862745960442",
+    "0x670a72e6d22b0956c0d2573288f82dcc5d6e3a61",
+    "0xf8db2accdef8e7a26b0e65c3980adc8ce11671a4",
+    "0x1ab3d612ea7df26117554dddd379764ebce1a5ad",
+    "0x964573b560da1ce5b10dd09a4723c5ccbe9f9688",
+    "0x57064f49ad7123c92560882a45518374ad982e85"
+]
 
 logger = logging.getLogger(__name__)
 
@@ -143,8 +153,10 @@ def update_chain_metrics():
     web3 = Web3(HTTPProvider(eth_chain.rpc))
     usde_contract = web3.eth.contract(address=USDE_ADDRESS, abi=USDE_ABI)
     susde_contract = web3.eth.contract(address=SUSDE_ADDRESS, abi=SUSDE_ABI)
+    dai_contract = web3.eth.contract(address=DAI_ADDRESS, abi=DAI_ABI)
     sdai_contract = web3.eth.contract(address=SDAI_ADDRESS, abi=SDAI_ABI)
     pot_contract = web3.eth.contract(address=POT_ADDRESS, abi=POT_ABI)
+    usdt_contract = web3.eth.contract(address=USDT_ADDRESS, abi=USDT_ABI)
 
     latest_block_number = web3.eth.get_block("latest")["number"]
     try:
@@ -163,7 +175,10 @@ def update_chain_metrics():
             usde_supply = usde_contract.functions.totalSupply().call(block_identifier=block_number)
             susde_supply = susde_contract.functions.totalSupply().call(block_identifier=block_number)
             susde_staked = susde_contract.functions.totalAssets().call(block_identifier=block_number)
+            dai_supply = dai_contract.functions.totalSupply().call(block_identifier=block_number)
             sdai_supply = sdai_contract.functions.totalSupply().call(block_identifier=block_number)
+            sdai_staked = sdai_contract.functions.totalAssets().call(block_identifier=block_number)
+            usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(block_identifier=block_number)
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
@@ -185,6 +200,9 @@ def update_chain_metrics():
                 total_sdai_supply=str(sdai_supply),
                 sdai_price=str(sdai_price),
                 dsr_rate=str(dsr_rate),
+                total_dai_supply=str(dai_supply),
+                total_dai_staked=str(sdai_staked),
+                usdt_balance=str(usdt_balance)
             )
             chain_metrics.save()
         except ValueError:
@@ -331,8 +349,55 @@ def update_uniswap_stats():
     uniswap_url = f"https://gateway.thegraph.com/api/{SUBGRAPH_KEY}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV"
     response = requests.post(uniswap_url, json={"query": UNISWAP_QUERY})
     data = response.json()["data"]["poolDayDatas"][0]
-    uniswap_stats = UniswapStats(data=data)
+    uniswap_stats = UniswapMetrics(metrics=data)
     uniswap_stats.save()
+
+
+def update_curve_pool_metrics():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name
+    data = []
+    for address in CURVE_POOL_ADDRESSES:
+        metrics_url = f"{CURVE_BASE_URL}/pools/{chain_name}/{address}"
+        response = requests.get(metrics_url).json()
+        data.append(response)
+    curve_pool_metrics = CurvePoolMetrics(chain=chain, metrics=data)
+    curve_pool_metrics.save()
+
+
+def update_curve_pool_snapshots():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name
+
+    end = datetime.now(tz=timezone.utc)
+    try:
+        last_pool_snapshot = CurvePoolSnapshots.objects.latest("timestamp")
+        last_reserve_fund_timestamp = last_pool_snapshot.timestamp
+    except ObjectDoesNotExist:
+        last_reserve_fund_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
+    start = max(end - timedelta(hours=4), last_reserve_fund_timestamp)
+
+    for address in CURVE_POOL_ADDRESSES:
+        snapshots_url = f"{CURVE_BASE_URL}/snapshots/{chain_name}/{address}/tvl"
+        response = requests.get(snapshots_url, params={
+            "start": int(start.timestamp()),
+            "end": int(end.timestamp()),
+            "unit": "none"
+        }).json()
+
+        for snapshot in response["data"]:
+            timestamp = snapshot.pop("timestamp")
+            timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            block_number = snapshot.pop("block_number")
+
+            pool_snapshot = CurvePoolSnapshots(
+                chain=chain,
+                block_number=block_number,
+                timestamp=timestamp,
+                address=address,
+                snapshot=snapshot
+            )
+            pool_snapshot.save()
 
 
 @shared_task
@@ -354,3 +419,17 @@ def task__ethena__uniswap_stats():
     logger.info("running task to update uniswap stats")
     update_uniswap_stats()
     logger.info("updating uniswap stats")
+
+
+@shared_task
+def task__ethena__curve_metrics():
+    logger.info("running task to update curve pool metrics")
+    update_curve_pool_metrics()
+    logger.info("updating curve pool metrics")
+
+
+@shared_task
+def task__ethena__curve_pool_snapshots():
+    logger.info("running task to update curve pool snapshots")
+    update_curve_pool_snapshots()
+    logger.info("updating curve pool snapshots")
