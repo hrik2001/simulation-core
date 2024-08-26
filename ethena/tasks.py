@@ -355,7 +355,7 @@ def update_uniswap_stats():
 
 def update_curve_pool_metrics():
     chain = Chain.objects.get(chain_name__iexact="ethereum")
-    chain_name = chain.chain_name
+    chain_name = chain.chain_name.lower()
     data = []
     for address in CURVE_POOL_ADDRESSES:
         metrics_url = f"{CURVE_BASE_URL}/pools/{chain_name}/{address}"
@@ -367,7 +367,7 @@ def update_curve_pool_metrics():
 
 def update_curve_pool_snapshots():
     chain = Chain.objects.get(chain_name__iexact="ethereum")
-    chain_name = chain.chain_name
+    chain_name = chain.chain_name.lower()
 
     end = datetime.now(tz=timezone.utc)
     try:
