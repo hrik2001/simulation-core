@@ -1,7 +1,7 @@
 import json
 import logging
-from collections import defaultdict
 from datetime import datetime, timezone, timedelta
+from string import Template
 
 import requests
 from celery import shared_task
@@ -11,7 +11,7 @@ from web3 import Web3, HTTPProvider
 
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
-from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapMetrics, \
+from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolMetrics, \
     CurvePoolMetrics, CurvePoolSnapshots
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY
 
@@ -98,12 +98,17 @@ USDT_ABI = [
 ]
 ETHENA_USDT_ADDRESS = Web3.to_checksum_address("0xe3490297a08d6fC8Da46Edb7B6142E4F461b62D3")
 
-UNISWAP_QUERY = """\
+UNISWAP_POOL_ADDRESSES = [
+    "0x435664008f38b0650fbc1c9fc971d0a3bc2f1e47",
+    "0x867b321132b18b5bf3775c0d9040d1872979422e",
+    "0xe6d7ebb9f1a9519dc06d557e03c522d53520e76a"
+]
+UNISWAP_QUERY = Template("""\
 {
   poolDayDatas(
     first: 1
     orderBy: date
-    where: {pool: "0x435664008f38b0650fbc1c9fc971d0a3bc2f1e47"}
+    where: {pool: "$poolAddress"}
     orderDirection: desc
   ) {
     tvlUSD
@@ -125,7 +130,7 @@ UNISWAP_QUERY = """\
     feesUSD
   }
 }
-"""
+""")
 
 ETHENA_COLLATERAL_API = "https://app.ethena.fi/api/positions/current/collateral"
 ETHENA_RESERVE_FUND_API = "https://app.ethena.fi/api/solvency/reserve-fund"
@@ -352,9 +357,13 @@ def update_reserve_fund_breakdown():
 
 def update_uniswap_stats():
     uniswap_url = f"https://gateway.thegraph.com/api/{SUBGRAPH_KEY}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV"
-    response = requests.post(uniswap_url, json={"query": UNISWAP_QUERY})
-    data = response.json()["data"]["poolDayDatas"][0]
-    uniswap_stats = UniswapMetrics(metrics=data)
+    pools = {}
+    for poolAddress in UNISWAP_POOL_ADDRESSES:
+        query = UNISWAP_QUERY.substitute({"poolAddress": poolAddress})
+        response = requests.post(uniswap_url, json={"query": query})
+        data = response.json()["data"]["poolDayDatas"][0]
+        pools[poolAddress] = data
+    uniswap_stats = UniswapPoolMetrics(metrics=pools)
     uniswap_stats.save()
 
 

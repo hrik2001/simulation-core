@@ -48,7 +48,7 @@ class ReserveFundBreakdown(BaseModel):
     total_usd_value = models.TextField(null=False)
 
 
-class UniswapMetrics(BaseModel):
+class UniswapPoolMetrics(BaseModel):
     metrics = models.JSONField(null=False)
 
 

@@ -3,7 +3,7 @@ from datetime import datetime
 import graphene
 from graphene import Int, String
 
-from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, UniswapMetrics, \
+from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, UniswapPoolMetrics, \
     CurvePoolMetrics, CurvePoolSnapshots
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
     UniswapMetricsType, CurvePoolMetricsType, CurvePoolSnapshotsType
@@ -15,7 +15,7 @@ class Query(graphene.ObjectType):
     collateral_metrics = graphene.List(CollateralMetricsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
     reserve_fund_metrics = graphene.List(ReserveFundMetricsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
     reserve_fund_breakdown = graphene.List(ReserveFundBreakdownType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
-    uniswap_metrics = graphene.List(UniswapMetricsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
+    uniswap_pool_metrics = graphene.List(UniswapMetricsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
     curve_pool_metrics = graphene.List(CurvePoolMetricsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
     curve_pool_snapshots = graphene.List(CurvePoolSnapshotsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
 
@@ -75,8 +75,8 @@ class Query(graphene.ObjectType):
             queryset = queryset[:limit]
         return queryset
 
-    def resolve_uniswap_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
-        queryset = UniswapMetrics.objects.all()
+    def resolve_uniswap_pool_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        queryset = UniswapPoolMetrics.objects.all()
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
         if end_time:
