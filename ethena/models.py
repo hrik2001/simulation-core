@@ -25,6 +25,9 @@ class ChainMetrics(BaseModel):
 
     usdt_balance = models.TextField(null=False, default="0")
 
+    usdt_price = models.TextField(null=False, default="0")
+    dai_price = models.TextField(null=False, default="0")
+
 
 
 class CollateralMetrics(BaseModel):

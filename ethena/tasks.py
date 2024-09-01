@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
@@ -162,9 +163,9 @@ def update_chain_metrics():
     try:
         chain_metrics = ChainMetrics.objects.latest("created_at")
         last_block_number = chain_metrics.block_number
-        last_block_number = max(last_block_number, latest_block_number - 64)
+        last_block_number = max(last_block_number, latest_block_number - 2)
     except ObjectDoesNotExist:
-        last_block_number = latest_block_number - 64
+        last_block_number = latest_block_number - 2
 
     for block_number in range(last_block_number + 1, latest_block_number + 1):
         try:
@@ -183,6 +184,8 @@ def update_chain_metrics():
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
             sdai_price = price_defillama("ethereum", SDAI_ADDRESS, timestamp)
+            dai_price = price_defillama("ethereum", DAI_ADDRESS, timestamp)
+            usdt_price = price_defillama("ethereum", USDT_ADDRESS, timestamp)
 
             dsr = pot_contract.functions.dsr().call(block_identifier=block_number)
             dsr_rate = 100 * ((dsr / RAY) ** SECONDS_IN_YEAR) - 100
@@ -202,7 +205,9 @@ def update_chain_metrics():
                 dsr_rate=str(dsr_rate),
                 total_dai_supply=str(dai_supply),
                 total_dai_staked=str(sdai_staked),
-                usdt_balance=str(usdt_balance)
+                usdt_balance=str(usdt_balance),
+                dai_price=str(dai_price),
+                usdt_price=str(usdt_price)
             )
             chain_metrics.save()
         except ValueError:
@@ -403,14 +408,31 @@ def update_curve_pool_snapshots():
 @shared_task
 def task__ethena__metric_snapshot():
     logger.info("running task to update ethena metrics")
-    logger.info("updating chain metrics")
-    update_chain_metrics()
-    logger.info("updating collateral metrics")
-    update_collateral_metrics()
-    logger.info("updating reserve fund metrics")
-    update_reserve_fund_metrics()
-    logger.info("update reserve fund breakdown")
-    update_reserve_fund_breakdown()
+
+    try:
+        logger.info("updating chain metrics")
+        update_chain_metrics()
+    except Exception as e:
+        logger.exception(e)
+
+    try:
+        logger.info("update reserve fund breakdown")
+        update_reserve_fund_breakdown()
+    except Exception as e:
+        logger.exception(e)
+
+    try:
+        logger.info("updating collateral metrics")
+        update_collateral_metrics()
+    except Exception as e:
+        logger.exception(e)
+
+    try:
+        logger.info("updating reserve fund metrics")
+        update_reserve_fund_metrics()
+    except Exception as e:
+        logger.exception(e)
+
     logger.info("ethena metrics update task completed successfully")
 
 
