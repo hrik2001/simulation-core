@@ -1,7 +1,15 @@
+from graphene import ObjectType, JSONString, Int, String, List
 from graphene_django import DjangoObjectType
-from .models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolMetrics, \
-    CurvePoolMetrics, CurvePoolSnapshots
+from .models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
+    CurvePoolMetrics
 
+class SnapshotType(ObjectType):
+    snapshot = JSONString()
+    timestamp = String()
+
+class AggregatedSnapshotsType(ObjectType):
+    address = String()
+    snapshots = List(SnapshotType)
 
 class ChainMetricsType(DjangoObjectType):
     class Meta:
@@ -21,12 +29,8 @@ class ReserveFundBreakdownType(DjangoObjectType):
 
 class UniswapMetricsType(DjangoObjectType):
     class Meta:
-        model = UniswapPoolMetrics
+        model = UniswapPoolSnapshots
 
 class CurvePoolMetricsType(DjangoObjectType):
     class Meta:
         model = CurvePoolMetrics
-
-class CurvePoolSnapshotsType(DjangoObjectType):
-    class Meta:
-        model = CurvePoolSnapshots

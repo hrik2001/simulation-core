@@ -11,7 +11,7 @@ from web3 import Web3, HTTPProvider
 
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
-from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolMetrics, \
+from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
     CurvePoolMetrics, CurvePoolSnapshots
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY
 
@@ -361,7 +361,7 @@ def update_reserve_fund_breakdown():
     breakdown.save()
 
 
-def update_uniswap_stats():
+def update_uniswap_pool_snapshots():
     uniswap_url = f"https://gateway.thegraph.com/api/{SUBGRAPH_KEY}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV"
     pools = {}
     for poolAddress in UNISWAP_POOL_ADDRESSES:
@@ -369,8 +369,8 @@ def update_uniswap_stats():
         response = requests.post(uniswap_url, json={"query": query})
         data = response.json()["data"]["poolDayDatas"][0]
         pools[poolAddress] = data
-    uniswap_stats = UniswapPoolMetrics(metrics=pools)
-    uniswap_stats.save()
+        uniswap_snapshot = UniswapPoolSnapshots(address=poolAddress, snapshot=data, timestamp=datetime.now(tz=timezone.utc))
+        uniswap_snapshot.save()
 
 
 def update_curve_pool_metrics():
@@ -454,7 +454,7 @@ def task__ethena__metric_snapshot():
 @shared_task
 def task__ethena__uniswap_stats():
     logger.info("running task to update uniswap stats")
-    update_uniswap_stats()
+    update_uniswap_pool_snapshots()
     logger.info("updating uniswap stats")
 
 

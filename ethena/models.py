@@ -48,8 +48,10 @@ class ReserveFundBreakdown(BaseModel):
     total_usd_value = models.TextField(null=False)
 
 
-class UniswapPoolMetrics(BaseModel):
-    metrics = models.JSONField(null=False)
+class UniswapPoolSnapshots(BaseModel):
+    timestamp = models.DateTimeField(null=False)
+    address = models.TextField(null=False)
+    snapshot = models.JSONField(null=False)
 
 
 class CurvePoolMetrics(BaseModel):
@@ -61,5 +63,5 @@ class CurvePoolSnapshots(BaseModel):
     chain = models.ForeignKey(Chain, on_delete=models.CASCADE)
     block_number = models.IntegerField(null=False)
     timestamp = models.DateTimeField(null=False)
-    address = models.TextField(null=False, default="")
+    address = models.TextField(null=False)
     snapshot = models.JSONField(null=False)
