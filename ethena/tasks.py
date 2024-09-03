@@ -111,6 +111,9 @@ UNISWAP_QUERY = Template("""\
     where: {pool: "$poolAddress"}
     orderDirection: desc
   ) {
+    sqrtPrice
+    token0Price
+    token1Price
     tvlUSD
     volumeUSD
     txCount
@@ -120,13 +123,16 @@ UNISWAP_QUERY = Template("""\
         id
         symbol
       }
+      token0Price
       totalValueLockedToken1
       token1 {
         id
         symbol
       }
+      token1Price
     }
     id
+    close
     feesUSD
   }
 }
