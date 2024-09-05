@@ -6,13 +6,15 @@ from string import Template
 import requests
 from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import ExpressionWrapper, F
+from django.db.models.functions import Abs, Extract
 from moralis import evm_api
 from web3 import Web3, HTTPProvider
 
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
-    CurvePoolMetrics, CurvePoolSnapshots
+    CurvePoolInfo, CurvePoolSnapshots
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY
 
 RAY = 10 ** 27
@@ -373,16 +375,16 @@ def update_uniswap_pool_snapshots():
         uniswap_snapshot.save()
 
 
-def update_curve_pool_metrics():
+def update_curve_pool_info():
     chain = Chain.objects.get(chain_name__iexact="ethereum")
     chain_name = chain.chain_name.lower()
-    data = []
     for address in CURVE_POOL_ADDRESSES:
         metrics_url = f"{CURVE_BASE_URL}/pools/{chain_name}/{address}"
         response = requests.get(metrics_url).json()
-        data.append(response)
-    curve_pool_metrics = CurvePoolMetrics(chain=chain, metrics=data)
-    curve_pool_metrics.save()
+        response.pop("pool_methods", None)
+        timestamp = datetime.now(tz=timezone.utc)
+        curve_pool_info = CurvePoolInfo(chain=chain, address=address, timestamp=timestamp, info=response)
+        curve_pool_info.save()
 
 
 def update_curve_pool_snapshots():
@@ -409,6 +411,16 @@ def update_curve_pool_snapshots():
             timestamp = snapshot.pop("timestamp")
             timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
             block_number = snapshot.pop("block_number")
+
+            closest_curve_pool_info = (
+                CurvePoolInfo
+                    .objects
+                    .filter(address=address)
+                    .annotate(time_diff=Abs(Extract(F('timestamp') - timestamp, 'epoch')))
+                    .order_by('time_diff')
+                    .first()
+            )
+            snapshot["info"] = closest_curve_pool_info.info
 
             pool_snapshot = CurvePoolSnapshots(
                 chain=chain,
@@ -461,7 +473,7 @@ def task__ethena__uniswap_stats():
 @shared_task
 def task__ethena__curve_metrics():
     logger.info("running task to update curve pool metrics")
-    update_curve_pool_metrics()
+    update_curve_pool_info()
     logger.info("updating curve pool metrics")
 
 

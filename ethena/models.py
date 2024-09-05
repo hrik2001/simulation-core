@@ -54,9 +54,11 @@ class UniswapPoolSnapshots(BaseModel):
     snapshot = models.JSONField(null=False)
 
 
-class CurvePoolMetrics(BaseModel):
+class CurvePoolInfo(BaseModel):
     chain = models.ForeignKey(Chain, on_delete=models.CASCADE)
-    metrics = models.JSONField(null=False)
+    timestamp = models.DateTimeField(null=False)
+    address = models.TextField(null=False)
+    info = models.JSONField(null=False)
 
 
 class CurvePoolSnapshots(BaseModel):

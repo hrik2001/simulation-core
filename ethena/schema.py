@@ -7,7 +7,7 @@ from django.db.models.functions import JSONObject
 from graphene import Int, String
 
 from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
-    CurvePoolMetrics, CurvePoolSnapshots
+    CurvePoolInfo, CurvePoolSnapshots
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
     CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType
 
@@ -120,7 +120,7 @@ class Query(graphene.ObjectType):
         return queryset
 
     def resolve_curve_pool_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
-        queryset = CurvePoolMetrics.objects.all()
+        queryset = CurvePoolInfo.objects.all()
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
         if end_time:
