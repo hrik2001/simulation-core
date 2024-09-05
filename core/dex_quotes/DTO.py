@@ -242,23 +242,42 @@ WETH_ARB_DTO = TokenDTO(
 WSTETH_OP_DTO = TokenDTO(
     address=WSTETH_OP,
     name="Wrapped liquid staked Ether 2.0 (Optimism)",
-    symbol="wstETH",
+    symbol="WSTETH",
     decimals=18,
     network=OPTIMISM_DTO,
     min_trade_size=0.5,
     max_trade_size=3500,
 )
 
+# SFRXETH_DTO = TokenDTO(
+    # address='',
+    # name="Staked Frax Ether",
+    # symbol="SFRXETH",
+    # decimals=18,
+    # network={ETHEREUM_DTO: {'address': '0xac3e018457b222d93114458476f3e3416abbe38f', 'min_trade_size':0.1, 'max_trade_size':3500}},
+    # min_trade_size=0.5,
+    # max_trade_size=3500,
+# )
+
 WSTETH_ARB_DTO = TokenDTO(
     address=WSTETH_ARB,
     name="Wrapped liquid staked Ether 2.0 (Arbitrum)",
-    symbol="wstETH",
+    symbol="WSTETH",
     decimals=18,
     network=ARIBTRUM_DTO,
     min_trade_size=0.5,
     max_trade_size=2500,
 )
 
+# TBTC_DTO = TokenDTO(
+    # address='',
+    # name="tBTC v2",
+    # symbol="TBTC",
+    # decimals=18,
+    # network={ETHEREUM_DTO:{'address': '0x18084fba666a33d37592fa2633fd49a74dd93a88', 'min_trade_size': 0.03,'max_trade_size': 3000}},
+    # min_trade_size=0.5,
+    # max_trade_size=2500,
+# )
 
 WBTC_OP_DTO = TokenDTO(
     address=WBTC_OP,

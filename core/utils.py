@@ -163,7 +163,13 @@ def price_defillama(chain_name: str, contract_address: str | list[str], timestam
     try:
         if contract_address.startswith("0x"):
             contract_address = Web3.to_checksum_address(contract_address)
-        price = data["coins"][f"{chain_name}:{contract_address}"]["price"]
+        # price = data["coins"][f"{chain_name}:{contract_address.lower}"]["price"]
+        price = None
+        for d in list(data["coins"].keys()):
+            if d.lower() == f"{chain_name}:{contract_address}".lower():
+                price = data["coins"][d]["price"]
+        if price is None:
+            raise KeyError
     except KeyError:
         raise Exception(f"{data=} {chain_name=} {contract_address=}")
     return price
