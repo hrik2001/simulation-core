@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'uniswap',
     'arcadia',
     'ethena',
+    'defimoney',
     "django_celery_beat",  # for scheduling tasks
     "graphene_django",
     "django_celery_results",
