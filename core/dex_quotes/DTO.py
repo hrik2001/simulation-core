@@ -94,11 +94,16 @@ GMX = "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a"
 PENDLE = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8"
 RDNT = "0x3082CC23568eA640225c2467653dB90e9250AaA0"
 
+# crvusd
 WETH_ETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 WSTETH_ETH = "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
 SFRXETH_ETH = "0x5e8422345238f34275888049021821e8e08caa1f"
 WBTC_ETH = "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
 TBTC_ETH = "0x18084fba666a33d37592fa2633fd49a74dd93a88"
+
+# aave
+WEETH_ETH = '0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee'
+AAVE_ETH = '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'
 
 
 STABLES = [USDC_OP, USDC_ARB, USDC_ETH, 
@@ -110,7 +115,7 @@ STABLES = [USDC_OP, USDC_ARB, USDC_ETH,
 COLLATERAL = [WETH_OP, WETH_ARB, WETH_ETH,
               WSTETH_OP, WSTETH_ARB, WSTETH_ETH,
               WBTC_OP, WBTC_ARB, WBTC_ETH, TBTC_ETH, 
-              SFRXETH_ETH, 
+              SFRXETH_ETH, AAVE_ETH, WEETH_ETH,
               OP, ARB, GMX, PENDLE, RDNT, VELO]
 ADDRESSES = STABLES + COLLATERAL
 
@@ -129,6 +134,8 @@ COINGECKO_IDS = {
     TUSD_ETH: "true-usd",
     SFRXETH_ETH: "staked-frax-ether", 
     TBTC_ETH: "tbtc", 
+    WEETH_ETH: 'wrapped-eeth',
+    AAVE_ETH: 'aave', 
 
 
     OP: "optimism",
@@ -374,6 +381,16 @@ SFRXETH_ETH_DTO = TokenDTO(
     max_trade_size=0,
 )
 
+WEETH_ETH_DTO = TokenDTO(
+    address=WEETH_ETH,
+    name="Wrapped EtherFi Ether",
+    symbol="WEETH",
+    decimals=18,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
 TBTC_ETH_DTO = TokenDTO(
     address=TBTC_ETH,
     name="tBTC v2",
@@ -415,6 +432,16 @@ WBTC_ETH_DTO = TokenDTO(
     max_trade_size=0,
 )
 
+
+AAVE_ETH_DTO = TokenDTO(
+    address=AAVE_ETH,
+    name="Aave",
+    symbol="AAVE",
+    decimals=18,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
 
 
 OP_DTO = TokenDTO(
@@ -519,9 +546,12 @@ TOKEN_DTOs = {
 
         WETH_ETH: WETH_ETH_DTO,
         WSTETH_ETH: WSTETH_ETH_DTO,
+        WEETH_ETH: WEETH_ETH_DTO,
         WBTC_ETH:WBTC_ETH_DTO,
         SFRXETH_ETH: SFRXETH_ETH_DTO, 
-        TBTC_ETH: TBTC_ETH_DTO
+        TBTC_ETH: TBTC_ETH_DTO, 
+        AAVE_ETH: AAVE_ETH_DTO
+
 
     }
 }
