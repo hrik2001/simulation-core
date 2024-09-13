@@ -42,9 +42,17 @@ ARIBTRUM_DTO = chainDTO(
     
 ) 
 
+ETHEREUM_DTO = chainDTO(
+    network="Ethereum",
+    network_id=42161
+    
+)
+
 network_mapping = {
     OPTIMISM_DTO.network_id: OPTIMISM_DTO,
-    ARIBTRUM_DTO.network_id: ARIBTRUM_DTO
+    ARIBTRUM_DTO.network_id: ARIBTRUM_DTO,
+    ETHEREUM_DTO.network_id: ETHEREUM_DTO
+
     # Add more chainDTO instances as needed
 }
 
@@ -63,7 +71,12 @@ USDT_ARB = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
 DAI_ARB= "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1" # same
 FRAX_ARB = "0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F"
 
-
+CRVUSD_ETH = "0xf939e0a03fb07f59a73314e73794be0e57ac1b4e"
+USDC_ETH = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+USDT_ETH = "0xdac17f958d2ee523a2206206994597c13d831ec7"
+USDP_ETH = "0x8e870d67f660d95d5be530380d0ec0bd388289e1"
+TUSD_ETH = "0x0000000000085d4780b73119b644ae5ecd22b376"
+PYUSD_ETH = "0x6c3ea9036406852006290770bedfcaba0e23a0e8"
 
 ## Collateral 
 WETH_OP = "0x4200000000000000000000000000000000000006"
@@ -81,30 +94,43 @@ GMX = "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a"
 PENDLE = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8"
 RDNT = "0x3082CC23568eA640225c2467653dB90e9250AaA0"
 
+WETH_ETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+WSTETH_ETH = "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
+SFRXETH_ETH = "0x5e8422345238f34275888049021821e8e08caa1f"
+WBTC_ETH = "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
+TBTC_ETH = "0x18084fba666a33d37592fa2633fd49a74dd93a88"
 
-STABLES = [USDC_OP, USDC_ARB, USDT_OP, USDT_ARB, CRVUSD_OP, CRVUSD_ARB, DAI_OP, DAI_OP, FRAX_OP, FRAX_ARB]
-COLLATERAL = [WETH_OP, WETH_ARB, WSTETH_OP, WSTETH_ARB, WBTC_OP, WBTC_ARB, OP, ARB, GMX, PENDLE, RDNT, VELO]
+
+STABLES = [USDC_OP, USDC_ARB, USDC_ETH, 
+           USDT_OP, USDT_ARB, USDT_ETH, 
+           USDP_ETH, PYUSD_ETH, TUSD_ETH,
+           CRVUSD_OP, CRVUSD_ARB, CRVUSD_ETH,
+           DAI_OP, DAI_OP, 
+           FRAX_OP, FRAX_ARB]
+COLLATERAL = [WETH_OP, WETH_ARB, WETH_ETH,
+              WSTETH_OP, WSTETH_ARB, WSTETH_ETH,
+              WBTC_OP, WBTC_ARB, WBTC_ETH, TBTC_ETH, 
+              SFRXETH_ETH, 
+              OP, ARB, GMX, PENDLE, RDNT, VELO]
 ADDRESSES = STABLES + COLLATERAL
 
 # Coingecko Helpers
 COINGECKO_IDS = {
-    USDC_OP: "usd-coin",
-    USDC_ARB: "usd-coin",
-    USDT_OP: "tether",
-    USDT_ARB: "tether",
-    CRVUSD_OP: "crvusd",
-    CRVUSD_ARB: "crvusd", 
-    DAI_OP: "dai", 
-    DAI_ARB: "dai", 
-    FRAX_OP: "frax", 
-    FRAX_ARB: "frax",
+    USDC_OP: "usd-coin", USDC_ARB: "usd-coin", USDC_ETH : "usd-coin", 
+    USDT_OP: "tether", USDT_ARB: "tether", USDT_ETH: "tether", 
+    CRVUSD_OP: "crvusd", CRVUSD_ARB: "crvusd", CRVUSD_ETH: "crvusd", 
+    DAI_OP: "dai", DAI_ARB: "dai", 
+    FRAX_OP: "frax", FRAX_ARB: "frax",
+    WETH_OP: "weth", WETH_ARB: "weth",  WETH_ETH: "weth", 
+    WSTETH_OP: "wrapped-steth", WSTETH_ARB: "wrapped-steth", WSTETH_ETH: "wrapped-steth",
+    WBTC_OP: "wrapped-bitcoin", WBTC_ARB:  "wrapped-bitcoin", WBTC_ETH:  "wrapped-bitcoin",
+    USDP_ETH: "paxos-standard", 
+    PYUSD_ETH: "paypal-usd", 
+    TUSD_ETH: "true-usd",
+    SFRXETH_ETH: "staked-frax-ether", 
+    TBTC_ETH: "tbtc", 
 
-    WETH_OP: "weth",
-    WETH_ARB: "weth", 
-    WSTETH_OP: "wrapped-steth",
-    WSTETH_ARB: "wrapped-steth",
-    WBTC_OP: "wrapped-bitcoin",
-    WBTC_ARB:  "wrapped-bitcoin",
+
     OP: "optimism",
     ARB: "arbitrum", 
     GMX: "gmx", 
@@ -138,6 +164,16 @@ CRVUSD_ARB_DTO = TokenDTO(
     max_trade_size=1_100_000,
 )  # NOTE don't add to TOKEN_DTOs
 
+CRVUSD_ETH_DTO = TokenDTO(
+    address=CRVUSD_ETH,
+    name="Curve.Fi USD Stablecoin (Ethereum)",
+    symbol="crvUSD",
+    decimals=18,
+    network=ETHEREUM_DTO, 
+    min_trade_size=0,
+    max_trade_size=0,
+)  # NOTE don't add to TOKEN_DTOs
+
 USDC_OP_DTO = TokenDTO(
     address=USDC_OP,
     name="USD Coin (Optimism)",
@@ -158,6 +194,16 @@ USDC_ARB_DTO = TokenDTO(
     max_trade_size=4_500_000,
 )
 
+USDC_ETH_DTO = TokenDTO(
+    address=USDC_ETH,
+    name="USD Coin (Ethereum)",
+    symbol="USDC",
+    decimals=6,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
 USDT_OP_DTO = TokenDTO(
     address=USDT_OP,
     name="Tether USD (Optimism)" ,
@@ -176,6 +222,45 @@ USDT_ARB_DTO = TokenDTO(
     network=ARIBTRUM_DTO,
     min_trade_size=1e2,
     max_trade_size=3_500_000,
+)
+
+USDT_ETH_DTO = TokenDTO(
+    address=USDT_ETH,
+    name="Tether USD (Ethereum)",
+    symbol="USDT",
+    decimals=6,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
+TUSD_ETH_DTO = TokenDTO(
+    address=TUSD_ETH,
+    name="True USD (Ethereum)",
+    symbol="TUSD",
+    decimals=18,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
+PYUSD_ETH_DTO = TokenDTO(
+    address=PYUSD_ETH,
+    name="True USD (Ethereum)",
+    symbol="PYUSD",
+    decimals=6,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
+USDP_ETH_DTO = TokenDTO(
+    address=USDP_ETH,
+    name="Pax Dollar",
+    symbol="USDP",
+    decimals=18,
+    min_trade_size=0,
+    max_trade_size=0,
 )
 
 DAI_OP_DTO = TokenDTO(
@@ -239,6 +324,16 @@ WETH_ARB_DTO = TokenDTO(
     max_trade_size=40000,
 )
 
+WETH_ETH_DTO = TokenDTO(
+    address=WETH_ETH,
+    name="Wrapped Ether (Ethereum)",
+    symbol="WETH",
+    decimals=18,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
 WSTETH_OP_DTO = TokenDTO(
     address=WSTETH_OP,
     name="Wrapped liquid staked Ether 2.0 (Optimism)",
@@ -248,16 +343,6 @@ WSTETH_OP_DTO = TokenDTO(
     min_trade_size=0.5,
     max_trade_size=3500,
 )
-
-# SFRXETH_DTO = TokenDTO(
-    # address='',
-    # name="Staked Frax Ether",
-    # symbol="SFRXETH",
-    # decimals=18,
-    # network={ETHEREUM_DTO: {'address': '0xac3e018457b222d93114458476f3e3416abbe38f', 'min_trade_size':0.1, 'max_trade_size':3500}},
-    # min_trade_size=0.5,
-    # max_trade_size=3500,
-# )
 
 WSTETH_ARB_DTO = TokenDTO(
     address=WSTETH_ARB,
@@ -269,15 +354,35 @@ WSTETH_ARB_DTO = TokenDTO(
     max_trade_size=2500,
 )
 
-# TBTC_DTO = TokenDTO(
-    # address='',
-    # name="tBTC v2",
-    # symbol="TBTC",
-    # decimals=18,
-    # network={ETHEREUM_DTO:{'address': '0x18084fba666a33d37592fa2633fd49a74dd93a88', 'min_trade_size': 0.03,'max_trade_size': 3000}},
-    # min_trade_size=0.5,
-    # max_trade_size=2500,
-# )
+WSTETH_ETH_DTO = TokenDTO(
+    address=WSTETH_ETH,
+    name="Wrapped liquid staked Ether 2.0 (Ethereum)",
+    symbol="WSTETH",
+    decimals=18,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
+SFRXETH_ETH_DTO = TokenDTO(
+    address=SFRXETH_ETH,
+    name="Staked Frax Ether",
+    symbol="SFRXETH",
+    decimals=18,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
+TBTC_ETH_DTO = TokenDTO(
+    address=TBTC_ETH,
+    name="tBTC v2",
+    symbol="TBTC",
+    decimals=18,
+    network=ETHEREUM_DTO,
+    min_trade_size=0.5,
+    max_trade_size=2500,
+)
 
 WBTC_OP_DTO = TokenDTO(
     address=WBTC_OP,
@@ -298,6 +403,19 @@ WBTC_ARB_DTO = TokenDTO(
     min_trade_size=0.03,
     max_trade_size=250,
 )
+
+
+WBTC_ETH_DTO = TokenDTO(
+    address=WBTC_ETH,
+    name="Wrapped BTC (Ethereum)",
+    symbol="WBTC",
+    decimals=8,
+    network=ETHEREUM_DTO,
+    min_trade_size=0,
+    max_trade_size=0,
+)
+
+
 
 OP_DTO = TokenDTO(
     address=OP,
@@ -373,10 +491,8 @@ TOKEN_DTOs = {
         WBTC_OP: WBTC_OP_DTO, 
         OP: OP_DTO, 
         VELO: VELO_DTO
-
-
-
                 },
+
     "Arbitrum":{
         CRVUSD_ARB: CRVUSD_ARB_DTO,
         USDC_ARB: USDC_ARB_DTO,
@@ -391,6 +507,22 @@ TOKEN_DTOs = {
         GMX: GMX_DTO, 
         PENDLE: PENDLE_DTO, 
         RDNT:RDNT_DTO
+    },
+
+    "Ethereum": {
+        CRVUSD_ETH: CRVUSD_ETH_DTO,
+        USDC_ETH: USDC_ETH_DTO,
+        USDT_ETH: USDT_ETH_DTO,
+        PYUSD_ETH: PYUSD_ETH_DTO, 
+        TUSD_ETH: TUSD_ETH_DTO, 
+        USDP_ETH: USDP_ETH_DTO, 
+
+        WETH_ETH: WETH_ETH_DTO,
+        WSTETH_ETH: WSTETH_ETH_DTO,
+        WBTC_ETH:WBTC_ETH_DTO,
+        SFRXETH_ETH: SFRXETH_ETH_DTO, 
+        TBTC_ETH: TBTC_ETH_DTO
+
     }
 }
 
