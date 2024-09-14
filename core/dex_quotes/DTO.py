@@ -266,6 +266,7 @@ USDP_ETH_DTO = TokenDTO(
     name="Pax Dollar",
     symbol="USDP",
     decimals=18,
+    network=ETHEREUM_DTO,
     min_trade_size=0,
     max_trade_size=0,
 )
