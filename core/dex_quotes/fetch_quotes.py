@@ -1,7 +1,7 @@
 import time
 import itertools
 import numpy as np
-
+from .utils import compute_sampling_points
 from .quote_requests import kyperswap, paraswap
 
 from .price_fetcher import get_current_price
@@ -9,11 +9,11 @@ from .DTO import TOKEN_DTOs
 from core.models import DexQuote
 
 def paraswap_job(
-        start_amount = 100,
-        end_amount = 50_000_100,
+        # start_amount = 100,
+        # end_amount = 50_000_100,
         num_samples = 30,
     ):
-    amounts = np.geomspace(start_amount, end_amount, num=num_samples).astype(int).tolist()
+    # amounts = np.geomspace(start_amount, end_amount, num=num_samples).astype(int).tolist()
 
     stopping_criteria = 0 
 
@@ -30,6 +30,8 @@ def paraswap_job(
         for permutation in asset_permutations:
             sell_token = permutation[0]
             buy_token = permutation[1]
+
+            amounts = compute_sampling_points(sell_token, buy_token, num_samples)
 
             # Fetch sell token price 
             price = get_current_price(sell_token.address, sell_token.network.network.lower())
@@ -84,11 +86,11 @@ def paraswap_job(
                     time.sleep(1.1)  # Adjust the sleep duration if necessary
 
 def kyperswap_job(
-        start_amount = 100,
-        end_amount = 50_000_100,
+        # start_amount = 100,
+        # end_amount = 50_000_100,
         num_samples = 30,
     ):
-    amounts = np.geomspace(start_amount, end_amount, num=num_samples).astype(int).tolist()
+    # amounts = np.geomspace(start_amount, end_amount, num=num_samples).astype(int).tolist()
 
     stopping_criteria = 0 
 
@@ -105,6 +107,8 @@ def kyperswap_job(
         for permutation in asset_permutations:
             sell_token = permutation[0]
             buy_token = permutation[1]
+
+            amounts = compute_sampling_points(sell_token, buy_token, num_samples)
 
             # Fetch sell token price 
             price = get_current_price(sell_token.address, sell_token.network.network.lower())
