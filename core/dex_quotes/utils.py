@@ -63,5 +63,10 @@ def compute_sampling_points(sell_token: TokenDTO, buy_token: TokenDTO, num_sampl
     end_amount = min(sell_token_tvl, buy_token_tvl) * 0.75 # 75% of the smaller token's TVL
     
     amounts = np.geomspace(start_amount, end_amount, num=num_samples).astype(int).tolist()
-    
-    return amounts
+
+    # addition of noise 
+    noise = 1 + np.random.uniform(-0.5, 0.5, num_samples)
+    amounts = (amounts * noise).astype(int).tolist()
+
+    # sorted amounts in increasing order to satisfy early stopping
+    return sorted(amounts)
