@@ -1,21 +1,23 @@
-import json
 import logging
 from datetime import datetime, timezone, timedelta
 from string import Template
 
+import dateutil.parser
 import requests
 from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import ExpressionWrapper, F
+from django.db.models import F
 from django.db.models.functions import Abs, Extract
 from moralis import evm_api
 from web3 import Web3, HTTPProvider
 
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
-from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
-    CurvePoolInfo, CurvePoolSnapshots
-from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY
+from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
+    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics
+from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY
+
+from dune_client.client import DuneClient
 
 RAY = 10 ** 27
 SECONDS_IN_YEAR = 365 * 24 * 60 * 60
@@ -77,6 +79,15 @@ SDAI_ABI = [supply_function, assets_function]
 
 DAI_ADDRESS = Web3.to_checksum_address("0x6b175474e89094c44da98b954eedeac495271d0f")
 DAI_ABI = [supply_function]
+
+BUIDL_ADDRESS = Web3.to_checksum_address("0x603bb6909be14f83282e03632280d91be7fb83b2")  # address of implementation contract of proxy BUIDL
+BUIDL_ABI = [supply_function]
+
+USDM_ADDRESS = Web3.to_checksum_address("0x59d9356e565ab3a36dd77763fc0d87feaf85508c")
+USDM_ABI = [supply_function]
+
+SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address("0x5419d3fa60c56104175684411a496879c4df21b5") # address of implementation contract of proxy Superstate USTB
+SUPERSTATE_USTB_ABI = [supply_function]
 
 USDT_ADDRESS = Web3.to_checksum_address("0xdac17f958d2ee523a2206206994597c13d831ec7")
 USDT_ABI = [
@@ -171,6 +182,9 @@ def update_chain_metrics():
     sdai_contract = web3.eth.contract(address=SDAI_ADDRESS, abi=SDAI_ABI)
     pot_contract = web3.eth.contract(address=POT_ADDRESS, abi=POT_ABI)
     usdt_contract = web3.eth.contract(address=USDT_ADDRESS, abi=USDT_ABI)
+    usdm_contract = web3.eth.contract(address=USDM_ADDRESS, abi=USDM_ABI)
+    superstate_ustb_contract = web3.eth.contract(address=SUPERSTATE_USTB_ADDRESS, abi=SUPERSTATE_USTB_ABI)
+    buidl_contract = web3.eth.contract(address=BUIDL_ADDRESS, abi=BUIDL_ABI)
 
     latest_block_number = web3.eth.get_block("latest")["number"]
     try:
@@ -193,12 +207,24 @@ def update_chain_metrics():
             sdai_supply = sdai_contract.functions.totalSupply().call(block_identifier=block_number)
             sdai_staked = sdai_contract.functions.totalAssets().call(block_identifier=block_number)
             usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(block_identifier=block_number)
+            usdm_supply = usdm_contract.functions.totalSupply().call(block_identifier=block_number)
+            buidl_supply = buidl_contract.functions.totalSupply().call(block_identifier=block_number)
+            superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(block_identifier=block_number)
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
             sdai_price = price_defillama("ethereum", SDAI_ADDRESS, timestamp)
             dai_price = price_defillama("ethereum", DAI_ADDRESS, timestamp)
             usdt_price = price_defillama("ethereum", USDT_ADDRESS, timestamp)
+            usdm_price = price_defillama("ethereum", USDM_ADDRESS, timestamp)
+            try:
+                superstate_ustb_price = price_defillama("ethereum", SUPERSTATE_USTB_ADDRESS, timestamp)
+            except Exception:
+                superstate_ustb_price = "0"
+            try:
+                buidl_price = price_defillama("ethereum", BUIDL_ADDRESS, timestamp)
+            except Exception:
+                buidl_price = "0"
 
             dsr = pot_contract.functions.dsr().call(block_identifier=block_number)
             dsr_rate = 100 * ((dsr / RAY) ** SECONDS_IN_YEAR) - 100
@@ -220,7 +246,13 @@ def update_chain_metrics():
                 total_dai_staked=str(sdai_staked),
                 usdt_balance=str(usdt_balance),
                 dai_price=str(dai_price),
-                usdt_price=str(usdt_price)
+                usdt_price=str(usdt_price),
+                total_usdm_supply=str(usdm_supply),
+                total_superstate_ustb_supply=str(superstate_ustb_supply),
+                total_buidl_supply=str(buidl_supply),
+                usdm_price=str(usdm_price),
+                superstate_ustb_price=str(superstate_ustb_price),
+                buidl_price=str(buidl_price),
             )
             chain_metrics.save()
         except ValueError:
@@ -432,6 +464,15 @@ def update_curve_pool_snapshots():
             pool_snapshot.save()
 
 
+def query_dune(query_id):
+    dune = DuneClient(
+        api_key=DUNE_KEY,
+        base_url="https://api.dune.com",
+        request_timeout=5000
+    )
+    return dune.get_latest_result(query_id, batch_size=500)
+
+
 @shared_task
 def task__ethena__metric_snapshot():
     logger.info("running task to update ethena metrics")
@@ -482,3 +523,17 @@ def task__ethena__curve_pool_snapshots():
     logger.info("running task to update curve pool snapshots")
     update_curve_pool_snapshots()
     logger.info("updating curve pool snapshots")
+
+
+@shared_task
+def task__ethena__staking_metrics():
+    logger.info("running task to update staking metrics")
+
+    query_result = query_dune(4069937)
+    objects = []
+    for row in query_result.result.rows:
+        _row = {**row, "day": dateutil.parser.parse(row["day"])}
+        objects.append(StakingMetrics(**_row))
+    StakingMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+    logger.info("updating staking metrics")

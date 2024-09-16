@@ -28,6 +28,14 @@ class ChainMetrics(BaseModel):
     usdt_price = models.TextField(null=False, default="0")
     dai_price = models.TextField(null=False, default="0")
 
+    total_usdm_supply = models.TextField(null=False, default="0")
+    total_superstate_ustb_supply = models.TextField(null=False, default="0")
+    total_buidl_supply = models.TextField(null=False, default="0")
+
+    usdm_price = models.TextField(null=False, default="0")
+    superstate_ustb_price = models.TextField(null=False, default="0")
+    buidl_price = models.TextField(null=False, default="0")
+
 
 
 class CollateralMetrics(BaseModel):
@@ -67,3 +75,13 @@ class CurvePoolSnapshots(BaseModel):
     timestamp = models.DateTimeField(null=False)
     address = models.TextField(null=False)
     snapshot = models.JSONField(null=False)
+
+
+class StakingMetrics(BaseModel):
+    day = models.DateTimeField(unique=True, null=False)
+    usde_mint = models.TextField(null=False)
+    usde_burn = models.TextField(null=False)
+    supply_usde = models.TextField(null=False)
+    staked_usde = models.TextField(null=False)
+    unstake_usde = models.TextField(null=False)
+    unstake_susde = models.TextField(null=False)

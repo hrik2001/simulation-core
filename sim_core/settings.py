@@ -227,6 +227,7 @@ CACHES = {
 # external API keys
 MORALIS_KEY = os.environ.get("MORALIS_KEY")
 SUBGRAPH_KEY = os.environ.get("SUBGRAPH_KEY")
+DUNE_KEY = os.environ.get("DUNE_KEY")
 
 if os.getenv("ENVIRONMENT", "").lower() == "production":
     if os.getenv("SENTRY_DSN") is not None:
