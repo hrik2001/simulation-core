@@ -2,14 +2,15 @@ from datetime import datetime
 
 import graphene
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Max, F
+from django.db.models import F
 from django.db.models.functions import JSONObject
 from graphene import Int, String
 
-from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
-    CurvePoolInfo, CurvePoolSnapshots
+from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, \
+    UniswapPoolSnapshots, \
+    CurvePoolInfo, CurvePoolSnapshots, StakingMetrics
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
-    CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType
+    CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType
 
 
 def _aggregate_snapshots(model, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -61,6 +62,8 @@ class Query(graphene.ObjectType):
                                        sort_by=String())
     curve_pool_snapshots = graphene.List(AggregatedSnapshotsType, start_time=Int(), end_time=Int(), limit=Int(),
                                          sort_by=String())
+    staking_metrics = graphene.List(StakingMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
+                                    sort_by=String())
 
 
     def resolve_chain_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -138,5 +141,19 @@ class Query(graphene.ObjectType):
 
     def resolve_uniswap_pool_snapshots(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
         return _aggregate_snapshots(UniswapPoolSnapshots, start_time, end_time, limit, sort_by)
+
+    def resolve_staking_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        queryset = StakingMetrics.objects.all()
+        if start_time:
+            queryset = queryset.filter(day__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(day__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('day')
+        if limit:
+            queryset = queryset[:limit]
+        return queryset
 
 schema = graphene.Schema(query=Query)

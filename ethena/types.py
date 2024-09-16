@@ -1,7 +1,8 @@
-from graphene import ObjectType, JSONString, Int, String, List
+from graphene import ObjectType, JSONString, String, List
 from graphene_django import DjangoObjectType
 from .models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
-    CurvePoolInfo
+    CurvePoolInfo, StakingMetrics
+
 
 class SnapshotType(ObjectType):
     snapshot = JSONString()
@@ -34,3 +35,7 @@ class UniswapMetricsType(DjangoObjectType):
 class CurvePoolMetricsType(DjangoObjectType):
     class Meta:
         model = CurvePoolInfo
+
+class StakingMetricsType(DjangoObjectType):
+    class Meta:
+        model = StakingMetrics
