@@ -528,12 +528,10 @@ def task__ethena__curve_pool_snapshots():
 @shared_task
 def task__ethena__staking_metrics():
     logger.info("running task to update staking metrics")
-
     query_result = query_dune(4069937)
     objects = []
     for row in query_result.result.rows:
         _row = {**row, "day": dateutil.parser.parse(row["day"])}
         objects.append(StakingMetrics(**_row))
     StakingMetrics.objects.bulk_create(objects, ignore_conflicts=True)
-
     logger.info("updating staking metrics")
