@@ -104,6 +104,7 @@ TBTC_ETH = "0x18084fba666a33d37592fa2633fd49a74dd93a88"
 # aave
 WEETH_ETH = '0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee'
 AAVE_ETH = '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'
+CBBTC_ETH = '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf'
 
 
 STABLES = [USDC_OP, USDC_ARB, USDC_ETH, 
@@ -115,7 +116,7 @@ STABLES = [USDC_OP, USDC_ARB, USDC_ETH,
 COLLATERAL = [WETH_OP, WETH_ARB, WETH_ETH,
               WSTETH_OP, WSTETH_ARB, WSTETH_ETH,
               WBTC_OP, WBTC_ARB, WBTC_ETH, TBTC_ETH, 
-              SFRXETH_ETH, AAVE_ETH, WEETH_ETH,
+              SFRXETH_ETH, AAVE_ETH, WEETH_ETH, CBBTC_ETH,
               OP, ARB, GMX, PENDLE, RDNT, VELO]
 ADDRESSES = STABLES + COLLATERAL
 
@@ -136,6 +137,7 @@ COINGECKO_IDS = {
     TBTC_ETH: "tbtc", 
     WEETH_ETH: 'wrapped-eeth',
     AAVE_ETH: 'aave', 
+    CBBTC_ETH: 'coinbase-wrapped-btc',
 
 
     OP: "optimism",
@@ -402,6 +404,17 @@ TBTC_ETH_DTO = TokenDTO(
     max_trade_size=2500,
 )
 
+CBBTC_ETH_DTO = TokenDTO(
+    address=CBBTC_ETH,
+    name="Coinbase BTC",
+    symbol="cbBTC",
+    decimals=8,
+    network=ETHEREUM_DTO,
+    min_trade_size=0.5,
+    max_trade_size=2500,
+
+)
+
 WBTC_OP_DTO = TokenDTO(
     address=WBTC_OP,
     name="Wrapped BTC (Optimism)",
@@ -551,7 +564,8 @@ TOKEN_DTOs = {
         WBTC_ETH:WBTC_ETH_DTO,
         SFRXETH_ETH: SFRXETH_ETH_DTO, 
         TBTC_ETH: TBTC_ETH_DTO, 
-        AAVE_ETH: AAVE_ETH_DTO
+        AAVE_ETH: AAVE_ETH_DTO,
+        CBBTC_ETH: CBBTC_ETH_DTO
 
 
     }
