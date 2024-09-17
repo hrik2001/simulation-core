@@ -8,6 +8,7 @@ from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F
 from django.db.models.functions import Abs, Extract
+from dune_client.client import DuneClient
 from moralis import evm_api
 from web3 import Web3, HTTPProvider
 
@@ -16,8 +17,6 @@ from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY
-
-from dune_client.client import DuneClient
 
 RAY = 10 ** 27
 SECONDS_IN_YEAR = 365 * 24 * 60 * 60
@@ -81,13 +80,59 @@ DAI_ADDRESS = Web3.to_checksum_address("0x6b175474e89094c44da98b954eedeac495271d
 DAI_ABI = [supply_function]
 
 BUIDL_ADDRESS = Web3.to_checksum_address("0x603bb6909be14f83282e03632280d91be7fb83b2")  # address of implementation contract of proxy BUIDL
-BUIDL_ABI = [supply_function]
+BUIDL_ABI = [
+    {
+        "inputs": [],
+        "name": "totalIssued",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    supply_function
+]
 
 USDM_ADDRESS = Web3.to_checksum_address("0x59d9356e565ab3a36dd77763fc0d87feaf85508c")
-USDM_ABI = [supply_function]
+USDM_ABI = [
+    {
+        "inputs": [],
+        "name": "totalShares",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    supply_function
+]
 
-SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address("0x5419d3fa60c56104175684411a496879c4df21b5") # address of implementation contract of proxy Superstate USTB
-SUPERSTATE_USTB_ABI = [supply_function]
+SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address("0x5419d3fa60c56104175684411a496879c4df21b5")  # address of implementation contract of proxy Superstate USTB
+SUPERSTATE_USTB_ABI = [
+    {
+        "inputs": [],
+        "name": "entityMaxBalance",
+        "outputs": [
+            {
+                "internalType":
+                 "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    supply_function
+]
 
 USDT_ADDRESS = Web3.to_checksum_address("0xdac17f958d2ee523a2206206994597c13d831ec7")
 USDT_ABI = [
@@ -207,9 +252,12 @@ def update_chain_metrics():
             sdai_supply = sdai_contract.functions.totalSupply().call(block_identifier=block_number)
             sdai_staked = sdai_contract.functions.totalAssets().call(block_identifier=block_number)
             usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(block_identifier=block_number)
-            usdm_supply = usdm_contract.functions.totalSupply().call(block_identifier=block_number)
             buidl_supply = buidl_contract.functions.totalSupply().call(block_identifier=block_number)
+            buidl_issued = buidl_contract.functions.totalIssued().call(block_identifier=block_number)
+            usdm_supply = usdm_contract.functions.totalSupply().call(block_identifier=block_number)
+            usdm_shares = usdm_contract.functions.totalShares().call(block_identifier=block_number)
             superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(block_identifier=block_number)
+            superstate_ustb_balance = superstate_ustb_contract.functions.entityMaxBalance().call(block_identifier=block_number)
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
@@ -253,6 +301,9 @@ def update_chain_metrics():
                 usdm_price=str(usdm_price),
                 superstate_ustb_price=str(superstate_ustb_price),
                 buidl_price=str(buidl_price),
+                total_buidl_issued=str(buidl_issued),
+                total_usdm_shares=str(usdm_shares),
+                total_superstate_ustb_balance=str(superstate_ustb_balance),
             )
             chain_metrics.save()
         except ValueError:
@@ -403,7 +454,8 @@ def update_uniswap_pool_snapshots():
         response = requests.post(uniswap_url, json={"query": query})
         data = response.json()["data"]["poolDayDatas"][0]
         pools[poolAddress] = data
-        uniswap_snapshot = UniswapPoolSnapshots(address=poolAddress, snapshot=data, timestamp=datetime.now(tz=timezone.utc))
+        uniswap_snapshot = UniswapPoolSnapshots(address=poolAddress, snapshot=data,
+                                                timestamp=datetime.now(tz=timezone.utc))
         uniswap_snapshot.save()
 
 
@@ -446,11 +498,11 @@ def update_curve_pool_snapshots():
 
             closest_curve_pool_info = (
                 CurvePoolInfo
-                    .objects
-                    .filter(address=address)
-                    .annotate(time_diff=Abs(Extract(F('timestamp') - timestamp, 'epoch')))
-                    .order_by('time_diff')
-                    .first()
+                .objects
+                .filter(address=address)
+                .annotate(time_diff=Abs(Extract(F('timestamp') - timestamp, 'epoch')))
+                .order_by('time_diff')
+                .first()
             )
             snapshot["info"] = closest_curve_pool_info.info
 

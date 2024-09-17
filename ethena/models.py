@@ -36,6 +36,10 @@ class ChainMetrics(BaseModel):
     superstate_ustb_price = models.TextField(null=False, default="0")
     buidl_price = models.TextField(null=False, default="0")
 
+    total_buidl_issued = models.TextField(null=False, default="0")
+    total_usdm_shares = models.TextField(null=False, default="0")
+    total_superstate_ustb_balance = models.TextField(null=False, default="0")
+
 
 
 class CollateralMetrics(BaseModel):
