@@ -151,8 +151,8 @@ UNISWAP_QUERY = Template("""\
 }
 """)
 
-ETHENA_COLLATERAL_API = "https://app.ethena.fi/api/positions/current/collateral"
-ETHENA_RESERVE_FUND_API = "https://app.ethena.fi/api/solvency/reserve-fund"
+ETHENA_COLLATERAL_API = "https://ethena.fi/api/positions/current/collateral"
+ETHENA_RESERVE_FUND_API = "https://ethena.fi/api/solvency/reserve-fund"
 CURVE_BASE_URL = "https://prices.curve.fi/v1"
 
 RESERVE_FUND_ADDRESS = "0x2b5ab59163a6e93b4486f6055d33ca4a115dd4d5"
