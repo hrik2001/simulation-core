@@ -44,7 +44,7 @@ ARIBTRUM_DTO = chainDTO(
 
 ETHEREUM_DTO = chainDTO(
     network="Ethereum",
-    network_id=42161
+    network_id=1
     
 )
 
