@@ -89,3 +89,12 @@ class StakingMetrics(BaseModel):
     staked_usde = models.TextField(null=False)
     unstake_usde = models.TextField(null=False)
     unstake_susde = models.TextField(null=False)
+
+
+class ExitQueueMetrics(BaseModel):
+    withdraw_day = models.DateTimeField(null=False)
+    unlock_day = models.DateTimeField(unique=True, null=False)
+    usde = models.TextField(null=False)
+    susde = models.TextField(null=False)
+    total_usde = models.TextField(null=False)
+    total_susde = models.TextField(null=False)

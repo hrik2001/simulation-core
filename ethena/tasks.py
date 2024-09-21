@@ -15,7 +15,7 @@ from web3 import Web3, HTTPProvider
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
-    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics
+    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY
 
 RAY = 10 ** 27
@@ -587,3 +587,22 @@ def task__ethena__staking_metrics():
         objects.append(StakingMetrics(**_row))
     StakingMetrics.objects.bulk_create(objects, ignore_conflicts=True)
     logger.info("updating staking metrics")
+
+
+@shared_task
+def task__ethena__exit_queue_metrics():
+    logger.info("running task to update exit queue metrics")
+    query_result = query_dune(4026879)
+    objects = []
+    for row in query_result.result.rows:
+        _row = {
+            "withdraw_day": dateutil.parser.parse(row["withdraw_day"]),
+            "unlock_day": dateutil.parser.parse(row["unlock_day"]),
+            "usde": row["USDe"],
+            "susde": row["sUSDe"],
+            "total_usde": row["total_USDe"],
+            "total_susde": row["total_sUSDe"],
+        }
+        objects.append(ExitQueueMetrics(**_row))
+    ExitQueueMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+    logger.info("updating exit queue metrics")
