@@ -4,7 +4,7 @@ from .models import DexQuote
 
 class DexQuoteListView(ListView):
     model = DexQuote
-    MAX_ROWS = 34560
+    MAX_ROWS = 10000
 
     def get_queryset(self):
         queryset = super().get_queryset()
