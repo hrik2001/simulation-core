@@ -255,7 +255,7 @@ TUSD_ETH_DTO = TokenDTO(
 
 PYUSD_ETH_DTO = TokenDTO(
     address=PYUSD_ETH,
-    name="True USD (Ethereum)",
+    name="PayPal USD (Ethereum)",
     symbol="PYUSD",
     decimals=6,
     network=ETHEREUM_DTO,
