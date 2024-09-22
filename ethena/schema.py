@@ -10,7 +10,7 @@ from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, R
     UniswapPoolSnapshots, \
     CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
-    CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType
+    CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType, ExitQueueMetricsType
 
 
 def _aggregate_snapshots(model, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -64,7 +64,7 @@ class Query(graphene.ObjectType):
                                          sort_by=String())
     staking_metrics = graphene.List(StakingMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                     sort_by=String())
-    exit_queue_metrics = graphene.List(ExitQueueMetrics, start_time=Int(), end_time=Int(), limit=Int(),
+    exit_queue_metrics = graphene.List(ExitQueueMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                        sort_by=String())
 
 
