@@ -77,5 +77,12 @@ class DexQuote(BaseModel):
     price_impact = models.FloatField()
     timestamp = models.IntegerField()
 
+    class Meta(BaseModel.Meta):
+        indexes = [
+            models.Index(fields=['src', 'dst'], name='src_dst_idx'),
+            models.Index(fields=['src'], name='src_idx'),
+            models.Index(fields=['dst'], name='dst_idx'),
+        ]
+
     def __str__(self):
         return f"{self.dex_aggregator} quote on network {self.network}"
