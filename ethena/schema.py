@@ -8,7 +8,7 @@ from graphene import Int, String
 
 from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, \
-    CurvePoolInfo, CurvePoolSnapshots, StakingMetrics
+    CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
     CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType
 
@@ -64,6 +64,8 @@ class Query(graphene.ObjectType):
                                          sort_by=String())
     staking_metrics = graphene.List(StakingMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                     sort_by=String())
+    exit_queue_metrics = graphene.List(ExitQueueMetrics, start_time=Int(), end_time=Int(), limit=Int(),
+                                       sort_by=String())
 
 
     def resolve_chain_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -152,6 +154,20 @@ class Query(graphene.ObjectType):
             queryset = queryset.order_by(sort_by)
         else:
             queryset = queryset.order_by('day')
+        if limit:
+            queryset = queryset[:limit]
+        return queryset
+
+    def resolve_exit_queue_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        queryset = ExitQueueMetrics.objects.all()
+        if start_time:
+            queryset = queryset.filter(unlock_day__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(unlock_day__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('unlock_day')
         if limit:
             queryset = queryset[:limit]
         return queryset
