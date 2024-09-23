@@ -149,6 +149,63 @@ COINGECKO_IDS = {
 STABLE_CG_IDS = [COINGECKO_IDS[coin] for coin in STABLES]
 COINGECKO_IDS_INV = {v: k for k, v in COINGECKO_IDS.items()}
 
+
+ADDRESS_TO_NAME_PER_NETWORK = {
+
+    "ethereum": {
+        USDC_ETH : "usd-coin",
+        USDT_ETH: "tether", 
+        CRVUSD_ETH: "crvusd",
+        WETH_ETH: "weth",
+        WSTETH_ETH: "wrapped-steth",
+        WBTC_ETH:  "wrapped-bitcoin",
+        USDP_ETH: "paxos-standard", 
+        PYUSD_ETH: "paypal-usd", 
+        TUSD_ETH: "true-usd",
+        SFRXETH_ETH: "staked-frax-ether", 
+        TBTC_ETH: "tbtc", 
+        WEETH_ETH: 'wrapped-eeth',
+        AAVE_ETH: 'aave', 
+        CBBTC_ETH: 'coinbase-wrapped-btc'
+    },
+
+    "optimism": {
+        USDC_OP: "usd-coin",
+        USDT_OP: "tether",
+        CRVUSD_OP: "crvusd",
+        DAI_OP: "dai",
+        FRAX_OP: "frax",
+        WETH_OP: "weth",
+        WSTETH_OP: "wrapped-steth",
+        WBTC_OP: "wrapped-bitcoin"
+    },
+
+    "arbitrum": {
+        USDC_ARB: "usd-coin",
+        USDT_ARB: "tether",
+        CRVUSD_ARB: "crvusd",
+        DAI_ARB: "dai",
+        FRAX_ARB: "frax",
+        WETH_ARB: "weth",
+        WSTETH_ARB: "wrapped-steth",
+        WBTC_ARB:  "wrapped-bitcoin"
+    }
+    
+    #OP: "optimism",
+    #ARB: "arbitrum", 
+    #GMX: "gmx", 
+    #PENDLE: "pendle", 
+    #RDNT: "radiant-capital",
+    #VELO: 'velodrome-finance'
+}
+
+NAME_TO_ADDRESS_PER_NETWORK = {}
+for network, network_assets in ADDRESS_TO_NAME_PER_NETWORK.items():
+    for k, v in network_assets.items():
+        if network not in NAME_TO_ADDRESS_PER_NETWORK:
+            NAME_TO_ADDRESS_PER_NETWORK[network] = {}
+        NAME_TO_ADDRESS_PER_NETWORK[network][v] = k
+
 # TODO script to update these with new tokens
 
 # DTOs
@@ -565,8 +622,6 @@ TOKEN_DTOs = {
         TBTC_ETH: TBTC_ETH_DTO, 
         AAVE_ETH: AAVE_ETH_DTO,
         CBBTC_ETH: CBBTC_ETH_DTO
-
-
     }
 }
 
