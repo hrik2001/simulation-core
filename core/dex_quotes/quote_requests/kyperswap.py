@@ -61,7 +61,7 @@ def get_quote(
             dest_amount = float(quote_raw['data']['routeSummary']['amountOut'])
             src_usd = float(quote_raw['data']['routeSummary']['amountInUsd']) 
             dest_usd = float(quote_raw['data']['routeSummary']['amountOutUsd']) 
-            aggregator = str('kyberswap')
+            aggregator = str('kyperswap')
 
             # format row 
             row = {

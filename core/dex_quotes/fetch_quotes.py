@@ -8,9 +8,10 @@ from .price_fetcher import get_current_price
 from .DTO import TOKEN_DTOs
 from core.models import DexQuote
 
-def paraswap_job(
+def kyperswap_job(
         # start_amount = 100,
         # end_amount = 50_000_100,
+        network = None,
         num_samples = 30,
     ):
     # amounts = np.geomspace(start_amount, end_amount, num=num_samples).astype(int).tolist()
@@ -20,8 +21,12 @@ def paraswap_job(
 
 
     # Iterate over networks
-    for network in TOKEN_DTOs.keys():
+    # for network in TOKEN_DTOs.keys():
+    if network is not None:
         print(f'{network}')
+        # if network != "Ethereum":
+            # print("OOPS")
+            # continue
 
         # Generate asset permutations for a given network 
         asset_permutations = list(itertools.permutations(TOKEN_DTOs[network].values(), 2))
@@ -57,6 +62,7 @@ def paraswap_job(
 
 
 
+                    print(f"CHAIN::{sell_token.network.network_id}")
                     new_row2 = kyperswap.get_quote(
                         src_token=sell_token.address, 
                         src_decimals=sell_token.decimals, 
@@ -66,7 +72,6 @@ def paraswap_job(
                         market_price=price,
                         network_id=sell_token.network.network_id
                     )
-                    print(new_row2)
 
 
 
@@ -85,9 +90,10 @@ def paraswap_job(
                     # Sleep for a short duration to avoid hitting the rate limit of the API
                     time.sleep(1.1)  # Adjust the sleep duration if necessary
 
-def kyperswap_job(
+def paraswap_job(
         # start_amount = 100,
         # end_amount = 50_000_100,
+        network = None,
         num_samples = 30,
     ):
     # amounts = np.geomspace(start_amount, end_amount, num=num_samples).astype(int).tolist()
@@ -97,7 +103,8 @@ def kyperswap_job(
 
 
     # Iterate over networks
-    for network in TOKEN_DTOs.keys():
+    # for network in TOKEN_DTOs.keys():
+    if network is not None:
         print(f'{network}')
 
         # Generate asset permutations for a given network 
