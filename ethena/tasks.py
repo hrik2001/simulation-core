@@ -312,7 +312,9 @@ def update_chain_metrics():
 
 
 def update_collateral_metrics():
-    collateral = requests.get(ETHENA_COLLATERAL_API).json()
+    response = requests.get(ETHENA_COLLATERAL_API)
+    response.raise_for_status()
+    collateral = response.json()
     collateral_metrics = CollateralMetrics(collateral=collateral)
     collateral_metrics.save()
 
@@ -324,7 +326,9 @@ def update_reserve_fund_metrics():
     except ObjectDoesNotExist:
         last_reserve_fund_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
 
-    reserve_fund = requests.get(ETHENA_RESERVE_FUND_API).json()
+    response = requests.get(ETHENA_RESERVE_FUND_API)
+    response.raise_for_status()
+    reserve_fund = response.json()
     for datum in reserve_fund["queryIndex"][0]["yields"]:
         try:
             if datum["timestamp"].endswith("Z"):
