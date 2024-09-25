@@ -57,9 +57,10 @@ class DexQuoteListView(ListView):
 
     def render_to_response(self, context, **response_kwargs):
         # Get the paginated queryset
-        queryset = context['object_list']
+        page_obj = context['object_list']
 
-        quotes_list = list(queryset.values(
+        # Access the object_list from the paginator's Page object and use values()
+        quotes_list = list(page_obj.object_list.values(
             'dst', 'in_amount', 'out_amount', 'price', 'price_impact', 'src', 'timestamp'
         ))
 
