@@ -207,10 +207,12 @@ def task_web3py_logs(
     os.chdir(os.path.join(settings.MEDIA_ROOT, f"logs__{label}"))
     metadata.save()
 
-@shared_task(name="task_paraswap_job")
+from celery import shared_task
+
+@shared_task(name="task_paraswap_job", time_limit=None, soft_time_limit=None)
 def task_paraswap_job(*args, **kwargs):
     paraswap_job(*args, **kwargs)
 
-@shared_task(name="task_kyperswap_job")
+@shared_task(name="task_kyperswap_job", time_limit=None, soft_time_limit=None)
 def task_kyperswap_job(*args, **kwargs):
     kyperswap_job(*args, **kwargs)
