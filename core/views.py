@@ -1,13 +1,15 @@
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
 from django.http import JsonResponse
 from .models import DexQuote
 
 class DexQuoteListView(ListView):
     model = DexQuote
-    MAX_ROWS = 10000
+    DEFAULT_MAX_ROWS = 10000
 
     def get_queryset(self):
         queryset = super().get_queryset()
+
         start_timestamp = self.request.GET.get('start')
         end_timestamp = self.request.GET.get('end')
         src = self.request.GET.get("src")
@@ -27,36 +29,42 @@ class DexQuoteListView(ListView):
             except ValueError:
                 return queryset.none()
         if src:
-            try:
-                queryset = queryset.filter(src__iexact=src)
-            except ValueError:
-                return queryset.none()
+            queryset = queryset.filter(src__iexact=src)
         if dst:
-            try:
-                queryset = queryset.filter(dst__iexact=dst)
-            except ValueError:
-                return queryset.none()
+            queryset = queryset.filter(dst__iexact=dst)
         if dex_aggregator:
-            try:
-                queryset = queryset.filter(dex_aggregator__iexact=dex_aggregator)
-            except ValueError:
-                return queryset.none()
+            queryset = queryset.filter(dex_aggregator__iexact=dex_aggregator)
 
-        # Limit the number of rows to MAX_ROWS
-        if queryset.count() > self.MAX_ROWS:
-            queryset = queryset[:self.MAX_ROWS]
+        queryset = queryset.order_by('-timestamp')
+
+        max_rows = self.request.GET.get('max_rows', self.DEFAULT_MAX_ROWS)
+        try:
+            max_rows = int(max_rows)
+        except ValueError:
+            max_rows = self.DEFAULT_MAX_ROWS
+
+        page = self.request.GET.get('page', 1)
+        paginator = Paginator(queryset, max_rows)
+
+        try:
+            queryset = paginator.page(page)
+        except PageNotAnInteger:
+            queryset = paginator.page(1)
+        except EmptyPage:
+            queryset = paginator.page(paginator.num_pages)
 
         return queryset
 
     def render_to_response(self, context, **response_kwargs):
-        quotes = context['object_list'].values(
-            'dst', 'in_amount', 'out_amount', 'price', 'price_impact', 'src', 'timestamp'
-        )
+        # Get the paginated queryset
+        queryset = context['object_list']
 
-        quotes_list = list(quotes)
+        quotes_list = list(queryset.values(
+            'dst', 'in_amount', 'out_amount', 'price', 'price_impact', 'src', 'timestamp'
+        ))
+
         for quote in quotes_list:
             quote['in_amount'] = float(quote['in_amount'])
             quote['out_amount'] = float(quote['out_amount'])
 
         return JsonResponse(quotes_list, safe=False)
-
