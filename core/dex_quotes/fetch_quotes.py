@@ -42,13 +42,13 @@ def kyperswap_job(
                         dest_decimals=buy_token.decimals, 
                         usd_amount=amount, 
                         market_price=price,
-                        network_id=sell_token.chain.chain_id
+                        network_id=sell_token.chain.chain_id,
                     )
 
 
 
                     stopping_criteria = new_row2.get('price_impact', 0)
-                    record = DexQuote(**new_row2)
+                    record = DexQuote(pair=permutation, **new_row2)
                     record.save()
 
 
@@ -91,11 +91,11 @@ def paraswap_job(
                         dest_decimals=buy_token.decimals, 
                         usd_amount=amount, 
                         market_price=price,
-                        network_id=sell_token.chain.chain_id
+                        network_id=sell_token.chain.chain_id,
                     )
 
                     stopping_criteria = new_row.get('price_impact', 0)
-                    record = DexQuote(**new_row)
+                    record = DexQuote(pair=permutation, **new_row)
                     record.save()
 
 
