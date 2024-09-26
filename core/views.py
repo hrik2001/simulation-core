@@ -51,7 +51,7 @@ class DexQuoteListView(ListView):
         except PageNotAnInteger:
             queryset = paginator.page(1)
         except EmptyPage:
-            queryset = paginator.page(paginator.num_pages)
+            queryset = []
 
         return queryset
 
