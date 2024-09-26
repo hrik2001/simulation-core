@@ -21,7 +21,7 @@ def kyperswap_job(
         print(f'{network}')
 
         # asset_permutations = list(itertools.permutations(TOKEN_DTOs[network].values(), 2))
-        asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network)
+        asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True)
 
         for permutation in asset_permutations:
             # sell_token = permutation[0]
@@ -69,7 +69,7 @@ def paraswap_job(
     if network is not None:
         print(f'{network}')
 
-        asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network)
+        asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True)
         # asset_permutations = list(itertools.permutations(TOKEN_DTOs[network].values(), 2))
 
         for permutation in asset_permutations:

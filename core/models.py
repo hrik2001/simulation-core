@@ -61,12 +61,14 @@ class UniswapLPPosition(ERC20):
 class DexQuotePair(BaseModel):
     src_asset = models.ForeignKey(ERC20, on_delete=models.CASCADE, related_name="src_asset_pairs")
     dst_asset = models.ForeignKey(ERC20, on_delete=models.CASCADE, related_name="dst_asset_pairs")
+    ingest = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ('src_asset', 'dst_asset')
 
     def __str__(self):
-        return f"Pair: {self.src_asset.symbol} -> {self.dst_asset.symbol}"
+        status = "[Active]" if self.ingest else "[Inactive]"
+        return f"Pair: {self.src_asset.symbol} -> {self.dst_asset.symbol} {status}"
 
 class DexQuote(BaseModel):
     network = models.IntegerField()
