@@ -1,6 +1,4 @@
 from django.db import models
-
-# Create your models here.
 from django.utils import timezone
 import uuid 
 
@@ -52,15 +50,23 @@ class ERC20(BaseModel):
 class UniswapLPPosition(ERC20):
     token0 = models.ForeignKey(ERC20, on_delete=models.CASCADE, null=True, related_name="erc_token0", blank=True)
     token1 = models.ForeignKey(ERC20, on_delete=models.CASCADE, null=True, related_name="erc_token1", blank=True)
-    # large numbers hence it's charfield
-    tickLower = models.CharField(max_length=50, null=True, blank=True)
+    tickLower = models.CharField(max_length=50, null=True, blank=True)  # large numbers hence it's CharField
     tickUpper = models.CharField(max_length=50, null=True, blank=True)
     liquidity = models.CharField(max_length=50, null=True, blank=True)
     token_id = models.CharField(max_length=50, null=True)
 
-
     def __str__(self):
         return f"{self.token0}-{self.token1}-{self.token_id}"
+
+class DexQuotePair(BaseModel):
+    src_asset = models.ForeignKey(ERC20, on_delete=models.CASCADE, related_name="src_asset_pairs")
+    dst_asset = models.ForeignKey(ERC20, on_delete=models.CASCADE, related_name="dst_asset_pairs")
+
+    class Meta:
+        unique_together = ('src_asset', 'dst_asset')
+
+    def __str__(self):
+        return f"Pair: {self.src_asset.symbol} -> {self.dst_asset.symbol}"
 
 class DexQuote(BaseModel):
     network = models.IntegerField()
@@ -76,6 +82,7 @@ class DexQuote(BaseModel):
     price = models.FloatField()
     price_impact = models.FloatField()
     timestamp = models.IntegerField()
+    pair = models.ForeignKey(DexQuotePair, on_delete=models.CASCADE, null=True, blank=True)
 
     class Meta(BaseModel.Meta):
         indexes = [
