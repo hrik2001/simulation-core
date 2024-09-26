@@ -1,11 +1,11 @@
 from core.dex_quotes.DTO import TokenDTO
 from web3 import Web3
-from core.models import Chain
+from core.models import Chain, ERC20
 from .price_fetcher import get_current_price
 import numpy as np
 
 
-def query_token_supply(dto: TokenDTO, *args, block_number=None):
+def query_token_supply(dto: ERC20, *args, block_number=None):
     """
     Query a smart contract function.
 
@@ -17,9 +17,9 @@ def query_token_supply(dto: TokenDTO, *args, block_number=None):
     :param block_number: Specific block number to query (optional)
     :return: Result of the function call or an error message
     """
-    contract_address = dto.address
+    contract_address = dto.contract_address
     
-    w3 = Web3(Web3.HTTPProvider(Chain.objects.get(chain_name__iexact=dto.network.network).rpc))
+    w3 = Web3(Web3.HTTPProvider(dto.chain.rpc))
     abi = [
             {
             "stateMutability": "view",
@@ -48,13 +48,13 @@ def query_token_supply(dto: TokenDTO, *args, block_number=None):
     except Exception as e:
         return f'Error querying smart contract: {e}'
 
-def compute_tvl(token: TokenDTO):
+def compute_tvl(token: ERC20):
     supply = query_token_supply(token)/pow(10, token.decimals)
-    price = get_current_price(token.address, token.network.network.lower())
+    price = get_current_price(token.contract_address, token.chain.chain_name.lower())
     tvl = supply * price
     return tvl
     
-def compute_sampling_points(sell_token: TokenDTO, buy_token: TokenDTO, num_samples: int):
+def compute_sampling_points(sell_token: ERC20, buy_token: ERC20, num_samples: int):
     
     sell_token_tvl = compute_tvl(sell_token)
     buy_token_tvl = compute_tvl(buy_token)
