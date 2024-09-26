@@ -68,7 +68,7 @@ class DexQuotePair(BaseModel):
 
     def __str__(self):
         status = "[Active]" if self.ingest else "[Inactive]"
-        return f"Pair: {self.src_asset.symbol} -> {self.dst_asset.symbol} {status}"
+        return f"Pair: {self.src_asset.symbol} -> {self.dst_asset.symbol} @ {self.src_asset.chain.chain_name} {status}"
 
 class DexQuote(BaseModel):
     network = models.IntegerField()
