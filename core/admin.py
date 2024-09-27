@@ -9,14 +9,20 @@ class DexQuoteAdmin(admin.ModelAdmin):
 
 # Custom admin class for DexQuotePair
 class DexQuotePairAdmin(admin.ModelAdmin):
-    list_display = ('src_asset', 'dst_asset', 'ingest')
+    # list_display = ('src_asset', 'dst_asset', 'ingest')
     search_fields = ('src_asset__symbol', 'dst_asset__symbol')
     raw_id_fields = ('src_asset', 'dst_asset')  # Use raw_id_fields for ForeignKey fields
 
 # Custom Admin class for ERC20
 class ERC20Admin(admin.ModelAdmin):
-    list_display = ('name', 'symbol', 'chain', 'contract_address')
-    
+    list_display = ('name', 'symbol', 'chain', 'contract_address', 'uuid_display')
+    readonly_fields = ('uuid_display',)
+
+    def uuid_display(self, obj):
+        return obj.id
+
+    uuid_display.short_description = 'UUID'
+
     def get_queryset(self, request):
         # Exclude ERC20 entries that have a related UniswapLPPosition
         qs = super().get_queryset(request)
