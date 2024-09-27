@@ -51,7 +51,7 @@ class DexQuoteListView(ListView):
         except PageNotAnInteger:
             queryset = paginator.page(1)
         except EmptyPage:
-            return queryset.none()
+            queryset = paginator.page(paginator.num_pages)
 
         return queryset
 
@@ -65,13 +65,27 @@ class DexQuoteListView(ListView):
                 'dst', 'in_amount', 'out_amount', 'price', 'price_impact', 'src', 'timestamp'
             ))
 
-            # Convert in_amount and out_amount to floats
             for quote in quotes_list:
                 quote['in_amount'] = float(quote['in_amount'])
                 quote['out_amount'] = float(quote['out_amount'])
 
-            # Return the JSON response
-            return JsonResponse(quotes_list, safe=False)
+            pagination_info = {
+                'current_page': page_obj.number, 
+                'total_pages': page_obj.paginator.num_pages,
+                'total_items': page_obj.paginator.count,
+            }
+
+            return JsonResponse({
+                'quotes': quotes_list,
+                'pagination': pagination_info
+            }, safe=False)
+
         else:
-            # Return an empty response if there are no quotes
-            return JsonResponse([], safe=False)
+            return JsonResponse({
+                'quotes': [],
+                'pagination': {
+                    'current_page': 0,
+                    'total_pages': 0,
+                    'total_items': 0
+                }
+            }, safe=False)
