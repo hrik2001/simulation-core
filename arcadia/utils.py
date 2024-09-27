@@ -177,7 +177,8 @@ lending_pool_abi = [
     }
 ]
 
-web3 = Web3(Web3.HTTPProvider(Chain.objects.get(chain_name="Base").rpc))
+def get_web3(chain_name):
+    return Web3(Web3.HTTPProvider(Chain.objects.get(chain_name=chain_name).rpc))
 
 # ABI and contract address configuration
 ORACLE_CONTRACT_ADDRESS = Web3.to_checksum_address("0x6a5485E3ce6913890ae5e8bDc08a868D432eEB31")
@@ -208,7 +209,7 @@ def get_oracle_information(oracle_count: int):
     def get_oracle_description(oracle_address: str):
         try:
             address = Web3.to_checksum_address(oracle_address)
-            contract = web3.eth.contract(address=address, abi=ORACLE_DESC_ABI)
+            contract = get_web3("Base").eth.contract(address=address, abi=ORACLE_DESC_ABI)
             return contract.functions.description().call()
         except Exception as e:
             print(f"Error calling description function for address {oracle_address}: {e}")
@@ -216,7 +217,7 @@ def get_oracle_information(oracle_count: int):
 
     def get_oracle_address_from_id(oracle_id: int):
         try:
-            contract = web3.eth.contract(address=ORACLE_CONTRACT_ADDRESS, abi=ORACLE_INFO_ABI)
+            contract = get_web3("Base").eth.contract(address=ORACLE_CONTRACT_ADDRESS, abi=ORACLE_INFO_ABI)
             oracle_info = contract.functions.oracleInformation(oracle_id).call()
             return oracle_info[2]  # Returning the oracle address
         except Exception as e:
@@ -241,55 +242,55 @@ def get_oracle_information(oracle_count: int):
 def get_debt(lending_pool, account):
     contract_address = Web3.to_checksum_address(lending_pool)
     account = Web3.to_checksum_address(account)
-    contract = web3.eth.contract(address=contract_address, abi=lending_pool_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=lending_pool_abi)
     return contract.functions.getOpenPosition(account).call()
 # The contract address. Replace with the actual contract address.
 
 def get_total_supply(lending_pool):
     contract_address = Web3.to_checksum_address(lending_pool)
-    contract = web3.eth.contract(address=contract_address, abi=lending_pool_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=lending_pool_abi)
     return contract.functions.totalSupply().call()
 
 def get_total_liquidity(lending_pool):
     contract_address = Web3.to_checksum_address(lending_pool)
-    contract = web3.eth.contract(address=contract_address, abi=lending_pool_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=lending_pool_abi)
     return contract.functions.totalLiquidity().call()
 
 # Function to get the account value
 def get_account_value(account, numeraire):
     contract_address = Web3.to_checksum_address(account)
-    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=minimal_abi)
     return contract.functions.getAccountValue(numeraire).call()
 
 def get_liquidation_value(account):
     contract_address = Web3.to_checksum_address(account)
-    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=minimal_abi)
     return contract.functions.getLiquidationValue().call()
 
 def get_used_margin_value(account):
     contract_address = Web3.to_checksum_address(account)
-    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=minimal_abi)
     return contract.functions.getUsedMargin().call()
 
 # Function to call generateAssetData
 def call_generate_asset_data(account):
     contract_address = Web3.to_checksum_address(account)
-    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=minimal_abi)
     return contract.functions.generateAssetData().call()
 
 def get_numeraire_address(account):
     contract_address = Web3.to_checksum_address(account)
-    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=minimal_abi)
     return contract.functions.numeraire().call()
 
 def get_collateral_value(account):
     contract_address = Web3.to_checksum_address(account)
-    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=minimal_abi)
     return contract.functions.getCollateralValue().call()
 
 def get_health_status(account):
     contract_address = Web3.to_checksum_address(account)
-    contract = web3.eth.contract(address=contract_address, abi=minimal_abi)
+    contract = get_web3("Base").eth.contract(address=contract_address, abi=minimal_abi)
     return not contract.functions.isAccountUnhealthy().call()
 
 def get_price_defillama(labels, search_width=4):
@@ -342,7 +343,7 @@ def update_amounts(account: str, asset_record: AccountAssets):
             asset_data_usd[asset] = usd
             usd_value_without_nft += usd
 
-    position_distribution = get_arcadia_account_nft_position(asset_data, w3=web3)
+    position_distribution = get_arcadia_account_nft_position(asset_data, w3=get_web3("Base"))
     position_distribution_usd = defaultdict(int)
 
     listed_asset_usd = 0
@@ -414,7 +415,7 @@ def update_all_data(account):
     asset_data = call_generate_asset_data(account)
     # collateral_value = get_collateral_value(account)
     
-    position_distribution = get_arcadia_account_nft_position(asset_data, w3=web3)
+    position_distribution = get_arcadia_account_nft_position(asset_data, w3=get_web3("Base"))
     
     numeraire = get_numeraire_address(account)
     liquidation_value = get_liquidation_value(account)
