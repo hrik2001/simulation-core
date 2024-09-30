@@ -1,7 +1,9 @@
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
 from django.http import JsonResponse
+from django.db.models import Q
 from .models import DexQuote
+
 
 class DexQuoteListView(ListView):
     model = DexQuote
@@ -15,6 +17,7 @@ class DexQuoteListView(ListView):
         src = self.request.GET.get("src")
         dst = self.request.GET.get("dst")
         dex_aggregator = self.request.GET.get("dex_aggregator")
+        tokens = self.request.GET.get("tokens")  # Comma-separated token addresses
 
         if start_timestamp:
             try:
@@ -28,12 +31,24 @@ class DexQuoteListView(ListView):
                 queryset = queryset.filter(timestamp__lte=end_timestamp)
             except ValueError:
                 return queryset.none()
+
         if src:
             queryset = queryset.filter(src__iexact=src)
         if dst:
             queryset = queryset.filter(dst__iexact=dst)
+
         if dex_aggregator:
             queryset = queryset.filter(dex_aggregator__iexact=dex_aggregator)
+
+        if tokens:
+            try:
+                token_list = [token.strip().lower() for token in tokens.split(",")]
+                token_filter = Q()
+                for token in token_list:
+                    token_filter |= Q(src__iexact=token) | Q(dst__iexact=token)
+                queryset = queryset.filter(token_filter)
+            except ValueError:
+                return queryset.none()
 
         queryset = queryset.order_by('-timestamp')
 
@@ -56,7 +71,6 @@ class DexQuoteListView(ListView):
         return queryset
 
     def render_to_response(self, context, **response_kwargs):
-
         context = self.get_context_data()
         page_obj = context.get('object_list', None)
 
@@ -70,7 +84,7 @@ class DexQuoteListView(ListView):
                 quote['out_amount'] = float(quote['out_amount'])
 
             pagination_info = {
-                'current_page': page_obj.number, 
+                'current_page': page_obj.number,
                 'total_pages': page_obj.paginator.num_pages,
                 'total_items': page_obj.paginator.count,
             }
