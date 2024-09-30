@@ -41,16 +41,10 @@ class DexQuoteListView(ListView):
             queryset = queryset.filter(dex_aggregator__iexact=dex_aggregator)
 
         if tokens:
-            try:
-                token_list = [token.strip().lower() for token in tokens.split(",")]
-                token_filter = Q(src__iexact=token_list[0]) | Q(dst__iexact=token_list[0])
-                for token in token_list[1:]:
-                    token_filter |= Q(src__iexact=token) | Q(dst__iexact=token)
-                queryset = queryset.filter(token_filter)
-            except IndexError:
-                pass
-            except ValueError:
-                return queryset.none()
+            token_list = [token.strip() for token in tokens.split(",")]
+            src_queryset = queryset.filter(src__iregex=r'^(' + '|'.join(token_list) + ')$')
+            dst_queryset = queryset.filter(dst__iregex=r'^(' + '|'.join(token_list) + ')$')
+            queryset = src_queryset & dst_queryset
 
         queryset = queryset.order_by('-timestamp')
 
