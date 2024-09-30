@@ -43,10 +43,12 @@ class DexQuoteListView(ListView):
         if tokens:
             try:
                 token_list = [token.strip().lower() for token in tokens.split(",")]
-                token_filter = Q()
-                for token in token_list:
+                token_filter = Q(src__iexact=token_list[0]) | Q(dst__iexact=token_list[0])
+                for token in token_list[1:]:
                     token_filter |= Q(src__iexact=token) | Q(dst__iexact=token)
                 queryset = queryset.filter(token_filter)
+            except IndexError:
+                pass
             except ValueError:
                 return queryset.none()
 
