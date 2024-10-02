@@ -288,13 +288,23 @@ def collateral_debt_ceilings():
             RDNT_DTO: {"debt_ceiling": 7025761},
     }
     for collateral in COLLATERAL:
+        flag = True
         try:
             collateral_dto = TOKEN_DTOs["Optimism"][collateral]
             chain = "optimism"
         except KeyError:
-            collateral_dto = TOKEN_DTOs["Arbitrum"][collateral]
-            chain = "arbitrum"
-        print(f"Trying {collateral_dto.symbol} on {chain}")
+            try:
+                collateral_dto = TOKEN_DTOs["Arbitrum"][collateral]
+                chain = "arbitrum"
+            except KeyError:
+                print("Asset is neither arbitrum nor optimism asset")
+                flag = False
+                
+        
+        if not flag:
+            continue
+        
+        print(f"Trying {collateral_dto.symbol} {collateral_dto.address} on {chain}")
         # df_collateral = pd.DataFrame(get_stable_quotes(collateral_dto, [USDT_ARB_DTO, USDC_ARB_DTO, USDT_OP_DTO, USDC_OP_DTO]).values())
         df_collateral = get_stable_quotes(collateral_dto, [USDT_ARB_DTO, USDC_ARB_DTO, USDT_OP_DTO, USDC_OP_DTO])
         df_backup = df_collateral.copy(deep=True)
