@@ -285,7 +285,7 @@ def collateral_debt_ceilings():
             VELO_DTO: {"debt_ceiling": 5000000},
             GMX_DTO: {"debt_ceiling": 120000},
             PENDLE_DTO: {"debt_ceiling": 286738},
-            RDNT_DTO: {"debt_ceiling": 7025761},
+            RDNT_DTO: {"debt_ceiling": 70257610},
     }
     for collateral in COLLATERAL:
         flag = True
