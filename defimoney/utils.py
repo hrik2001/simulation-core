@@ -283,7 +283,7 @@ def collateral_debt_ceilings():
             OP_DTO: {"debt_ceiling": 1119402},
             ARB_DTO: {"debt_ceiling": 12244897},
             VELO_DTO: {"debt_ceiling": 5000000},
-            GMX_DTO: {"debt_ceiling": 1200000},
+            GMX_DTO: {"debt_ceiling": 120000},
             PENDLE_DTO: {"debt_ceiling": 286738},
             RDNT_DTO: {"debt_ceiling": 7025761},
     }
