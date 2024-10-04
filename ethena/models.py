@@ -46,7 +46,6 @@ class ChainMetrics(BaseModel):
         ]
 
 
-
 class CollateralMetrics(BaseModel):
     collateral = models.JSONField(null=False)
 

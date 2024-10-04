@@ -496,6 +496,8 @@ def update_curve_pool_snapshots():
         }).json()
 
         for snapshot in response["data"]:
+            if snapshot["tvl_usd"] is None:
+                continue
             timestamp = snapshot.pop("timestamp")
             timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
             block_number = snapshot.pop("block_number")
@@ -527,53 +529,6 @@ def query_dune(query_id):
         request_timeout=5000
     )
     return dune.get_latest_result(query_id, batch_size=500, max_age_hours=8)
-
-
-def update_curve_pool_metrics():
-    chain = Chain.objects.get(chain_name__iexact="ethereum")
-    chain_name = chain.chain_name.lower()
-    data = []
-    for address in CURVE_POOL_ADDRESSES:
-        metrics_url = f"{CURVE_BASE_URL}/pools/{chain_name}/{address}"
-        response = requests.get(metrics_url).json()
-        data.append(response)
-    curve_pool_metrics = CurvePoolMetrics(chain=chain, metrics=data)
-    curve_pool_metrics.save()
-
-
-def update_curve_pool_snapshots():
-    chain = Chain.objects.get(chain_name__iexact="ethereum")
-    chain_name = chain.chain_name.lower()
-
-    end = datetime.now(tz=timezone.utc)
-    try:
-        last_pool_snapshot = CurvePoolSnapshots.objects.latest("timestamp")
-        last_reserve_fund_timestamp = last_pool_snapshot.timestamp
-    except ObjectDoesNotExist:
-        last_reserve_fund_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-    start = max(end - timedelta(hours=4), last_reserve_fund_timestamp)
-
-    for address in CURVE_POOL_ADDRESSES:
-        snapshots_url = f"{CURVE_BASE_URL}/snapshots/{chain_name}/{address}/tvl"
-        response = requests.get(snapshots_url, params={
-            "start": int(start.timestamp()),
-            "end": int(end.timestamp()),
-            "unit": "none"
-        }).json()
-
-        for snapshot in response["data"]:
-            timestamp = snapshot.pop("timestamp")
-            timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            block_number = snapshot.pop("block_number")
-
-            pool_snapshot = CurvePoolSnapshots(
-                chain=chain,
-                block_number=block_number,
-                timestamp=timestamp,
-                address=address,
-                snapshot=snapshot
-            )
-            pool_snapshot.save()
 
 
 @shared_task
