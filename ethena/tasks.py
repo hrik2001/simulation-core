@@ -526,7 +526,7 @@ def query_dune(query_id):
         base_url="https://api.dune.com",
         request_timeout=5000
     )
-    return dune.get_latest_result(query_id, batch_size=500)
+    return dune.get_latest_result(query_id, batch_size=500, max_age_hours=8)
 
 
 @shared_task
