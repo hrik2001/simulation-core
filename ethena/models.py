@@ -108,12 +108,12 @@ class ApyMetrics(BaseModel):
     timestamp = models.DateTimeField(null=False)
     pool_id = models.TextField(null=False)
     symbol = models.TextField(null=False)
-    tvl_usd = models.TextField()
-    apy = models.TextField()
-    apy_base = models.TextField()
-    apy_reward = models.TextField()
-    il7d = models.TextField()
-    apy_base_7d = models.TextField()
+    tvl_usd = models.TextField(null=True)
+    apy = models.TextField(null=True)
+    apy_base = models.TextField(null=True)
+    apy_reward = models.TextField(null=True)
+    il7d = models.TextField(null=True)
+    apy_base_7d = models.TextField(null=True)
 
     class Meta(BaseModel.Meta):
         constraints = [
