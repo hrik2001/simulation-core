@@ -116,6 +116,18 @@ class ApyMetrics(BaseModel):
     apy_base_7d = models.TextField()
 
     class Meta(BaseModel.Meta):
-        indexes = [
-            models.Index(fields=['pool_id', 'timestamp'], name='pool_id_timestamp_idx'),
+        constraints = [
+            models.UniqueConstraint(fields=['pool_id', 'timestamp'], name='pool_id_timestamp_idx'),
+        ]
+
+
+class FundingRateMetrics(BaseModel):
+    timestamp = models.DateTimeField(null=False)
+    symbol = models.TextField(null=False)
+    exchange = models.TextField(null=False)
+    rate = models.TextField(null=False)
+
+    class Meta(BaseModel.Meta):
+        constraints = [
+            models.UniqueConstraint(fields=['timestamp', 'symbol', 'exchange'], name='timestamp_asset_cex_rate_idx'),
         ]

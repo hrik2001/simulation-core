@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime, timezone, timedelta
+import time
+from datetime import datetime, timezone, timedelta, tzinfo
 from string import Template
 
 import dateutil.parser
@@ -15,8 +16,9 @@ from web3 import Web3, HTTPProvider
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
-    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics
-from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY
+    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, \
+    FundingRateMetrics
+from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY, COINANALYZE_KEY
 
 RAY = 10 ** 27
 SECONDS_IN_YEAR = 365 * 24 * 60 * 60
@@ -226,6 +228,44 @@ YIELD_POOLS = [
     {"symbol": "USD3", "pool_id": "9c4e675e-7615-4d60-90ef-03d58c66b476"},
     {"symbol": "hyUSD", "pool_id": "3378bced-4bde-4ccf-b742-7d5c8ebb7720"}
 ]
+
+FUNDING_RATE_URL = "https://api.coinalyze.net/v1/funding-rate-history"
+FUNDING_RATE_DICT = [
+    {
+        "symbol": "BTCUSDT_PERP.A",
+        "exchange": "binance"
+    },
+    {
+        "symbol": "BTCUSDT.6",
+        "exchange": "bybit"
+    },
+    {
+        "symbol": "BTCUSDT_PERP.3",
+        "exchange": "okx"
+    },
+    {
+        "symbol": "BTC_USDC-PERPETUAL.2",
+        "exchange": "deribit"
+    },
+    {
+        "symbol": "ETHUSDT_PERP.A",
+        "exchange": "binance"
+    },
+    {
+        "symbol": "ETHUSDT.6",
+        "exchange": "bybit"
+    },
+    {
+        "symbol": "ETHUSDT_PERP.3",
+        "exchange": "okx"
+    },
+    {
+        "symbol": "ETH_USDC-PERPETUAL.2",
+        "exchange": "deribit"
+    }
+
+]
+
 
 logger = logging.getLogger(__name__)
 
@@ -566,6 +606,50 @@ def update_apy_metrics():
         ApyMetrics.objects.bulk_create(objects, ignore_conflicts=True)
 
 
+def update_funding_rates():
+    to_dt = datetime.now()
+    from_dt = to_dt - timedelta(days=1)
+    to_ts = int(to_dt.timestamp())
+    from_ts = int(from_dt.timestamp())
+
+    objects = []
+
+    for item in FUNDING_RATE_DICT:
+        symbol = item["symbol"]
+        exchange = item["exchange"]
+
+        try:
+            logger.info(f"Fetching data for {symbol} on {exchange}...")
+            params = {
+                "symbols": symbol,
+                "interval": "4hour",
+                "from": from_ts,
+                "to": to_ts
+            }
+
+            headers = {"api_key": COINANALYZE_KEY}
+            response = requests.get(FUNDING_RATE_URL, headers=headers, params=params)
+            response.raise_for_status()
+
+            data = response.json()
+            for point in data[0]["history"]:
+                timestamp = datetime.fromtimestamp(point["t"], tz=timezone.utc)
+                rate = str(float(point["c"]))
+
+                objects.append(FundingRateMetrics(
+                    symbol=symbol,
+                    exchange=exchange,
+                    timestamp=timestamp,
+                    rate=rate,
+                ))
+
+            time.sleep(1)  # Add a small delay to avoid hitting rate limits
+        except Exception:
+            logger.exception(f"Failed to fetch data for {symbol} on {exchange}", exc_info=True)
+
+    FundingRateMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+
 @shared_task
 def task__ethena__metric_snapshot():
     logger.info("running task to update ethena metrics")
@@ -647,3 +731,17 @@ def task__ethena__exit_queue_metrics():
         objects.append(ExitQueueMetrics(**_row))
     ExitQueueMetrics.objects.bulk_create(objects, ignore_conflicts=True)
     logger.info("updating exit queue metrics")
+
+
+@shared_task
+def task__ethena__apy_metrics():
+    logger.info("running task to update apy metrics")
+    update_apy_metrics()
+    logger.info("updated apy metrics")
+
+
+@shared_task
+def task__ethena__funding_rate_metrics():
+    logger.info("running task to update funding rate metrics")
+    update_funding_rates()
+    logger.info("updated funding rate metrics")
