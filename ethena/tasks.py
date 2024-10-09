@@ -595,12 +595,12 @@ def update_apy_metrics():
                 timestamp=datetime.fromisoformat(metric["timestamp"].replace("Z", "+00:00")),
                 symbol=pool["symbol"],
                 pool_id=pool["pool_id"],
-                tvl_usd=str(metric["tvlUsd"]),
-                apy=str(metric["apy"]),
-                apy_base=str(metric["apyBase"]),
-                apy_reward=str(metric["apyReward"]),
-                il7d=str(metric["il7d"]),
-                apy_base_7d=str(metric["apyBase7d"]),
+                tvl_usd=str(metric["tvlUsd"]) if metric["tvlUsd"] is not None else None,
+                apy=str(metric["apy"]) if metric["apy"] is not None else None,
+                apy_base=str(metric["apyBase"]) if metric["apyBase"] is not None else None,
+                apy_reward=str(metric["apyReward"]) if metric["apyReward"] is not None else None,
+                il7d=str(metric["il7d"]) if metric["il7d"] is not None else None,
+                apy_base_7d=str(metric["apyBase7d"]) if metric["apyBase7d"] is not None else None,
             )
             objects.append(apy_metric)
         ApyMetrics.objects.bulk_create(objects, ignore_conflicts=True)
