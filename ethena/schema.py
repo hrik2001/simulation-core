@@ -8,9 +8,9 @@ from graphene import Int, String
 
 from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, \
-    CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics
+    CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
-    CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType, ExitQueueMetricsType
+    CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType, ExitQueueMetricsType, ApyMetricsType
 
 
 def _aggregate_snapshots(model, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -66,7 +66,8 @@ class Query(graphene.ObjectType):
                                     sort_by=String())
     exit_queue_metrics = graphene.List(ExitQueueMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                        sort_by=String())
-
+    apy_metrics = graphene.List(ApyMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
+                                sort_by=String())
 
     def resolve_chain_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
         queryset = ChainMetrics.objects.all()
@@ -168,6 +169,20 @@ class Query(graphene.ObjectType):
             queryset = queryset.order_by(sort_by)
         else:
             queryset = queryset.order_by('unlock_day')
+        if limit:
+            queryset = queryset[:limit]
+        return queryset
+
+    def resolve_apy_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        queryset = ApyMetrics.objects.all()
+        if start_time:
+            queryset = queryset.filter(timestamp__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(timestamp__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('timestamp')
         if limit:
             queryset = queryset[:limit]
         return queryset

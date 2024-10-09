@@ -102,3 +102,20 @@ class ExitQueueMetrics(BaseModel):
     susde = models.TextField(null=False)
     total_usde = models.TextField(null=False)
     total_susde = models.TextField(null=False)
+
+
+class ApyMetrics(BaseModel):
+    timestamp = models.DateTimeField(null=False)
+    pool_id = models.TextField(null=False)
+    symbol = models.TextField(null=False)
+    tvl_usd = models.TextField()
+    apy = models.TextField()
+    apy_base = models.TextField()
+    apy_reward = models.TextField()
+    il7d = models.TextField()
+    apy_base_7d = models.TextField()
+
+    class Meta(BaseModel.Meta):
+        indexes = [
+            models.Index(fields=['pool_id', 'timestamp'], name='pool_id_timestamp_idx'),
+        ]

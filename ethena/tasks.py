@@ -15,7 +15,7 @@ from web3 import Web3, HTTPProvider
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
-    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics
+    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY
 
 RAY = 10 ** 27
@@ -79,7 +79,8 @@ SDAI_ABI = [supply_function, assets_function]
 DAI_ADDRESS = Web3.to_checksum_address("0x6b175474e89094c44da98b954eedeac495271d0f")
 DAI_ABI = [supply_function]
 
-BUIDL_ADDRESS = Web3.to_checksum_address("0x603bb6909be14f83282e03632280d91be7fb83b2")  # address of implementation contract of proxy BUIDL
+BUIDL_ADDRESS = Web3.to_checksum_address(
+    "0x603bb6909be14f83282e03632280d91be7fb83b2")  # address of implementation contract of proxy BUIDL
 BUIDL_ABI = [
     {
         "inputs": [],
@@ -115,7 +116,8 @@ USDM_ABI = [
     supply_function
 ]
 
-SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address("0x5419d3fa60c56104175684411a496879c4df21b5")  # address of implementation contract of proxy Superstate USTB
+SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address(
+    "0x5419d3fa60c56104175684411a496879c4df21b5")  # address of implementation contract of proxy Superstate USTB
 SUPERSTATE_USTB_ABI = [
     {
         "inputs": [],
@@ -123,7 +125,7 @@ SUPERSTATE_USTB_ABI = [
         "outputs": [
             {
                 "internalType":
-                 "uint256",
+                    "uint256",
                 "name": "",
                 "type": "uint256"
             }
@@ -215,6 +217,16 @@ CURVE_POOL_ADDRESSES = [
     "0x57064f49ad7123c92560882a45518374ad982e85"
 ]
 
+YIELDS_BASE_URL = "https://yields.llama.fi"
+YIELD_POOLS = [
+    {"symbol": "DSR", "pool_id": "c8a24fee-ec00-4f38-86c0-9f6daebc4225"},
+    {"symbol": "sUSDe", "pool_id": "66985a81-9c51-46ca-9977-42b4fe7bc6df"},
+    {"symbol": "aaveUSDT", "pool_id": "f981a304-bb6c-45b8-b0c5-fd2f515ad23a"},
+    {"symbol": "aaveUSDC", "pool_id": "aa70268e-4b52-42bf-a116-608b370f9501"},
+    {"symbol": "USD3", "pool_id": "9c4e675e-7615-4d60-90ef-03d58c66b476"},
+    {"symbol": "hyUSD", "pool_id": "3378bced-4bde-4ccf-b742-7d5c8ebb7720"}
+]
+
 logger = logging.getLogger(__name__)
 
 
@@ -256,8 +268,10 @@ def update_chain_metrics():
             buidl_issued = buidl_contract.functions.totalIssued().call(block_identifier=block_number)
             usdm_supply = usdm_contract.functions.totalSupply().call(block_identifier=block_number)
             usdm_shares = usdm_contract.functions.totalShares().call(block_identifier=block_number)
-            superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(block_identifier=block_number)
-            superstate_ustb_balance = superstate_ustb_contract.functions.entityMaxBalance().call(block_identifier=block_number)
+            superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(
+                block_identifier=block_number)
+            superstate_ustb_balance = superstate_ustb_contract.functions.entityMaxBalance().call(
+                block_identifier=block_number)
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
@@ -529,6 +543,27 @@ def query_dune(query_id):
         request_timeout=5000
     )
     return dune.get_latest_result(query_id, batch_size=500, max_age_hours=8)
+
+
+def update_apy_metrics():
+    for pool in YIELD_POOLS:
+        pool_url = f"{YIELDS_BASE_URL}/chart/{pool['pool_id']}"
+        response = requests.get(pool_url).json()
+        objects = []
+        for metric in response["data"]:
+            apy_metric = ApyMetrics(
+                timestamp=datetime.fromisoformat(metric["timestamp"].replace("Z", "+00:00")),
+                symbol=pool["symbol"],
+                pool_id=pool["pool_id"],
+                tvl_usd=str(metric["tvlUsd"]),
+                apy=str(metric["apy"]),
+                apy_base=str(metric["apyBase"]),
+                apy_reward=str(metric["apyReward"]),
+                il7d=str(metric["il7d"]),
+                apy_base_7d=str(metric["apyBase7d"]),
+            )
+            objects.append(apy_metric)
+        ApyMetrics.objects.bulk_create(objects, ignore_conflicts=True)
 
 
 @shared_task
