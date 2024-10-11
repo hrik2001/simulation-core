@@ -47,7 +47,7 @@ Generate simple slippage graph at a specific Unix timestamp:
 # python3 cli/main.py plot --collateral=coinbase-wrapped-btc --debt=usd-coin --network=ethereum --plot=simple --timestamp=1722526011
 ```
 
-Generate regression slippage graph with regression:
+Generate slippage graph with regression line:
 ```
 # python3 cli/main.py plot --collateral=coinbase-wrapped-btc --debt=usd-coin --network=ethereum --plot=regression --timestamp=now
 ```
