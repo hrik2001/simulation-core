@@ -3,15 +3,16 @@ from datetime import datetime
 import graphene
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F
-from django.db.models.functions import JSONObject
+from django.db.models.functions import JSONObject, TruncDate
 from graphene import Int, String
 
 from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, \
-    CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, FundingRateMetrics
+    CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, FundingRateMetrics, \
+    UstbYieldMetrics, BuidlYieldMetrics
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
     CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType, ExitQueueMetricsType, \
-    ApyMetricsType, FundingRateMetricsType
+    ApyMetricsType, FundingRateMetricsType, AggregatedPoolApyType, UstbYieldMetricsType, BuidlYieldMetricsType
 
 
 def _aggregate_snapshots(model, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -67,10 +68,14 @@ class Query(graphene.ObjectType):
                                     sort_by=String())
     exit_queue_metrics = graphene.List(ExitQueueMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                        sort_by=String())
-    apy_metrics = graphene.List(ApyMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
+    apy_metrics = graphene.List(AggregatedPoolApyType, start_time=Int(), end_time=Int(), limit=Int(),
                                 sort_by=String())
     funding_rate_metrics = graphene.List(FundingRateMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                          sort_by=String())
+    ustb_yield_metrics = graphene.List(UstbYieldMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
+                                         sort_by=String())
+    buidl_yield_metrics = graphene.List(BuidlYieldMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
+                                        sort_by=String())
 
     def resolve_chain_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
         queryset = ChainMetrics.objects.all()
@@ -188,7 +193,26 @@ class Query(graphene.ObjectType):
             queryset = queryset.order_by('timestamp')
         if limit:
             queryset = queryset[:limit]
-        return queryset
+
+        aggregated_data = (
+            queryset
+            .annotate(date=TruncDate('timestamp'))
+            .values('date')
+            .annotate(
+                pools=ArrayAgg(
+                    JSONObject(apy=F('apy'), pool_id=F('pool_id'), symbol=F('symbol')),
+                )
+            )
+        )
+
+        result = []
+        for data in aggregated_data:
+            result.append(AggregatedPoolApyType(
+                pools=data['pools'],
+                date=data['date'],
+            ))
+
+        return result
 
     def resolve_funding_rate_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
         queryset = FundingRateMetrics.objects.all()
@@ -203,5 +227,34 @@ class Query(graphene.ObjectType):
         if limit:
             queryset = queryset[:limit]
         return queryset
+
+    def resolve_ustb_yield_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        queryset = UstbYieldMetrics.objects.all()
+        if start_time:
+            queryset = queryset.filter(date__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(date__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('date')
+        if limit:
+            queryset = queryset[:limit]
+        return queryset
+
+    def resolve_buidl_yield_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        queryset = BuidlYieldMetrics.objects.all()
+        if start_time:
+            queryset = queryset.filter(date__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(date__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('date')
+        if limit:
+            queryset = queryset[:limit]
+        return queryset
+
 
 schema = graphene.Schema(query=Query)

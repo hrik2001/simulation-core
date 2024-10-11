@@ -17,7 +17,7 @@ from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, \
-    FundingRateMetrics
+    FundingRateMetrics, UstbYieldMetrics, BuidlYieldMetrics
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY, COINANALYZE_KEY
 
 RAY = 10 ** 27
@@ -650,6 +650,33 @@ def update_funding_rates():
     FundingRateMetrics.objects.bulk_create(objects, ignore_conflicts=True)
 
 
+def update_ustb_yield_metrics():
+    url = "https://api.superstate.co/v1/funds/1/yield"
+    response = requests.get(url)
+    response.raise_for_status()
+    data = response.json()
+    UstbYieldMetrics.objects.bulk_create([UstbYieldMetrics(
+        date=dateutil.parser.parse(data["as_of_date"]).replace(tzinfo=timezone.utc),
+        thirty_day=str(data["thirty_day"]) if data["thirty_day"] is not None else None,
+        seven_day=str(data["seven_day"]) if data["seven_day"] is not None else None,
+        one_day=str(data["one_day"]) if data["one_day"] is not None else None,
+    )], ignore_conflicts=True)
+
+
+def update_buidl_yield_metrics():
+    query_result = query_dune(4150762)
+    objects = []
+    for row in query_result.result.rows:
+        _row = {
+            "date": dateutil.parser.parse(row["time"]).replace(tzinfo=timezone.utc),
+            "amount": str(row["amount"]) if row["amount"] is not None else None,
+            "apy_7d": str(row["APY_7d"]) if row["APY_7d"] is not None else None,
+            "apy_30d": str(row["APY_30d"]) if row["APY_30d"] is not None else None,
+        }
+        objects.append(BuidlYieldMetrics(**_row))
+    BuidlYieldMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+
 @shared_task
 def task__ethena__metric_snapshot():
     logger.info("running task to update ethena metrics")
@@ -708,7 +735,7 @@ def task__ethena__staking_metrics():
     query_result = query_dune(4069937)
     objects = []
     for row in query_result.result.rows:
-        _row = {**row, "day": dateutil.parser.parse(row["day"])}
+        _row = {**row, "day": dateutil.parser.parse(row["day"]).replace(tzinfo=timezone.utc)}
         objects.append(StakingMetrics(**_row))
     StakingMetrics.objects.bulk_create(objects, ignore_conflicts=True)
     logger.info("updating staking metrics")
@@ -721,8 +748,8 @@ def task__ethena__exit_queue_metrics():
     objects = []
     for row in query_result.result.rows:
         _row = {
-            "withdraw_day": dateutil.parser.parse(row["withdraw_day"]),
-            "unlock_day": dateutil.parser.parse(row["unlock_day"]),
+            "withdraw_day": dateutil.parser.parse(row["withdraw_day"]).replace(tzinfo=timezone.utc),
+            "unlock_day": dateutil.parser.parse(row["unlock_day"]).replace(tzinfo=timezone.utc),
             "usde": row["USDe"],
             "susde": row["sUSDe"],
             "total_usde": row["total_USDe"],
@@ -745,3 +772,17 @@ def task__ethena__funding_rate_metrics():
     logger.info("running task to update funding rate metrics")
     update_funding_rates()
     logger.info("updated funding rate metrics")
+
+
+@shared_task
+def task__ethena__ustb_yield_metrics():
+    logger.info("running task to update ustb yield metrics")
+    update_ustb_yield_metrics()
+    logger.info("updated ustb yield metrics")
+
+
+@shared_task
+def task__ethena__buidl_yield_metrics():
+    logger.info("running task to update ustb yield metrics")
+    update_ustb_yield_metrics()
+    logger.info("updated ustb yield metrics")

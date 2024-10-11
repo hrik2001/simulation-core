@@ -131,3 +131,17 @@ class FundingRateMetrics(BaseModel):
         constraints = [
             models.UniqueConstraint(fields=['timestamp', 'symbol', 'exchange'], name='timestamp_asset_cex_rate_idx'),
         ]
+
+
+class UstbYieldMetrics(BaseModel):
+    date = models.DateTimeField(null=False, unique=True)
+    one_day = models.TextField(null=False)
+    seven_day = models.TextField(null=False)
+    thirty_day = models.TextField(null=False)
+
+
+class BuidlYieldMetrics(BaseModel):
+    date = models.DateTimeField(null=False, unique=True)
+    amount = models.TextField(null=False)
+    apy_7d = models.TextField(null=False)
+    apy_30d = models.TextField(null=False)
