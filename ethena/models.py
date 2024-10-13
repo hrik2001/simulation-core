@@ -156,6 +156,6 @@ class BuidlRedemptionMetrics(BaseModel):
 
 class UsdmMetrics(BaseModel):
     date = models.DateTimeField(null=False, unique=True)
-    holders = models.JSONField(null=False)
+    holders = models.TextField(null=False)
     index = models.TextField(null=False)
     apy = models.TextField(null=False)
