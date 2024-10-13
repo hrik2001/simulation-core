@@ -82,11 +82,24 @@ DAI_ADDRESS = Web3.to_checksum_address("0x6b175474e89094c44da98b954eedeac495271d
 DAI_ABI = [supply_function]
 
 BUIDL_ADDRESS = Web3.to_checksum_address(
-    "0x603bb6909be14f83282e03632280d91be7fb83b2")  # address of implementation contract of proxy BUIDL
+    "0x7712c34205737192402172409a8f7ccef8aa2aec")  # address of implementation contract of proxy BUIDL
 BUIDL_ABI = [
     {
         "inputs": [],
         "name": "totalIssued",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "walletCount",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -306,6 +319,7 @@ def update_chain_metrics():
             usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(block_identifier=block_number)
             buidl_supply = buidl_contract.functions.totalSupply().call(block_identifier=block_number)
             buidl_issued = buidl_contract.functions.totalIssued().call(block_identifier=block_number)
+            build_holders = buidl_contract.functions.walletCount().call(block_identifier=block_number)
             usdm_supply = usdm_contract.functions.totalSupply().call(block_identifier=block_number)
             usdm_shares = usdm_contract.functions.totalShares().call(block_identifier=block_number)
             superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(
@@ -319,10 +333,7 @@ def update_chain_metrics():
             dai_price = price_defillama("ethereum", DAI_ADDRESS, timestamp)
             usdt_price = price_defillama("ethereum", USDT_ADDRESS, timestamp)
             usdm_price = price_defillama("ethereum", USDM_ADDRESS, timestamp)
-            try:
-                superstate_ustb_price = price_defillama("ethereum", SUPERSTATE_USTB_ADDRESS, timestamp)
-            except Exception:
-                superstate_ustb_price = "0"
+            superstate_ustb_price = price_defillama("ethereum", SUPERSTATE_USTB_ADDRESS, timestamp)
             try:
                 buidl_price = price_defillama("ethereum", BUIDL_ADDRESS, timestamp)
             except Exception:
