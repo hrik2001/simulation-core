@@ -693,13 +693,14 @@ def update_usdm_metrics():
     query_result = query_dune(3050717)
     objects = []
     for row in query_result.result.rows:
-        _row = {
-            "date": dateutil.parser.parse(row["period"]).replace(tzinfo=timezone.utc),
-            "holders": str(row["holders"]) if row["holders"] is not None else None,
-            "index": str(row["index"]) if row["index"] is not None else None,
-            "apy": str(row["apy"]) if row["apy"] is not None else None,
-        }
-        objects.append(UsdmMetrics(**_row))
+        if row["apy"] is not None:
+            _row = {
+                "date": dateutil.parser.parse(row["period"]).replace(tzinfo=timezone.utc),
+                "holders": str(row["holders"]) if row["holders"] is not None else None,
+                "index": str(row["index"]) if row["index"] is not None else None,
+                "apy": str(row["apy"]),
+            }
+            objects.append(UsdmMetrics(**_row))
     UsdmMetrics.objects.bulk_create(objects, ignore_conflicts=True)
 
 
