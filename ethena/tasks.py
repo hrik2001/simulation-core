@@ -319,7 +319,7 @@ def update_chain_metrics():
             usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(block_identifier=block_number)
             buidl_supply = buidl_contract.functions.totalSupply().call(block_identifier=block_number)
             buidl_issued = buidl_contract.functions.totalIssued().call(block_identifier=block_number)
-            build_holders = buidl_contract.functions.walletCount().call(block_identifier=block_number)
+            buidl_wallet_count = buidl_contract.functions.walletCount().call(block_identifier=block_number)
             usdm_supply = usdm_contract.functions.totalSupply().call(block_identifier=block_number)
             usdm_shares = usdm_contract.functions.totalShares().call(block_identifier=block_number)
             superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(
@@ -369,6 +369,7 @@ def update_chain_metrics():
                 total_buidl_issued=str(buidl_issued),
                 total_usdm_shares=str(usdm_shares),
                 total_superstate_ustb_balance=str(superstate_ustb_balance),
+                buidl_wallet_count=str(buidl_wallet_count)
             )
             chain_metrics.save()
         except ValueError:

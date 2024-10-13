@@ -40,6 +40,8 @@ class ChainMetrics(BaseModel):
     total_usdm_shares = models.TextField(null=False, default="0")
     total_superstate_ustb_balance = models.TextField(null=False, default="0")
 
+    buidl_wallet_count = models.TextField(null=False, default="0")
+
     class Meta(BaseModel.Meta):
         indexes = [
             models.Index(fields=['block_timestamp'], name='block_timestamp_idx'),
