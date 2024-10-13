@@ -145,3 +145,10 @@ class BuidlYieldMetrics(BaseModel):
     amount = models.TextField(null=False)
     apy_7d = models.TextField(null=False)
     apy_30d = models.TextField(null=False)
+
+
+class UsdmMetrics(BaseModel):
+    date = models.DateTimeField(null=False, unique=True)
+    holders = models.JSONField(null=False)
+    index = models.TextField(null=False)
+    apy = models.TextField(null=False)

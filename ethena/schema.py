@@ -9,10 +9,11 @@ from graphene import Int, String
 from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, \
     CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, FundingRateMetrics, \
-    UstbYieldMetrics, BuidlYieldMetrics
+    UstbYieldMetrics, BuidlYieldMetrics, UsdmMetrics
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
     CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType, ExitQueueMetricsType, \
-    ApyMetricsType, FundingRateMetricsType, AggregatedPoolApyType, UstbYieldMetricsType, BuidlYieldMetricsType
+    FundingRateMetricsType, AggregatedPoolApyType, UstbYieldMetricsType, BuidlYieldMetricsType, \
+    UsdmMetricsType
 
 
 def _aggregate_snapshots(model, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -76,6 +77,8 @@ class Query(graphene.ObjectType):
                                          sort_by=String())
     buidl_yield_metrics = graphene.List(BuidlYieldMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                         sort_by=String())
+    usdm_metrics = graphene.List(UsdmMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
+                                 sort_by=String())
 
     def resolve_chain_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
         queryset = ChainMetrics.objects.all()
@@ -255,6 +258,21 @@ class Query(graphene.ObjectType):
         if limit:
             queryset = queryset[:limit]
         return queryset
+
+    def resolve_usdm_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        queryset = UsdmMetrics.objects.all()
+        if start_time:
+            queryset = queryset.filter(date__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(date__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('date')
+        if limit:
+            queryset = queryset[:limit]
+        return queryset
+
 
 
 schema = graphene.Schema(query=Query)

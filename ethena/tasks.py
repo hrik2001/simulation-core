@@ -17,7 +17,7 @@ from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, \
-    FundingRateMetrics, UstbYieldMetrics, BuidlYieldMetrics
+    FundingRateMetrics, UstbYieldMetrics, BuidlYieldMetrics, UsdmMetrics
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY, COINANALYZE_KEY
 
 RAY = 10 ** 27
@@ -677,6 +677,20 @@ def update_buidl_yield_metrics():
     BuidlYieldMetrics.objects.bulk_create(objects, ignore_conflicts=True)
 
 
+def update_usdm_metrics():
+    query_result = query_dune(3050717)
+    objects = []
+    for row in query_result.result.rows:
+        _row = {
+            "date": dateutil.parser.parse(row["period"]).replace(tzinfo=timezone.utc),
+            "holders": str(row["holders"]) if row["holders"] is not None else None,
+            "index": str(row["index"]) if row["index"] is not None else None,
+            "apy": str(row["apy"]) if row["apy"] is not None else None,
+        }
+        objects.append(UsdmMetrics(**_row))
+    UsdmMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+
 @shared_task
 def task__ethena__metric_snapshot():
     logger.info("running task to update ethena metrics")
@@ -783,6 +797,13 @@ def task__ethena__ustb_yield_metrics():
 
 @shared_task
 def task__ethena__buidl_yield_metrics():
-    logger.info("running task to update ustb yield metrics")
-    update_ustb_yield_metrics()
-    logger.info("updated ustb yield metrics")
+    logger.info("running task to update buidl yield metrics")
+    update_buidl_yield_metrics()
+    logger.info("updated buidl yield metrics")
+
+
+@shared_task
+def task__ethena__usdm_yield_metrics():
+    logger.info("running task to update usdm yield metrics")
+    update_usdm_metrics()
+    logger.info("updated usdm yield metrics")
