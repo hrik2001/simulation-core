@@ -149,6 +149,11 @@ class BuidlYieldMetrics(BaseModel):
     apy_30d = models.TextField(null=False)
 
 
+class BuidlRedemptionMetrics(BaseModel):
+    date = models.DateTimeField(null=False, unique=True)
+    balance = models.TextField(null=False)
+
+
 class UsdmMetrics(BaseModel):
     date = models.DateTimeField(null=False, unique=True)
     holders = models.JSONField(null=False)

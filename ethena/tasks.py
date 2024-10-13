@@ -17,7 +17,7 @@ from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, \
-    FundingRateMetrics, UstbYieldMetrics, BuidlYieldMetrics, UsdmMetrics
+    FundingRateMetrics, UstbYieldMetrics, BuidlYieldMetrics, UsdmMetrics, BuidlRedemptionMetrics
 from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY, COINANALYZE_KEY
 
 RAY = 10 ** 27
@@ -703,6 +703,18 @@ def update_usdm_metrics():
     UsdmMetrics.objects.bulk_create(objects, ignore_conflicts=True)
 
 
+def update_buidl_redemption_metrics():
+    query_result = query_dune(3543899)
+    objects = []
+    for row in query_result.result.rows:
+        _row = {
+            "date": dateutil.parser.parse(row["day"]).replace(tzinfo=timezone.utc),
+            "balance": str(row["balance_raw"]) if row["balance_raw"] is not None else None,
+        }
+        objects.append(BuidlRedemptionMetrics(**_row))
+    BuidlRedemptionMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+
 @shared_task
 def task__ethena__metric_snapshot():
     logger.info("running task to update ethena metrics")
@@ -808,10 +820,17 @@ def task__ethena__ustb_yield_metrics():
 
 
 @shared_task
-def task__ethena__buidl_yield_metrics():
-    logger.info("running task to update buidl yield metrics")
-    update_buidl_yield_metrics()
-    logger.info("updated buidl yield metrics")
+def task__ethena__buidl_metrics():
+    logger.info("running task to update buidl metrics")
+    try:
+        update_buidl_yield_metrics()
+    except Exception:
+        logger.exception("BUIDL Yield metrics error: %s", exc_info=True)
+    try:
+        update_buidl_redemption_metrics()
+    except Exception:
+        logger.exception("BUIDL redemption metrics error: %s", exc_info=True)
+    logger.info("updated buidl metrics")
 
 
 @shared_task
