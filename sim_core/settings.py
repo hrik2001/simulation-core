@@ -242,3 +242,27 @@ if os.getenv("ENVIRONMENT", "").lower() == "production":
             # We recommend adjusting this value in production.
             profiles_sample_rate=1.0,
         )
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "root": {
+            "handlers": ["console"],
+            "propagate": True,
+        },
+    },
+}

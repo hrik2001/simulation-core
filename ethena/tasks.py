@@ -119,22 +119,8 @@ USDM_ABI = [
 ]
 
 SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address(
-    "0x5419d3fa60c56104175684411a496879c4df21b5")  # address of implementation contract of proxy Superstate USTB
+    "0x43415eB6ff9DB7E26A15b704e7A3eDCe97d31C4e")  # address of implementation contract of proxy Superstate USTB
 SUPERSTATE_USTB_ABI = [
-    {
-        "inputs": [],
-        "name": "entityMaxBalance",
-        "outputs": [
-            {
-                "internalType":
-                    "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
     supply_function
 ]
 
