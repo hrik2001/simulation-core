@@ -13,10 +13,6 @@ class AggregatedSnapshotsType(ObjectType):
     address = String()
     snapshots = List(SnapshotType)
 
-class AggregatedPoolApyType(ObjectType):
-    pools = JSONString()
-    date = String()
-
 class ChainMetricsType(DjangoObjectType):
     class Meta:
         model = ChainMetrics
@@ -55,6 +51,16 @@ class ApyMetricsType(DjangoObjectType):
         model = ApyMetrics
 
 
+class ApyMetricApiType(ObjectType):
+    timestamp = String()
+    apy = String()
+
+
+class AggregatedApyMetricsType(ObjectType):
+    symbol = String()
+    metrics = List(ApyMetricApiType)
+
+
 class FundingRateMetricsType(DjangoObjectType):
     class Meta:
         model = FundingRateMetrics
@@ -73,7 +79,6 @@ class BuidlYieldMetricsType(DjangoObjectType):
 class BuidlRedemptionMetricsType(DjangoObjectType):
     class Meta:
         model = BuidlRedemptionMetrics
-
 
 
 class UsdmMetricsType(DjangoObjectType):
