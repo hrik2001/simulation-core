@@ -1,7 +1,7 @@
 from graphene import ObjectType, JSONString, String, List
 from graphene_django import DjangoObjectType
 from .models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
-    CurvePoolInfo, StakingMetrics, ExitQueueMetrics, ApyMetrics, FundingRateMetrics, UstbYieldMetrics, \
+    CurvePoolInfo, StakingMetrics, ExitQueueMetrics, ApyMetrics, UstbYieldMetrics, \
     BuidlYieldMetrics, UsdmMetrics, BuidlRedemptionMetrics
 
 
@@ -61,9 +61,14 @@ class AggregatedApyMetricsType(ObjectType):
     metrics = List(ApyMetricApiType)
 
 
-class FundingRateMetricsType(DjangoObjectType):
-    class Meta:
-        model = FundingRateMetrics
+class FundingMetricsApyType(ObjectType):
+    timestamp = String()
+    rate = String()
+
+class FundingRateMetricsType(ObjectType):
+    symbol = String()
+    exchange = String()
+    metrics = List(FundingMetricsApyType)
 
 
 class UstbYieldMetricsType(DjangoObjectType):

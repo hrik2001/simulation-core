@@ -13,7 +13,7 @@ from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, R
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
     CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType, ExitQueueMetricsType, \
     FundingRateMetricsType, UstbYieldMetricsType, BuidlYieldMetricsType, \
-    UsdmMetricsType, BuidlRedemptionMetricsType, AggregatedApyMetricsType, ApyMetricApiType
+    UsdmMetricsType, BuidlRedemptionMetricsType, AggregatedApyMetricsType, ApyMetricApiType, FundingMetricsApyType
 
 
 def _aggregate_snapshots(model, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -224,12 +224,29 @@ class Query(graphene.ObjectType):
             queryset = queryset.filter(timestamp__gte=datetime.fromtimestamp(start_time))
         if end_time:
             queryset = queryset.filter(timestamp__lte=datetime.fromtimestamp(end_time))
-        if sort_by:
-            queryset = queryset.order_by(sort_by)
-        else:
-            queryset = queryset.order_by('timestamp')
-        if limit:
-            queryset = queryset[:limit]
+
+        queryset = (
+            queryset
+            .values('symbol', 'exchange')
+            .annotate(
+                metrics=ArrayAgg(
+                    JSONObject(timestamp=F('timestamp'), rate=F('rate')),
+                    ordering=sort_by
+                )
+            )
+        )
+
+        aggregated_data = []
+        for row in queryset:
+            aggregated_data.append(FundingRateMetricsType(
+                symbol=row["symbol"],
+                exchange=row["exchange"],
+                metrics=[FundingMetricsApyType(
+                    timestamp=m["timestamp"],
+                    rate=m["rate"]
+                ) for m in row["metrics"]]
+            ))
+
         return queryset
 
     def resolve_ustb_yield_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
