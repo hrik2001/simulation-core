@@ -1,3 +1,5 @@
+import logging
+
 import requests
 from web3 import Web3
 from core.models import ERC20, Chain, UniswapLPPosition
@@ -178,10 +180,11 @@ def price_defillama_multi(chain_name: str, contract_addresses: list[str], timest
     coins_url = ",".join(f"{chain_name}:{address}" for address in contract_addresses)
     data = _price_defillama_api(coins_url, timestamp)
     prices = {}
-    try:
-        for address in contract_addresses:
+    for address in contract_addresses:
+        try:
             price = data["coins"][f"{chain_name}:{address}"]["price"]
             prices[address] = price
-    except KeyError:
-        raise Exception(f"{data=} {chain_name=} {contract_addresses=}")
+        except KeyError:
+            logging.exception(f"Missing data for coin: {data=} {chain_name=} {contract_addresses=}", exc_info=True)
+            prices[address] = 1
     return prices
