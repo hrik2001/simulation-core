@@ -3,7 +3,7 @@ from datetime import datetime
 import graphene
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F
-from django.db.models.functions import JSONObject, TruncDate
+from django.db.models.functions import JSONObject
 from graphene import Int, String
 
 from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, \
@@ -12,8 +12,8 @@ from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, R
     UstbYieldMetrics, BuidlYieldMetrics, UsdmMetrics, BuidlRedemptionMetrics
 from ethena.types import ChainMetricsType, CollateralMetricsType, ReserveFundMetricsType, ReserveFundBreakdownType, \
     CurvePoolMetricsType, SnapshotType, AggregatedSnapshotsType, StakingMetricsType, ExitQueueMetricsType, \
-    FundingRateMetricsType, AggregatedPoolApyType, UstbYieldMetricsType, BuidlYieldMetricsType, \
-    UsdmMetricsType, BuidlRedemptionMetricsType
+    FundingRateMetricsType, UstbYieldMetricsType, BuidlYieldMetricsType, \
+    UsdmMetricsType, BuidlRedemptionMetricsType, ApyMetricsType
 
 
 def _aggregate_snapshots(model, start_time=None, end_time=None, limit=None, sort_by=None):
@@ -69,7 +69,7 @@ class Query(graphene.ObjectType):
                                     sort_by=String())
     exit_queue_metrics = graphene.List(ExitQueueMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                        sort_by=String())
-    apy_metrics = graphene.List(AggregatedPoolApyType, start_time=Int(), end_time=Int(), limit=Int(),
+    apy_metrics = graphene.List(ApyMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                 sort_by=String())
     funding_rate_metrics = graphene.List(FundingRateMetricsType, start_time=Int(), end_time=Int(), limit=Int(),
                                          sort_by=String())
@@ -198,26 +198,7 @@ class Query(graphene.ObjectType):
             queryset = queryset.order_by('timestamp')
         if limit:
             queryset = queryset[:limit]
-
-        aggregated_data = (
-            queryset
-            .annotate(date=TruncDate('timestamp'))
-            .values('date')
-            .annotate(
-                pools=ArrayAgg(
-                    JSONObject(apy=F('apy'), pool_id=F('pool_id'), symbol=F('symbol')),
-                )
-            )
-        )
-
-        result = []
-        for data in aggregated_data:
-            result.append(AggregatedPoolApyType(
-                pools=data['pools'],
-                date=data['date'],
-            ))
-
-        return result
+        return queryset
 
     def resolve_funding_rate_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
         queryset = FundingRateMetrics.objects.all()
