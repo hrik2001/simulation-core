@@ -74,7 +74,7 @@ def get_quote(
             "in_amount": data['sellAmount'], 
             "out_amount": data['buyAmount'],
             "market_price": src_price, 
-            "price": (float(data['sellAmount'])/(10**src_decimals)) / (float(data['buyAmount'])/(10**dst_decimals)),
+            "price": (float(data['sellAmount']) / (float(data['buyAmount']))),
             "price_impact": (src_usd_amount-dst_usd_amount) / src_usd_amount, # calculate the price impact
             "timestamp": round((datetime.now() + timedelta(minutes=30)).replace(minute=0, second=0, microsecond=0).timestamp())
         }
