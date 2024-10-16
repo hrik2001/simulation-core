@@ -13,7 +13,7 @@ def get_okx_auth_signature(now, method, url, params, okx_secret):
     hmac_hash = hmac.new(okx_secret.encode(), input_string.encode(), hashlib.sha256).digest()
     return base64.b64encode(hmac_hash).decode()
 
-def get_liquidity_venues(
+def get_dex_ids(
     okx_project_id: str,
     okx_api_key: str,
     okx_passphrase: str,
@@ -46,7 +46,7 @@ def get_liquidity_venues(
         return dex_ids
 
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching liquidity data: {e}")
+        print(f"Error fetching DEX IDs: {e}")
         return None
 
 def get_quote(
@@ -75,7 +75,7 @@ def get_quote(
         dex_ids (int[]): The dex IDs to use for getting the quote
 
     Returns:
-        Dict[str, Any]: A dictionary containing the response from the OKX API or an error message.
+        Dict[str, Any]: A dictionary containing the response or an error message.
 
     For more details refer to: https://www.okx.com/web3/build/docs/waas/dex-get-quote
     """

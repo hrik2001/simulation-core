@@ -14,7 +14,7 @@ def get_quote(
     network_id: int
 ) -> Dict[str, Any]:
     """
-    Fetches the swap rate between two tokens using the 1inch API.
+    Fetches the swap rate between two tokens using the Cowswap API.
 
     Args:
         src_token (str): The address of the source token.
@@ -27,9 +27,9 @@ def get_quote(
         network_id (int): The network identifier (e.g., '1' for Ethereum Mainnet).
 
     Returns:
-        Dict[str, Any]: A dictionary containing the response from the ParaSwap API or an error message.
+        Dict[str, Any]: A dictionary containing the response or an error message.
 
-    For more details refer to: https://developers.paraswap.network/api/get-rate-for-a-token-pair-1
+    For more details refer to: https://docs.cow.fi/cow-protocol/reference/apis/orderbook
     """
 
     network = ""
@@ -75,7 +75,7 @@ def get_quote(
             "out_amount": data['buyAmount'],
             "market_price": src_price, 
             "price": (float(data['sellAmount']) / (float(data['buyAmount']))),
-            "price_impact": (src_usd_amount-dst_usd_amount) / src_usd_amount, # calculate the price impact
+            "price_impact": (src_usd_amount-dst_usd_amount) / src_usd_amount,
             "timestamp": round((datetime.now() + timedelta(minutes=30)).replace(minute=0, second=0, microsecond=0).timestamp())
         }
 

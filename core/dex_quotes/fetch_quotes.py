@@ -138,14 +138,18 @@ def okx_job(okx_project_id, okx_api_key, okx_passphrase, okx_secret, network = N
         print(f'{network}')
 
         asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True)
+        if len(asset_permutations) == 0:
+            return
+
+        network_id = asset_permutations[0].src_asset.chain.chain_id
 
         # need to get all dex ids because default dex IDs are limited
-        dex_ids = okx.get_liquidity_venues(
+        dex_ids = okx.get_dex_ids(
             okx_project_id=okx_project_id,
             okx_api_key=okx_api_key,
             okx_passphrase=okx_passphrase,
             okx_secret=okx_secret,
-            network_id=asset_permutations[0].src_asset.chain.chain_id)
+            network_id=network_id)
 
         for permutation in asset_permutations:
             sell_token = permutation.src_asset
@@ -158,7 +162,7 @@ def okx_job(okx_project_id, okx_api_key, okx_passphrase, okx_secret, network = N
                         src_token=sell_token.contract_address, 
                         dst_token=buy_token.contract_address, 
                         src_amount=amount,
-                        network_id=sell_token.chain.chain_id,
+                        network_id=network_id,
                         dex_ids=dex_ids,
                     )
 
