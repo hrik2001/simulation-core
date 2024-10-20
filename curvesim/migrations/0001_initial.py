@@ -8,73 +8,110 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='SimulationParameters',
+            name="SimulationParameters",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('A', models.IntegerField()),
-                ('fee', models.FloatField()),
-                ('D', models.FloatField()),
-                ('fee_mul', models.FloatField()),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("A", models.IntegerField()),
+                ("fee", models.FloatField()),
+                ("D", models.FloatField()),
+                ("fee_mul", models.FloatField()),
             ],
             options={
-                'unique_together': {('A', 'fee', 'D', 'fee_mul')},
+                "unique_together": {("A", "fee", "D", "fee_mul")},
             },
         ),
         migrations.CreateModel(
-            name='SimulationRun',
+            name="SimulationRun",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('run_date', models.DateTimeField(auto_now_add=True)),
-                ('parameters', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='runs', to='curvesim.simulationparameters')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("run_date", models.DateTimeField(auto_now_add=True)),
+                (
+                    "parameters",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="runs",
+                        to="curvesim.simulationparameters",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('parameters', 'run_date')},
+                "unique_together": {("parameters", "run_date")},
             },
         ),
         migrations.CreateModel(
-            name='PriceErrorDistribution',
+            name="PriceErrorDistribution",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('price_error', models.FloatField()),
-                ('frequency', models.FloatField()),
-                ('simulation_run', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='price_error_distribution', to='curvesim.simulationrun')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("price_error", models.FloatField()),
+                ("frequency", models.FloatField()),
+                (
+                    "simulation_run",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="price_error_distribution",
+                        to="curvesim.simulationrun",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='SummaryMetrics',
+            name="SummaryMetrics",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('pool_value_virtual_annualized_returns', models.FloatField()),
-                ('pool_value_annualized_returns', models.FloatField()),
-                ('pool_balance_median', models.FloatField()),
-                ('pool_balance_min', models.FloatField()),
-                ('liquidity_density_median', models.FloatField()),
-                ('liquidity_density_min', models.FloatField()),
-                ('pool_volume_sum', models.FloatField()),
-                ('arb_profit_sum', models.FloatField()),
-                ('pool_fees_sum', models.FloatField()),
-                ('price_error_median', models.FloatField()),
-                ('simulation_run', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='summary_metrics', to='curvesim.simulationrun')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("pool_value_virtual_annualized_returns", models.FloatField()),
+                ("pool_value_annualized_returns", models.FloatField()),
+                ("pool_balance_median", models.FloatField()),
+                ("pool_balance_min", models.FloatField()),
+                ("liquidity_density_median", models.FloatField()),
+                ("liquidity_density_min", models.FloatField()),
+                ("pool_volume_sum", models.FloatField()),
+                ("arb_profit_sum", models.FloatField()),
+                ("pool_fees_sum", models.FloatField()),
+                ("price_error_median", models.FloatField()),
+                (
+                    "simulation_run",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="summary_metrics",
+                        to="curvesim.simulationrun",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='TimeseriesData',
+            name="TimeseriesData",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timestamp', models.DateTimeField()),
-                ('pool_value_virtual', models.FloatField()),
-                ('pool_value', models.FloatField()),
-                ('pool_balance', models.FloatField()),
-                ('liquidity_density', models.FloatField()),
-                ('pool_volume', models.FloatField()),
-                ('arb_profit', models.FloatField()),
-                ('pool_fees', models.FloatField()),
-                ('simulation_run', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='timeseries_data', to='curvesim.simulationrun')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("timestamp", models.DateTimeField()),
+                ("pool_value_virtual", models.FloatField()),
+                ("pool_value", models.FloatField()),
+                ("pool_balance", models.FloatField()),
+                ("liquidity_density", models.FloatField()),
+                ("pool_volume", models.FloatField()),
+                ("arb_profit", models.FloatField()),
+                ("pool_fees", models.FloatField()),
+                (
+                    "simulation_run",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="timeseries_data",
+                        to="curvesim.simulationrun",
+                    ),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="Pool",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("address", models.CharField(max_length=42)),
+                ("name", models.CharField(max_length=100)),
+                ("params_dict", models.JSONField()),
+                ("enabled", models.BooleanField(default=True)),
             ],
         ),
     ]
