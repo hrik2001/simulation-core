@@ -2,6 +2,7 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.forms.models import model_to_dict
 from ..models import SimulationRun, SummaryMetrics, TimeseriesData, PriceErrorDistribution
+from typing import Any
 
 
 class SimulationJSONGenerator:
@@ -42,7 +43,7 @@ class SimulationJSONGenerator:
         return [model_to_dict(data) for data in self.price_error_distribution]
 
 
-def generate_multiple_simulations_json(simulation_runs: list):
+def generate_multiple_simulations_json(simulation_runs: list) -> list[dict[Any]]:
     try:
         data = []
         for run in simulation_runs:
