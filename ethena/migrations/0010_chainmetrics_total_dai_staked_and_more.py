@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ethena', '0009_rename_data_curvepoolmetrics_metrics_and_more'),
+        ("ethena", "0009_rename_data_curvepoolmetrics_metrics_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='chainmetrics',
-            name='total_dai_staked',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="total_dai_staked",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='total_dai_supply',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="total_dai_supply",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='usdt_balance',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="usdt_balance",
+            field=models.TextField(default="0"),
         ),
     ]

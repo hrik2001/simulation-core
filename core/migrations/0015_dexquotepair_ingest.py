@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0014_dexquotepair_dexquote_pair'),
+        ("core", "0014_dexquotepair_dexquote_pair"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='dexquotepair',
-            name='ingest',
+            model_name="dexquotepair",
+            name="ingest",
             field=models.BooleanField(default=True),
         ),
     ]

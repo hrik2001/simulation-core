@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0008_alter_erc20_name_alter_erc20_pricing_metadata_and_more'),
+        ("core", "0008_alter_erc20_name_alter_erc20_pricing_metadata_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='uniswaplpposition',
-            name='token_id',
+            model_name="uniswaplpposition",
+            name="token_id",
             field=models.CharField(max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='uniswaplpposition',
-            name='liquidity',
+            model_name="uniswaplpposition",
+            name="liquidity",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='uniswaplpposition',
-            name='tickLower',
+            model_name="uniswaplpposition",
+            name="tickLower",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='uniswaplpposition',
-            name='tickUpper',
+            model_name="uniswaplpposition",
+            name="tickUpper",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
     ]

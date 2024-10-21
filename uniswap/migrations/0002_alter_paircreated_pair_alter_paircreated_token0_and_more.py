@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('uniswap', '0001_initial'),
+        ("uniswap", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='paircreated',
-            name='pair',
+            model_name="paircreated",
+            name="pair",
             field=models.CharField(max_length=255),
         ),
         migrations.AlterField(
-            model_name='paircreated',
-            name='token0',
+            model_name="paircreated",
+            name="token0",
             field=models.CharField(max_length=255),
         ),
         migrations.AlterField(
-            model_name='paircreated',
-            name='token1',
+            model_name="paircreated",
+            name="token1",
             field=models.CharField(max_length=255),
         ),
     ]

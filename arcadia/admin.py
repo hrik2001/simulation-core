@@ -1,14 +1,7 @@
 from django.contrib import admin
-from .models import (
-    AuctionStarted,
-    AuctionFinished,
-    Borrow,
-    Repay,
-    AccountAssets,
-    MetricSnapshot,
-    SimSnapshot,
-    OracleSnapshot
-)
+
+from .models import (AccountAssets, AuctionFinished, AuctionStarted, Borrow,
+                     MetricSnapshot, OracleSnapshot, Repay, SimSnapshot)
 
 admin.site.register(AuctionStarted)
 admin.site.register(AuctionFinished)

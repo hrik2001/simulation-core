@@ -1,14 +1,16 @@
+import os
+from datetime import datetime, timezone
+from typing import Any, Dict, List
+
+import requests
+from dotenv import load_dotenv
+
+from ..caching import cache
+from ..entities.asset import base, ethereum
 from ..entities.chain import base, ethereum
-from ..models.chain import Chain
 from ..models.arcadia import AuctionInformation
 from ..models.asset import Asset
-from datetime import datetime, timezone
-from dotenv import load_dotenv
-import requests
-import os
-from typing import List, Dict, Any
-from ..entities.asset import base, ethereum
-from ..caching import cache
+from ..models.chain import Chain
 
 ## TO_DO
 # - Create an ETH Asset in Entities

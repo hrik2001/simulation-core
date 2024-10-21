@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 from filebrowser.sites import site
 
 admin.site.site_header = "Llamarisk Core"
@@ -23,12 +23,12 @@ admin.site.site_title = "Llamarisk Core Admin Dashboard"
 admin.site.index_title = "Llamarisk Core Administration"
 
 urlpatterns = [
-    path('admin/filebrowser/', site.urls),
-    path('admin/', admin.site.urls),
-    path('protocols/uniswap', include('uniswap.urls')),
-    path('protocols/arcadia', include('arcadia.urls')),
-    path('protocols/ethena', include('ethena.urls')),
-    path('protocols/defimoney', include('defimoney.urls')),
-    path('api/', include('core.urls')),
-    path('explorer/', include('explorer.urls')),
+    path("admin/filebrowser/", site.urls),
+    path("admin/", admin.site.urls),
+    path("protocols/uniswap", include("uniswap.urls")),
+    path("protocols/arcadia", include("arcadia.urls")),
+    path("protocols/ethena", include("ethena.urls")),
+    path("protocols/defimoney", include("defimoney.urls")),
+    path("api/", include("core.urls")),
+    path("explorer/", include("explorer.urls")),
 ]

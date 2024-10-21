@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ethena', '0003_reservefundbreakdown'),
+        ("ethena", "0003_reservefundbreakdown"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='chainmetrics',
-            name='dsr_rate',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="dsr_rate",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='sdai_price',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="sdai_price",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='total_sdai_supply',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="total_sdai_supply",
+            field=models.TextField(default="0"),
         ),
     ]

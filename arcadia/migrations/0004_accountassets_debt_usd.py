@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('arcadia', '0003_accountassets_asset_details_usd_and_more'),
+        ("arcadia", "0003_accountassets_asset_details_usd_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='accountassets',
-            name='debt_usd',
+            model_name="accountassets",
+            name="debt_usd",
             field=models.TextField(default=0),
             preserve_default=False,
         ),

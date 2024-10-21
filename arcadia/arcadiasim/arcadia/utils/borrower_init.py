@@ -1,18 +1,15 @@
-from .borrower_debt_model import *
-from typing import List, Dict
-from arcadiasim.models.arcadia import (
-    AssetsInMarginAccount,
-    AssetMetadata,
-    AssetValueAndRiskFactors,
-    Ranges,
-)
-from arcadiasim.models.asset import Asset, ConcentratedLiquidityAsset
-from arcadiasim.models.borrower import BorrowerDetailsFromModel
-from arcadiasim.entities.asset import cbETH, rETH, usdc, usdbc, weth, dai
-
 from collections import defaultdict
+from typing import Dict, List
+
 import numpy as np
 import requests
+from arcadiasim.entities.asset import cbETH, dai, rETH, usdbc, usdc, weth
+from arcadiasim.models.arcadia import (AssetMetadata, AssetsInMarginAccount,
+                                       AssetValueAndRiskFactors, Ranges)
+from arcadiasim.models.asset import Asset, ConcentratedLiquidityAsset
+from arcadiasim.models.borrower import BorrowerDetailsFromModel
+
+from .borrower_debt_model import *
 
 
 def borrower_init_arcadia_v1_short_term_cbETH_rETH(
@@ -117,7 +114,6 @@ def borrower_init_moonwell_simple(
     collateral_per_asset: List[List[AssetsInMarginAccount]],
     numeraire: Asset,
 ) -> List[BorrowerDetailsFromModel]:
-
     # Initialize variables outside the while loop
     exposure_met = False
     attempt = 0
@@ -174,11 +170,9 @@ def borrower_init_moonwell_multiasset(
     collateral_per_asset: List[List[AssetsInMarginAccount]],
     numeraire: Asset,
 ) -> List[BorrowerDetailsFromModel]:
-
     # ensure exposure is correct
     df_samples = []
     while True:
-
         df_samples = sample_empirical_multiasset_positions(
             numeraire=numeraire, n_samples=len(collateral_per_asset), condition=1
         )
@@ -194,7 +188,6 @@ def borrower_init_moonwell_multiasset(
             )
 
             if sample_exposure > permitted_exposure:
-
                 # WARNING: EXPOSURE CHECK DISABLED IF SET TO TRUE
                 exposure_check = False  #
                 break
@@ -204,7 +197,6 @@ def borrower_init_moonwell_multiasset(
 
     return_context = []
     for index, collateral_assets in enumerate(collateral_per_asset):
-
         debt = 10 ** df_samples.iloc[index]["log10_borrow"]
         collateral_value_numeraire = df_samples.iloc[index]["CR"] * debt
 
@@ -219,7 +211,6 @@ def borrower_init_moonwell_multiasset(
                 index_asset_to_remove.append(i)
 
             else:
-
                 fixed_point_amount = (
                     (collateral_value_numeraire * weight)
                     / prices[asset_in_margin_account.asset]
@@ -252,7 +243,6 @@ def borrower_init_moonwell_multiasset_conditional(
     collateral_per_asset: List[List[AssetsInMarginAccount]],
     numeraire: Asset,
 ) -> List[BorrowerDetailsFromModel]:
-
     # Get all unique asset form ranges defined in Orchestrator in order to
     # create a filtering condition for empricical sampling
     # Initialize sets for uniqueness
@@ -276,7 +266,6 @@ def borrower_init_moonwell_multiasset_conditional(
     # ensure exposure is correct
     df_samples = []
     while True:
-
         df_samples = sample_empirical_multiasset_positions_conditional(
             numeraire=numeraire,
             n_samples=len(collateral_per_asset),
@@ -296,7 +285,6 @@ def borrower_init_moonwell_multiasset_conditional(
             )
 
             if sample_exposure > permitted_exposure:
-
                 # WARNING: EXPOSURE CHECK DISABLED IF SET TO TRUE
                 exposure_check = False
                 break
@@ -306,7 +294,6 @@ def borrower_init_moonwell_multiasset_conditional(
 
     return_context = []
     for index, collateral_assets in enumerate(collateral_per_asset):
-
         debt = 10 ** df_samples.iloc[index]["log10_borrow"]
         collateral_value_numeraire = df_samples.iloc[index]["CR"] * debt
 
@@ -321,7 +308,6 @@ def borrower_init_moonwell_multiasset_conditional(
                 index_asset_to_remove.append(i)
 
             else:
-
                 fixed_point_amount = (
                     (collateral_value_numeraire * weight)
                     / prices[asset_in_margin_account.asset]

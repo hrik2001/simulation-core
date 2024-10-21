@@ -1,17 +1,15 @@
 import math
-from typing import List, Dict
+from typing import Dict, List
 
-from arcadia.arcadiasim.models.arcadia import (
-    AssetValueAndRiskFactors,
-    AuctionInformation,
-    AssetMetadata,
-    MarginAccount,
-    AssetsInMarginAccount,
-    LiquidationConfig,
-)
+from arcadia.arcadiasim.exceptions import NotEnoughLiquidity
+from arcadia.arcadiasim.models.arcadia import (AssetMetadata,
+                                               AssetsInMarginAccount,
+                                               AssetValueAndRiskFactors,
+                                               AuctionInformation,
+                                               LiquidationConfig,
+                                               MarginAccount)
 from arcadia.arcadiasim.models.asset import Asset
 from arcadia.arcadiasim.models.time import SimulationTime
-from arcadia.arcadiasim.exceptions import NotEnoughLiquidity
 
 
 def calculate_asked_share(
@@ -61,7 +59,6 @@ def calculate_liquidation_value(
 ):
     total_value = 0
     for asset_in_margin_account in account.assets:
-
         asset = asset_in_margin_account.asset
         metadata = asset_in_margin_account.metadata
         total_value += (

@@ -1,17 +1,18 @@
-import requests
-from requests.exceptions import ConnectionError, Timeout, RequestException
-from typing import Dict, Any
 from datetime import datetime, timedelta
+from typing import Any, Dict
+
+import requests
+from requests.exceptions import ConnectionError, RequestException, Timeout
 
 
 def get_quote(
-    src_token: str, 
-    src_decimals: int, 
-    dest_token: str, 
-    dest_decimals: int, 
-    usd_amount: float, 
+    src_token: str,
+    src_decimals: int,
+    dest_token: str,
+    dest_decimals: int,
+    usd_amount: float,
     market_price: float,
-    network_id: int
+    network_id: int,
 ) -> Dict[str, Any]:
     """
     Fetches the swap rate between two tokens using the OpenOcean API.
@@ -39,10 +40,11 @@ def get_quote(
         "outTokenDecimals": dest_decimals,
         "amount": f"{int((usd_amount/market_price))}",
         "gasPrice": "100000000000000000",
-        "slippage": "9999", 
+        "slippage": "9999",
         "account": "0x3727cfCBD85390Bb11B3fF421878123AdB866be8",
         "gasInclude": "true",
-        "onlyRoute": "true"    }
+        "onlyRoute": "true",
+    }
 
     headers = {
         "Content-Type": "application/json",
@@ -55,34 +57,38 @@ def get_quote(
         response.raise_for_status()  # Raise an exception for HTTP errors
 
         if response.status_code == 200:
-
             print(response.json())
             quote_raw = response.json()
 
             # extract
-            src_amount = float(quote_raw['data']['inAmount'])
-            dest_amount = float(quote_raw['data']['outAmount'])
-            src_usd = float(quote_raw['data']['inToken']['volume'])
-            dest_usd = float(quote_raw['data']['outToken']['volume'])
-            aggregator = str('openocean')
+            src_amount = float(quote_raw["data"]["inAmount"])
+            dest_amount = float(quote_raw["data"]["outAmount"])
+            src_usd = float(quote_raw["data"]["inToken"]["volume"])
+            dest_usd = float(quote_raw["data"]["outToken"]["volume"])
+            aggregator = str("openocean")
 
-            # format row 
+            # format row
             row = {
-                    "network": network_id,
-                    "dex_aggregator": aggregator, 
-                    "src": src_token,
-                    "src_decimals": src_decimals,
-                    "dst": dest_token,
-                    "dest_decimals": dest_decimals,
-                    "in_amount_usd": usd_amount,
-                    "in_amount": src_amount, 
-                    "out_amount": dest_amount,
-                    "market_price": market_price, 
-                    "price": (src_amount/(10**src_decimals)) / (dest_amount/(10**dest_decimals)), #execution_price
-                    "price_impact": (src_usd-dest_usd) / src_usd, #impact_cost
-                    "timestamp": round((datetime.now() + timedelta(minutes=30)).replace(minute=0, second=0, microsecond=0).timestamp())
-                }
-            
+                "network": network_id,
+                "dex_aggregator": aggregator,
+                "src": src_token,
+                "src_decimals": src_decimals,
+                "dst": dest_token,
+                "dest_decimals": dest_decimals,
+                "in_amount_usd": usd_amount,
+                "in_amount": src_amount,
+                "out_amount": dest_amount,
+                "market_price": market_price,
+                "price": (src_amount / (10**src_decimals))
+                / (dest_amount / (10**dest_decimals)),  # execution_price
+                "price_impact": (src_usd - dest_usd) / src_usd,  # impact_cost
+                "timestamp": round(
+                    (datetime.now() + timedelta(minutes=30))
+                    .replace(minute=0, second=0, microsecond=0)
+                    .timestamp()
+                ),
+            }
+
             print(row)
 
             return row
@@ -99,7 +105,6 @@ def get_quote(
     except Exception as e:
         print(f"Unexpected error: {e}")
         return {"error": "UnexpectedError", "message": str(e)}
-
 
 
 # Example usage

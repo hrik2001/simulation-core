@@ -4,22 +4,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0012_dexquote'),
+        ("core", "0012_dexquote"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='dexquote',
-            index=models.Index(fields=['src', 'dst'], name='src_dst_idx'),
+            model_name="dexquote",
+            index=models.Index(fields=["src", "dst"], name="src_dst_idx"),
         ),
         migrations.AddIndex(
-            model_name='dexquote',
-            index=models.Index(fields=['src'], name='src_idx'),
+            model_name="dexquote",
+            index=models.Index(fields=["src"], name="src_idx"),
         ),
         migrations.AddIndex(
-            model_name='dexquote',
-            index=models.Index(fields=['dst'], name='dst_idx'),
+            model_name="dexquote",
+            index=models.Index(fields=["dst"], name="dst_idx"),
         ),
     ]

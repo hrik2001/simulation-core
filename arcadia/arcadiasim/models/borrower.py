@@ -1,6 +1,7 @@
-from typing import List, Dict
-from .base import Base
+from typing import Dict, List
+
 from .asset import Asset
+from .base import Base
 
 
 class BorrowerDetailsFromModel(Base):

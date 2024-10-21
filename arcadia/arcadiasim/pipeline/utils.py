@@ -4,14 +4,15 @@ Utils to initiate a pipeline
 
 from typing import List
 
+import requests
+
 from ..caching import cache
+from ..entities.chain import base, ethereum
+from ..gas.gas import get_gas_owlracle_eth, get_gas_owlracle_usd
 from ..models.asset import Asset
 from ..models.chain import Chain
-from ..entities.chain import ethereum, base
 from ..models.time import SimulationTime
 from ..pricing.historical_pricing import historical_get_price
-from ..gas.gas import get_gas_owlracle_usd, get_gas_owlracle_eth
-import requests
 
 
 def create_market_price_feed(

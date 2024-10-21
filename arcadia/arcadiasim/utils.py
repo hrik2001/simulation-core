@@ -1,8 +1,9 @@
 import bisect
+import os
 from typing import List
+
 import pymongo
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 MONGODB_CONNECTION_STRING = os.getenv("MONGODB_CONNECTION_STRING")
@@ -10,7 +11,9 @@ MONGODB_CONNECTION_STRING = os.getenv("MONGODB_CONNECTION_STRING")
 
 def get_mongodb_db():
     database_name = "arcadiasim"
-    client = pymongo.MongoClient(MONGODB_CONNECTION_STRING, uuidRepresentation='standard')
+    client = pymongo.MongoClient(
+        MONGODB_CONNECTION_STRING, uuidRepresentation="standard"
+    )
     collections = [
         "PARAMS",
         "ACCOUNTS",

@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0007_alter_uniswaplpposition_liquidity_and_more'),
+        ("core", "0007_alter_uniswaplpposition_liquidity_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='erc20',
-            name='name',
+            model_name="erc20",
+            name="name",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='erc20',
-            name='pricing_metadata',
+            model_name="erc20",
+            name="pricing_metadata",
             field=models.JSONField(blank=True, default={}),
         ),
         migrations.AlterField(
-            model_name='erc20',
-            name='symbol',
+            model_name="erc20",
+            name="symbol",
             field=models.CharField(blank=True, max_length=59, null=True),
         ),
     ]

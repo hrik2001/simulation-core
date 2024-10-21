@@ -15,7 +15,9 @@ class SimulationParameters(models.Model):
 
 
 class SimulationRun(models.Model):
-    parameters = models.ForeignKey(SimulationParameters, on_delete=models.CASCADE, related_name="runs")
+    parameters = models.ForeignKey(
+        SimulationParameters, on_delete=models.CASCADE, related_name="runs"
+    )
     run_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -26,7 +28,9 @@ class SimulationRun(models.Model):
 
 
 class TimeseriesData(models.Model):
-    simulation_run = models.ForeignKey(SimulationRun, on_delete=models.CASCADE, related_name="timeseries_data")
+    simulation_run = models.ForeignKey(
+        SimulationRun, on_delete=models.CASCADE, related_name="timeseries_data"
+    )
     timestamp = models.DateTimeField()
     pool_value_virtual = models.FloatField()
     pool_value = models.FloatField()
@@ -41,7 +45,9 @@ class TimeseriesData(models.Model):
 
 
 class SummaryMetrics(models.Model):
-    simulation_run = models.OneToOneField(SimulationRun, on_delete=models.CASCADE, related_name="summary_metrics")
+    simulation_run = models.OneToOneField(
+        SimulationRun, on_delete=models.CASCADE, related_name="summary_metrics"
+    )
     pool_value_virtual_annualized_returns = models.FloatField()
     pool_value_annualized_returns = models.FloatField()
     pool_balance_median = models.FloatField()
@@ -58,7 +64,9 @@ class SummaryMetrics(models.Model):
 
 
 class PriceErrorDistribution(models.Model):
-    simulation_run = models.ForeignKey(SimulationRun, on_delete=models.CASCADE, related_name="price_error_distribution")
+    simulation_run = models.ForeignKey(
+        SimulationRun, on_delete=models.CASCADE, related_name="price_error_distribution"
+    )
     price_error = models.FloatField()
     frequency = models.FloatField()
 

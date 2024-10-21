@@ -4,28 +4,27 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0001_initial'),
+        ("core", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='cryologsmetadata',
-            name='new_extraction',
+            model_name="cryologsmetadata",
+            name="new_extraction",
         ),
         migrations.RemoveField(
-            model_name='cryologsmetadata',
-            name='old_extraction',
+            model_name="cryologsmetadata",
+            name="old_extraction",
         ),
         migrations.AddField(
-            model_name='cryologsmetadata',
-            name='extracted',
+            model_name="cryologsmetadata",
+            name="extracted",
             field=models.JSONField(blank=True, default=[], null=True),
         ),
         migrations.AddField(
-            model_name='cryologsmetadata',
-            name='ingested',
+            model_name="cryologsmetadata",
+            name="ingested",
             field=models.JSONField(blank=True, default=[], null=True),
         ),
     ]

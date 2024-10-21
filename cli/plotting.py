@@ -1,12 +1,14 @@
 """
-Plotting functions for 1inch quotes 
+Plotting functions for 1inch quotes
 and generated price impact curves.
 """
-import sys, os
+import datetime
+import os
+import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import datetime
-import matplotlib.pyplot as plt
 from external_market import ExternalMarket
 from sklearn.isotonic import IsotonicRegression
 
@@ -16,7 +18,7 @@ from core.dex_quotes.DTO import TokenDTO
 
 S = 5
 
-def plot_simple(quotes_df, in_token, out_token, timestamp, liquidation_bonus=0.075): 
+def plot_simple(quotes_df, in_token, out_token, timestamp, liquidation_bonus=0.075):
 
     if timestamp != None: # only display data for the provided timestamp
         closest_timestamp_value = quotes_df.loc[(quotes_df['timestamp'] - timestamp).abs().idxmin(), 'timestamp'].iloc[0]
@@ -24,23 +26,23 @@ def plot_simple(quotes_df, in_token, out_token, timestamp, liquidation_bonus=0.0
 
     quotes_df['price_impact'].clip(lower=0, upper=1)
     quotes_df['in_amount'] = quotes_df['in_amount']/(10**in_token.decimals)
-    
+
     plt.figure(figsize=(10, 6))
-    
-    for ts in quotes_df['timestamp'].unique(): 
-        plt.scatter(quotes_df[quotes_df['timestamp'] == ts]['in_amount'],  
-                    quotes_df[quotes_df['timestamp'] == ts]['price_impact'],  
+
+    for ts in quotes_df['timestamp'].unique():
+        plt.scatter(quotes_df[quotes_df['timestamp'] == ts]['in_amount'],
+                    quotes_df[quotes_df['timestamp'] == ts]['price_impact'],
                     label=f'{datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')}', alpha=0.5)
 
     price_impact = quotes_df['in_amount'].iloc[np.abs(quotes_df['price_impact'] - liquidation_bonus).argmin()]
     plt.axvline(x=price_impact, color='r', linestyle='--', label=f'{liquidation_bonus*100}% price impact = {int(price_impact)}')
-        
-    plt.xlabel('In Amount') 
-    plt.ylabel('Price Impact') 
-    plt.xscale('log') 
-    plt.title(f'Price Impact vs In Amount for {in_token.symbol} to {out_token.symbol}') 
-    plt.grid(True) 
-    plt.legend() 
+
+    plt.xlabel('In Amount')
+    plt.ylabel('Price Impact')
+    plt.xscale('log')
+    plt.title(f'Price Impact vs In Amount for {in_token.symbol} to {out_token.symbol}')
+    plt.grid(True)
+    plt.legend()
     plt.show()
 
 # pylint: disable=too-many-arguments, too-many-locals
@@ -129,7 +131,7 @@ def plot_regression_bounded(
     ax.plot(x / 10**in_token.decimals, y_lower, label="Lower Bound", c="black", lw=2)
     ax.plot(x / 10**in_token.decimals, y_central, label="Prediction", c="indianred", lw=2)
     ax.plot(x / 10**in_token.decimals, y_upper, label="Upper Bound", c="blue", lw=2)
-    
+
     ax.set_xscale(scale)
     ax.legend()
     ax.set_xlabel(f"Amount in ({in_token.symbol})")
@@ -146,4 +148,3 @@ def plot_regression_bounded(
 
     if fn:
         f.savefig(fn, bbox_inches="tight")
-        

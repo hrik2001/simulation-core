@@ -3,6 +3,7 @@ import json
 import os
 from functools import lru_cache
 from typing import TextIO
+
 import requests
 from django.conf import settings
 
@@ -19,7 +20,7 @@ class Caching:
     def __init__(self):
         # Find the project root directory in a cross-platform way
         # project_root = os.path.dirname(
-            # os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         # )
         project_root = settings.MEDIA_ROOT
         # Construct the base path for caching

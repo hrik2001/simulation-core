@@ -4,41 +4,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('uniswap', '0002_alter_paircreated_pair_alter_paircreated_token0_and_more'),
+        ("uniswap", "0002_alter_paircreated_pair_alter_paircreated_token0_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='paircreated',
-            name='transaction',
+            model_name="paircreated",
+            name="transaction",
         ),
         migrations.AddField(
-            model_name='paircreated',
-            name='block_number',
+            model_name="paircreated",
+            name="block_number",
             field=models.IntegerField(default=0),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='paircreated',
-            name='log_index',
+            model_name="paircreated",
+            name="log_index",
             field=models.IntegerField(null=True),
         ),
         migrations.AddField(
-            model_name='paircreated',
-            name='timestamp',
+            model_name="paircreated",
+            name="timestamp",
             field=models.IntegerField(null=True),
         ),
         migrations.AddField(
-            model_name='paircreated',
-            name='transaction_hash',
-            field=models.CharField(db_index=True, default='', max_length=255, unique=True),
+            model_name="paircreated",
+            name="transaction_hash",
+            field=models.CharField(
+                db_index=True, default="", max_length=255, unique=True
+            ),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='paircreated',
-            name='transaction_index',
+            model_name="paircreated",
+            name="transaction_index",
             field=models.IntegerField(null=True),
         ),
     ]

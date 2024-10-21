@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime, timezone, timedelta, tzinfo
+from datetime import datetime, timedelta, timezone, tzinfo
 from string import Template
 
 import dateutil.parser
@@ -11,43 +11,35 @@ from django.db.models import F
 from django.db.models.functions import Abs, Extract
 from dune_client.client import DuneClient
 from moralis import evm_api
-from web3 import Web3, HTTPProvider
+from web3 import HTTPProvider, Web3
 
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
-from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
-    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, \
-    FundingRateMetrics, UstbYieldMetrics, BuidlYieldMetrics, UsdmMetrics, BuidlRedemptionMetrics
-from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY, COINANALYZE_KEY
+from ethena.models import (ApyMetrics, BuidlRedemptionMetrics,
+                           BuidlYieldMetrics, ChainMetrics, CollateralMetrics,
+                           CurvePoolInfo, CurvePoolSnapshots, ExitQueueMetrics,
+                           FundingRateMetrics, ReserveFundBreakdown,
+                           ReserveFundMetrics, StakingMetrics,
+                           UniswapPoolSnapshots, UsdmMetrics, UstbYieldMetrics)
+from sim_core.settings import (COINANALYZE_KEY, DUNE_KEY, MORALIS_KEY,
+                               SUBGRAPH_KEY)
 
-RAY = 10 ** 27
+RAY = 10**27
 SECONDS_IN_YEAR = 365 * 24 * 60 * 60
 
 supply_function = {
     "inputs": [],
     "name": "totalSupply",
-    "outputs": [
-        {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-        }
-    ],
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
-    "type": "function"
+    "type": "function",
 }
 assets_function = {
     "inputs": [],
     "name": "totalAssets",
-    "outputs": [
-        {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-        }
-    ],
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
-    "type": "function"
+    "type": "function",
 }
 
 USDE_ADDRESS = Web3.to_checksum_address("0x4c9edd5852cd905f086c759e8383e09bff1e68b3")
@@ -62,16 +54,10 @@ POT_ABI = [
         "constant": True,
         "inputs": [],
         "name": "dsr",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "payable": False,
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     }
 ]
 
@@ -82,35 +68,24 @@ DAI_ADDRESS = Web3.to_checksum_address("0x6b175474e89094c44da98b954eedeac495271d
 DAI_ABI = [supply_function]
 
 BUIDL_ADDRESS = Web3.to_checksum_address(
-    "0x7712c34205737192402172409a8f7ccef8aa2aec")  # address of implementation contract of proxy BUIDL
+    "0x7712c34205737192402172409a8f7ccef8aa2aec"
+)  # address of implementation contract of proxy BUIDL
 BUIDL_ABI = [
     {
         "inputs": [],
         "name": "totalIssued",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     },
     {
         "inputs": [],
         "name": "walletCount",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     },
-    supply_function
+    supply_function,
 ]
 
 USDM_ADDRESS = Web3.to_checksum_address("0x59d9356e565ab3a36dd77763fc0d87feaf85508c")
@@ -118,67 +93,48 @@ USDM_ABI = [
     {
         "inputs": [],
         "name": "totalShares",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     },
-    supply_function
+    supply_function,
 ]
 
 SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address(
-    "0x43415eB6ff9DB7E26A15b704e7A3eDCe97d31C4e")  # address of implementation contract of proxy Superstate USTB
+    "0x43415eB6ff9DB7E26A15b704e7A3eDCe97d31C4e"
+)  # address of implementation contract of proxy Superstate USTB
 SUPERSTATE_USTB_ABI = [
     {
         "inputs": [],
         "name": "entityMaxBalance",
-        "outputs": [
-            {
-                "internalType":
-                    "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     },
-    supply_function
+    supply_function,
 ]
 
 USDT_ADDRESS = Web3.to_checksum_address("0xdac17f958d2ee523a2206206994597c13d831ec7")
 USDT_ABI = [
     {
-        "inputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "inputs": [{"name": "", "type": "address"}],
         "name": "balances",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{"name": "", "type": "uint256"}],
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     }
 ]
-ETHENA_USDT_ADDRESS = Web3.to_checksum_address("0xe3490297a08d6fC8Da46Edb7B6142E4F461b62D3")
+ETHENA_USDT_ADDRESS = Web3.to_checksum_address(
+    "0xe3490297a08d6fC8Da46Edb7B6142E4F461b62D3"
+)
 
 UNISWAP_POOL_ADDRESSES = [
     "0x435664008f38b0650fbc1c9fc971d0a3bc2f1e47",
     "0x867b321132b18b5bf3775c0d9040d1872979422e",
-    "0xe6d7ebb9f1a9519dc06d557e03c522d53520e76a"
+    "0xe6d7ebb9f1a9519dc06d557e03c522d53520e76a",
 ]
-UNISWAP_QUERY = Template("""\
+UNISWAP_QUERY = Template(
+    """\
 {
   poolDayDatas(
     first: 1
@@ -211,7 +167,8 @@ UNISWAP_QUERY = Template("""\
     feesUSD
   }
 }
-""")
+"""
+)
 
 ETHENA_COLLATERAL_API = "https://ethena.fi/api/positions/current/collateral"
 ETHENA_RESERVE_FUND_API = "https://ethena.fi/api/solvency/reserve-fund"
@@ -229,7 +186,7 @@ CURVE_POOL_ADDRESSES = [
     "0xf8db2accdef8e7a26b0e65c3980adc8ce11671a4",
     "0x1ab3d612ea7df26117554dddd379764ebce1a5ad",
     "0x964573b560da1ce5b10dd09a4723c5ccbe9f9688",
-    "0x57064f49ad7123c92560882a45518374ad982e85"
+    "0x57064f49ad7123c92560882a45518374ad982e85",
 ]
 
 YIELDS_BASE_URL = "https://yields.llama.fi"
@@ -239,44 +196,19 @@ YIELD_POOLS = [
     {"symbol": "aaveUSDT", "pool_id": "f981a304-bb6c-45b8-b0c5-fd2f515ad23a"},
     {"symbol": "aaveUSDC", "pool_id": "aa70268e-4b52-42bf-a116-608b370f9501"},
     {"symbol": "USD3", "pool_id": "9c4e675e-7615-4d60-90ef-03d58c66b476"},
-    {"symbol": "hyUSD", "pool_id": "3378bced-4bde-4ccf-b742-7d5c8ebb7720"}
+    {"symbol": "hyUSD", "pool_id": "3378bced-4bde-4ccf-b742-7d5c8ebb7720"},
 ]
 
 FUNDING_RATE_URL = "https://api.coinalyze.net/v1/funding-rate-history"
 FUNDING_RATE_DICT = [
-    {
-        "symbol": "BTCUSDT_PERP.A",
-        "exchange": "binance"
-    },
-    {
-        "symbol": "BTCUSDT.6",
-        "exchange": "bybit"
-    },
-    {
-        "symbol": "BTCUSDT_PERP.3",
-        "exchange": "okx"
-    },
-    {
-        "symbol": "BTC_USDC-PERPETUAL.2",
-        "exchange": "deribit"
-    },
-    {
-        "symbol": "ETHUSDT_PERP.A",
-        "exchange": "binance"
-    },
-    {
-        "symbol": "ETHUSDT.6",
-        "exchange": "bybit"
-    },
-    {
-        "symbol": "ETHUSDT_PERP.3",
-        "exchange": "okx"
-    },
-    {
-        "symbol": "ETH_USDC-PERPETUAL.2",
-        "exchange": "deribit"
-    }
-
+    {"symbol": "BTCUSDT_PERP.A", "exchange": "binance"},
+    {"symbol": "BTCUSDT.6", "exchange": "bybit"},
+    {"symbol": "BTCUSDT_PERP.3", "exchange": "okx"},
+    {"symbol": "BTC_USDC-PERPETUAL.2", "exchange": "deribit"},
+    {"symbol": "ETHUSDT_PERP.A", "exchange": "binance"},
+    {"symbol": "ETHUSDT.6", "exchange": "bybit"},
+    {"symbol": "ETHUSDT_PERP.3", "exchange": "okx"},
+    {"symbol": "ETH_USDC-PERPETUAL.2", "exchange": "deribit"},
 ]
 
 
@@ -293,7 +225,9 @@ def update_chain_metrics():
     pot_contract = web3.eth.contract(address=POT_ADDRESS, abi=POT_ABI)
     usdt_contract = web3.eth.contract(address=USDT_ADDRESS, abi=USDT_ABI)
     usdm_contract = web3.eth.contract(address=USDM_ADDRESS, abi=USDM_ABI)
-    superstate_ustb_contract = web3.eth.contract(address=SUPERSTATE_USTB_ADDRESS, abi=SUPERSTATE_USTB_ABI)
+    superstate_ustb_contract = web3.eth.contract(
+        address=SUPERSTATE_USTB_ADDRESS, abi=SUPERSTATE_USTB_ABI
+    )
     buidl_contract = web3.eth.contract(address=BUIDL_ADDRESS, abi=BUIDL_ABI)
 
     latest_block_number = web3.eth.get_block("latest")["number"]
@@ -310,22 +244,52 @@ def update_chain_metrics():
 
             timestamp = block["timestamp"]
 
-            usde_supply = usde_contract.functions.totalSupply().call(block_identifier=block_number)
-            susde_supply = susde_contract.functions.totalSupply().call(block_identifier=block_number)
-            susde_staked = susde_contract.functions.totalAssets().call(block_identifier=block_number)
-            dai_supply = dai_contract.functions.totalSupply().call(block_identifier=block_number)
-            sdai_supply = sdai_contract.functions.totalSupply().call(block_identifier=block_number)
-            sdai_staked = sdai_contract.functions.totalAssets().call(block_identifier=block_number)
-            usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(block_identifier=block_number)
-            buidl_supply = buidl_contract.functions.totalSupply().call(block_identifier=block_number)
-            buidl_issued = buidl_contract.functions.totalIssued().call(block_identifier=block_number)
-            buidl_wallet_count = buidl_contract.functions.walletCount().call(block_identifier=block_number)
-            usdm_supply = usdm_contract.functions.totalSupply().call(block_identifier=block_number)
-            usdm_shares = usdm_contract.functions.totalShares().call(block_identifier=block_number)
-            superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(
-                block_identifier=block_number)
-            superstate_ustb_balance = superstate_ustb_contract.functions.entityMaxBalance().call(
-                block_identifier=block_number)
+            usde_supply = usde_contract.functions.totalSupply().call(
+                block_identifier=block_number
+            )
+            susde_supply = susde_contract.functions.totalSupply().call(
+                block_identifier=block_number
+            )
+            susde_staked = susde_contract.functions.totalAssets().call(
+                block_identifier=block_number
+            )
+            dai_supply = dai_contract.functions.totalSupply().call(
+                block_identifier=block_number
+            )
+            sdai_supply = sdai_contract.functions.totalSupply().call(
+                block_identifier=block_number
+            )
+            sdai_staked = sdai_contract.functions.totalAssets().call(
+                block_identifier=block_number
+            )
+            usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(
+                block_identifier=block_number
+            )
+            buidl_supply = buidl_contract.functions.totalSupply().call(
+                block_identifier=block_number
+            )
+            buidl_issued = buidl_contract.functions.totalIssued().call(
+                block_identifier=block_number
+            )
+            buidl_wallet_count = buidl_contract.functions.walletCount().call(
+                block_identifier=block_number
+            )
+            usdm_supply = usdm_contract.functions.totalSupply().call(
+                block_identifier=block_number
+            )
+            usdm_shares = usdm_contract.functions.totalShares().call(
+                block_identifier=block_number
+            )
+            superstate_ustb_supply = (
+                superstate_ustb_contract.functions.totalSupply().call(
+                    block_identifier=block_number
+                )
+            )
+            superstate_ustb_balance = (
+                superstate_ustb_contract.functions.entityMaxBalance().call(
+                    block_identifier=block_number
+                )
+            )
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
@@ -333,7 +297,9 @@ def update_chain_metrics():
             dai_price = price_defillama("ethereum", DAI_ADDRESS, timestamp)
             usdt_price = price_defillama("ethereum", USDT_ADDRESS, timestamp)
             usdm_price = price_defillama("ethereum", USDM_ADDRESS, timestamp)
-            superstate_ustb_price = price_defillama("ethereum", SUPERSTATE_USTB_ADDRESS, timestamp)
+            superstate_ustb_price = price_defillama(
+                "ethereum", SUPERSTATE_USTB_ADDRESS, timestamp
+            )
             try:
                 buidl_price = price_defillama("ethereum", BUIDL_ADDRESS, timestamp)
             except Exception:
@@ -369,7 +335,7 @@ def update_chain_metrics():
                 total_buidl_issued=str(buidl_issued),
                 total_usdm_shares=str(usdm_shares),
                 total_superstate_ustb_balance=str(superstate_ustb_balance),
-                buidl_wallet_count=str(buidl_wallet_count)
+                buidl_wallet_count=str(buidl_wallet_count),
             )
             chain_metrics.save()
         except ValueError:
@@ -414,11 +380,7 @@ def update_reserve_fund_metrics():
 def update_reserve_fund_breakdown():
     wallet_tokens = evm_api.token.get_wallet_token_balances(
         api_key=MORALIS_KEY,
-        params={
-            "chain": "eth",
-            "exclude_spam": True,
-            "address": RESERVE_FUND_ADDRESS
-        },
+        params={"chain": "eth", "exclude_spam": True, "address": RESERVE_FUND_ADDRESS},
     )
 
     token_addresses = [token["token_address"] for token in wallet_tokens]
@@ -427,29 +389,32 @@ def update_reserve_fund_breakdown():
 
     refined_wallet_tokens = []
     for token in wallet_tokens:
-        usd_value = (float(token['balance']) * token_prices[token["token_address"]]) / (10 ** token['decimals'])
-        refined_wallet_tokens.append({
-            "token_address": token["token_address"],
-            "symbol": token["symbol"],
-            "decimals": token["decimals"],
-            "balance": token["balance"],
-            "usd_value": usd_value
-        })
+        usd_value = (float(token["balance"]) * token_prices[token["token_address"]]) / (
+            10 ** token["decimals"]
+        )
+        refined_wallet_tokens.append(
+            {
+                "token_address": token["token_address"],
+                "symbol": token["symbol"],
+                "decimals": token["decimals"],
+                "balance": token["balance"],
+                "usd_value": usd_value,
+            }
+        )
 
     native_balance = evm_api.balance.get_native_balance(
         api_key=MORALIS_KEY,
-        params={
-            "chain": "eth",
-            "address": RESERVE_FUND_ADDRESS
-        },
+        params={"chain": "eth", "address": RESERVE_FUND_ADDRESS},
     )
-    eth_usd_value = (float(native_balance['balance']) * token_prices[WETH_ADDRESS]) / (10 ** 18)
+    eth_usd_value = (float(native_balance["balance"]) * token_prices[WETH_ADDRESS]) / (
+        10**18
+    )
     eth_asset = {
         "token_address": WETH_ADDRESS,
         "symbol": "WETH",
         "decimals": 18,
         "balance": native_balance["balance"],
-        "usd_value": eth_usd_value
+        "usd_value": eth_usd_value,
     }
     refined_wallet_tokens.append(eth_asset)
 
@@ -458,52 +423,58 @@ def update_reserve_fund_breakdown():
         params={
             "chain": "eth",
             "address": RESERVE_FUND_ADDRESS,
-            "protocol": "makerdao"
+            "protocol": "makerdao",
         },
     )
-    refined_wallet_tokens.append({
-        "token_address": maker_position["positions"][0]["address"],
-        "symbol": maker_position["positions"][0]["tokens"][0]["symbol"],
-        "decimals": maker_position["positions"][0]["tokens"][0]["decimals"],
-        "balance": maker_position["positions"][0]["tokens"][0]["balance"],
-        "price": maker_position["positions"][0]["tokens"][0]["usd_price"],
-        "usd_value": maker_position["positions"][0]["balance_usd"]
-    })
+    refined_wallet_tokens.append(
+        {
+            "token_address": maker_position["positions"][0]["address"],
+            "symbol": maker_position["positions"][0]["tokens"][0]["symbol"],
+            "decimals": maker_position["positions"][0]["tokens"][0]["decimals"],
+            "balance": maker_position["positions"][0]["tokens"][0]["balance"],
+            "price": maker_position["positions"][0]["tokens"][0]["usd_price"],
+            "usd_value": maker_position["positions"][0]["balance_usd"],
+        }
+    )
 
     wallet_nfts = evm_api.wallets.get_defi_positions_by_protocol(
         api_key=MORALIS_KEY,
         params={
             "chain": "eth",
             "address": RESERVE_FUND_ADDRESS,
-            "protocol": "uniswap-v3"
+            "protocol": "uniswap-v3",
         },
     )
 
     refined_wallet_nfts = []
     for nft in wallet_nfts["positions"]:
-        refined_wallet_nfts.append({
-            "nft_address": "0x2B5AB59163a6e93b4486f6055D33CA4a115Dd4D5",
-            "pool_address": nft["position_details"]["pool_address"],
-            "position_key": nft["position_details"]["position_key"],
-            "balance_usd": nft["balance_usd"],
-            "total_unclaimed_usd_value": nft["total_unclaimed_usd_value"],
-            "reserves": nft["position_details"]["reserves"],
-            "liquidity": nft["position_details"]["liquidity"],
-            "price_lower": nft["position_details"]["price_lower"],
-            "price_upper": nft["position_details"]["price_upper"],
-            "current_price": nft["position_details"]["current_price"],
-            "token0": nft["tokens"][0]["contract_address"],
-            "token0_symbol": nft["tokens"][0]["symbol"],
-            "token0_decimals": nft["tokens"][0]["decimals"],
-            "token0_price": nft["tokens"][0]["usd_price"],
-            "token1": nft["tokens"][1]["contract_address"],
-            "token1_symbol": nft["tokens"][1]["symbol"],
-            "token1_decimals": nft["tokens"][1]["decimals"],
-            "token1_price": nft["tokens"][1]["usd_price"]
-        })
+        refined_wallet_nfts.append(
+            {
+                "nft_address": "0x2B5AB59163a6e93b4486f6055D33CA4a115Dd4D5",
+                "pool_address": nft["position_details"]["pool_address"],
+                "position_key": nft["position_details"]["position_key"],
+                "balance_usd": nft["balance_usd"],
+                "total_unclaimed_usd_value": nft["total_unclaimed_usd_value"],
+                "reserves": nft["position_details"]["reserves"],
+                "liquidity": nft["position_details"]["liquidity"],
+                "price_lower": nft["position_details"]["price_lower"],
+                "price_upper": nft["position_details"]["price_upper"],
+                "current_price": nft["position_details"]["current_price"],
+                "token0": nft["tokens"][0]["contract_address"],
+                "token0_symbol": nft["tokens"][0]["symbol"],
+                "token0_decimals": nft["tokens"][0]["decimals"],
+                "token0_price": nft["tokens"][0]["usd_price"],
+                "token1": nft["tokens"][1]["contract_address"],
+                "token1_symbol": nft["tokens"][1]["symbol"],
+                "token1_decimals": nft["tokens"][1]["decimals"],
+                "token1_price": nft["tokens"][1]["usd_price"],
+            }
+        )
 
-    reserve_funds_nft_usd = sum(nft['balance_usd'] for nft in refined_wallet_nfts)
-    reserve_funds_tokens_usd = sum(token['usd_value'] for token in refined_wallet_tokens)
+    reserve_funds_nft_usd = sum(nft["balance_usd"] for nft in refined_wallet_nfts)
+    reserve_funds_tokens_usd = sum(
+        token["usd_value"] for token in refined_wallet_tokens
+    )
     reserve_funds_total_usd = reserve_funds_nft_usd + reserve_funds_tokens_usd
 
     breakdown = ReserveFundBreakdown(
@@ -511,7 +482,7 @@ def update_reserve_fund_breakdown():
         positions=refined_wallet_nfts,
         tokens_usd_value=str(reserve_funds_tokens_usd),
         positions_usd_value=str(reserve_funds_nft_usd),
-        total_usd_value=str(reserve_funds_total_usd)
+        total_usd_value=str(reserve_funds_total_usd),
     )
     breakdown.save()
 
@@ -524,8 +495,9 @@ def update_uniswap_pool_snapshots():
         response = requests.post(uniswap_url, json={"query": query})
         data = response.json()["data"]["poolDayDatas"][0]
         pools[poolAddress] = data
-        uniswap_snapshot = UniswapPoolSnapshots(address=poolAddress, snapshot=data,
-                                                timestamp=datetime.now(tz=timezone.utc))
+        uniswap_snapshot = UniswapPoolSnapshots(
+            address=poolAddress, snapshot=data, timestamp=datetime.now(tz=timezone.utc)
+        )
         uniswap_snapshot.save()
 
 
@@ -537,7 +509,9 @@ def update_curve_pool_info():
         response = requests.get(metrics_url).json()
         response.pop("pool_methods", None)
         timestamp = datetime.now(tz=timezone.utc)
-        curve_pool_info = CurvePoolInfo(chain=chain, address=address, timestamp=timestamp, info=response)
+        curve_pool_info = CurvePoolInfo(
+            chain=chain, address=address, timestamp=timestamp, info=response
+        )
         curve_pool_info.save()
 
 
@@ -555,11 +529,14 @@ def update_curve_pool_snapshots():
 
     for address in CURVE_POOL_ADDRESSES:
         snapshots_url = f"{CURVE_BASE_URL}/snapshots/{chain_name}/{address}/tvl"
-        response = requests.get(snapshots_url, params={
-            "start": int(start.timestamp()),
-            "end": int(end.timestamp()),
-            "unit": "none"
-        }).json()
+        response = requests.get(
+            snapshots_url,
+            params={
+                "start": int(start.timestamp()),
+                "end": int(end.timestamp()),
+                "unit": "none",
+            },
+        ).json()
 
         for snapshot in response["data"]:
             if snapshot["tvl_usd"] is None:
@@ -569,11 +546,9 @@ def update_curve_pool_snapshots():
             block_number = snapshot.pop("block_number")
 
             closest_curve_pool_info = (
-                CurvePoolInfo
-                .objects
-                .filter(address=address)
-                .annotate(time_diff=Abs(Extract(F('timestamp') - timestamp, 'epoch')))
-                .order_by('time_diff')
+                CurvePoolInfo.objects.filter(address=address)
+                .annotate(time_diff=Abs(Extract(F("timestamp") - timestamp, "epoch")))
+                .order_by("time_diff")
                 .first()
             )
             snapshot["info"] = closest_curve_pool_info.info
@@ -583,16 +558,14 @@ def update_curve_pool_snapshots():
                 block_number=block_number,
                 timestamp=timestamp,
                 address=address,
-                snapshot=snapshot
+                snapshot=snapshot,
             )
             pool_snapshot.save()
 
 
 def query_dune(query_id):
     dune = DuneClient(
-        api_key=DUNE_KEY,
-        base_url="https://api.dune.com",
-        request_timeout=5000
+        api_key=DUNE_KEY, base_url="https://api.dune.com", request_timeout=5000
     )
     return dune.get_latest_result(query_id, batch_size=500, max_age_hours=8)
 
@@ -604,15 +577,23 @@ def update_apy_metrics():
         objects = []
         for metric in response["data"]:
             apy_metric = ApyMetrics(
-                timestamp=datetime.fromisoformat(metric["timestamp"].replace("Z", "+00:00")),
+                timestamp=datetime.fromisoformat(
+                    metric["timestamp"].replace("Z", "+00:00")
+                ),
                 symbol=pool["symbol"],
                 pool_id=pool["pool_id"],
                 tvl_usd=str(metric["tvlUsd"]) if metric["tvlUsd"] is not None else None,
                 apy=str(metric["apy"]) if metric["apy"] is not None else None,
-                apy_base=str(metric["apyBase"]) if metric["apyBase"] is not None else None,
-                apy_reward=str(metric["apyReward"]) if metric["apyReward"] is not None else None,
+                apy_base=str(metric["apyBase"])
+                if metric["apyBase"] is not None
+                else None,
+                apy_reward=str(metric["apyReward"])
+                if metric["apyReward"] is not None
+                else None,
                 il7d=str(metric["il7d"]) if metric["il7d"] is not None else None,
-                apy_base_7d=str(metric["apyBase7d"]) if metric["apyBase7d"] is not None else None,
+                apy_base_7d=str(metric["apyBase7d"])
+                if metric["apyBase7d"] is not None
+                else None,
             )
             objects.append(apy_metric)
         ApyMetrics.objects.bulk_create(objects, ignore_conflicts=True)
@@ -636,7 +617,7 @@ def update_funding_rates():
                 "symbols": symbol,
                 "interval": "4hour",
                 "from": from_ts,
-                "to": to_ts
+                "to": to_ts,
             }
 
             headers = {"api_key": COINANALYZE_KEY}
@@ -648,16 +629,20 @@ def update_funding_rates():
                 timestamp = datetime.fromtimestamp(point["t"], tz=timezone.utc)
                 rate = str(float(point["c"]))
 
-                objects.append(FundingRateMetrics(
-                    symbol=symbol,
-                    exchange=exchange,
-                    timestamp=timestamp,
-                    rate=rate,
-                ))
+                objects.append(
+                    FundingRateMetrics(
+                        symbol=symbol,
+                        exchange=exchange,
+                        timestamp=timestamp,
+                        rate=rate,
+                    )
+                )
 
             time.sleep(1)  # Add a small delay to avoid hitting rate limits
         except Exception:
-            logger.exception(f"Failed to fetch data for {symbol} on {exchange}", exc_info=True)
+            logger.exception(
+                f"Failed to fetch data for {symbol} on {exchange}", exc_info=True
+            )
 
     FundingRateMetrics.objects.bulk_create(objects, ignore_conflicts=True)
 
@@ -667,12 +652,23 @@ def update_ustb_yield_metrics():
     response = requests.get(url)
     response.raise_for_status()
     data = response.json()
-    UstbYieldMetrics.objects.bulk_create([UstbYieldMetrics(
-        date=dateutil.parser.parse(data["as_of_date"]).replace(tzinfo=timezone.utc),
-        thirty_day=str(data["thirty_day"]) if data["thirty_day"] is not None else None,
-        seven_day=str(data["seven_day"]) if data["seven_day"] is not None else None,
-        one_day=str(data["one_day"]) if data["one_day"] is not None else None,
-    )], ignore_conflicts=True)
+    UstbYieldMetrics.objects.bulk_create(
+        [
+            UstbYieldMetrics(
+                date=dateutil.parser.parse(data["as_of_date"]).replace(
+                    tzinfo=timezone.utc
+                ),
+                thirty_day=str(data["thirty_day"])
+                if data["thirty_day"] is not None
+                else None,
+                seven_day=str(data["seven_day"])
+                if data["seven_day"] is not None
+                else None,
+                one_day=str(data["one_day"]) if data["one_day"] is not None else None,
+            )
+        ],
+        ignore_conflicts=True,
+    )
 
 
 def update_buidl_yield_metrics():
@@ -695,7 +691,9 @@ def update_usdm_metrics():
     for row in query_result.result.rows:
         if row["apy"] is not None:
             _row = {
-                "date": dateutil.parser.parse(row["period"]).replace(tzinfo=timezone.utc),
+                "date": dateutil.parser.parse(row["period"]).replace(
+                    tzinfo=timezone.utc
+                ),
                 "holders": str(row["holders"]) if row["holders"] is not None else None,
                 "index": str(row["index"]) if row["index"] is not None else None,
                 "apy": str(row["apy"]),
@@ -710,7 +708,9 @@ def update_buidl_redemption_metrics():
     for row in query_result.result.rows:
         _row = {
             "date": dateutil.parser.parse(row["day"]).replace(tzinfo=timezone.utc),
-            "balance": str(row["balance_raw"]) if row["balance_raw"] is not None else None,
+            "balance": str(row["balance_raw"])
+            if row["balance_raw"] is not None
+            else None,
         }
         objects.append(BuidlRedemptionMetrics(**_row))
     BuidlRedemptionMetrics.objects.bulk_create(objects, ignore_conflicts=True)
@@ -774,7 +774,10 @@ def task__ethena__staking_metrics():
     query_result = query_dune(4069937)
     objects = []
     for row in query_result.result.rows:
-        _row = {**row, "day": dateutil.parser.parse(row["day"]).replace(tzinfo=timezone.utc)}
+        _row = {
+            **row,
+            "day": dateutil.parser.parse(row["day"]).replace(tzinfo=timezone.utc),
+        }
         objects.append(StakingMetrics(**_row))
     StakingMetrics.objects.bulk_create(objects, ignore_conflicts=True)
     logger.info("updating staking metrics")
@@ -787,8 +790,12 @@ def task__ethena__exit_queue_metrics():
     objects = []
     for row in query_result.result.rows:
         _row = {
-            "withdraw_day": dateutil.parser.parse(row["withdraw_day"]).replace(tzinfo=timezone.utc),
-            "unlock_day": dateutil.parser.parse(row["unlock_day"]).replace(tzinfo=timezone.utc),
+            "withdraw_day": dateutil.parser.parse(row["withdraw_day"]).replace(
+                tzinfo=timezone.utc
+            ),
+            "unlock_day": dateutil.parser.parse(row["unlock_day"]).replace(
+                tzinfo=timezone.utc
+            ),
             "usde": row["USDe"],
             "susde": row["sUSDe"],
             "total_usde": row["total_USDe"],

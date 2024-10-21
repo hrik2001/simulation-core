@@ -1,9 +1,6 @@
-from ..models.asset import (
-    Asset,
-    ConcentratedLiquidityAsset,
-    ConcentratedLiquidityAssetPosition,
-)
-from .chain import ethereum, base
+from ..models.asset import (Asset, ConcentratedLiquidityAsset,
+                            ConcentratedLiquidityAssetPosition)
+from .chain import base, ethereum
 
 usdt = Asset(
     symbol="USDT",

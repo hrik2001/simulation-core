@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ethena', '0007_remove_curvepoolmetrics_address_and_more'),
+        ("ethena", "0007_remove_curvepoolmetrics_address_and_more"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='UniswapStats',
-            new_name='UniswapMetrics',
+            old_name="UniswapStats",
+            new_name="UniswapMetrics",
         ),
     ]

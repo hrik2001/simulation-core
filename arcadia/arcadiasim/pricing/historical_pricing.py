@@ -1,11 +1,14 @@
-from ..caching import cache
-from ..models.asset import Asset, ConcentratedLiquidityAsset, SimCoreUniswapLPPosition
-from ..exceptions import HistoricalSpotPriceNotFoundError
-from ..univ3.utils import initiate_liquidity_position, get_value_of_lp
+import os
 from time import sleep
+
 import requests
 from dotenv import load_dotenv
-import os
+
+from ..caching import cache
+from ..exceptions import HistoricalSpotPriceNotFoundError
+from ..models.asset import (Asset, ConcentratedLiquidityAsset,
+                            SimCoreUniswapLPPosition)
+from ..univ3.utils import get_value_of_lp, initiate_liquidity_position
 
 load_dotenv()
 
@@ -109,7 +112,6 @@ class HistoricalPriceStrategyMethods:
             key=lambda x: abs(result["t"][x] - target_timestamp),
         )
         try:
-
             avg_price = (result["o"][closest_index] + result["c"][closest_index]) / 2
             print(avg_price)
             return avg_price
@@ -119,7 +121,6 @@ class HistoricalPriceStrategyMethods:
     def defillama_strategy(
         asset: Asset, numeraire: Asset | str, *, target_timestamp: int, **kwargs
     ):
-
         name_mapping = {8453: "base", 1: "ethereum"}
         timestamp = int(target_timestamp)
         chain_name = name_mapping[asset.chain.chain_id]
@@ -158,31 +159,33 @@ def historical_get_price(
         )
     else:
         # if asset.position.liquidity_estimate is None:
-            # (
-                # asset.position.liquidity_estimate,
-                # asset.position.lower_price,
-                # asset.position.upper_price,
-                # _,
-                # _,
-            # ) = initiate_liquidity_position(
-                # asset.position.usd_value_invested,
-                # historical_get_price(
-                    # asset.token0, numeraire, target_timestamp=target_timestamp
-                # ),
-                # historical_get_price(
-                    # asset.token1, numeraire, target_timestamp=target_timestamp
-                # ),
-                # asset.position.interval_spread,
-            # )
+        # (
+        # asset.position.liquidity_estimate,
+        # asset.position.lower_price,
+        # asset.position.upper_price,
+        # _,
+        # _,
+        # ) = initiate_liquidity_position(
+        # asset.position.usd_value_invested,
+        # historical_get_price(
+        # asset.token0, numeraire, target_timestamp=target_timestamp
+        # ),
+        # historical_get_price(
+        # asset.token1, numeraire, target_timestamp=target_timestamp
+        # ),
+        # asset.position.interval_spread,
+        # )
 
         # getting price
         print(f"{asset.liquidity=} {asset.tickLower=} {asset.tickUpper=}")
-        if int(asset.liquidity) == 0 or (asset.tickLower.startswith("-") or asset.tickLower.startswith("-")):
+        if int(asset.liquidity) == 0 or (
+            asset.tickLower.startswith("-") or asset.tickLower.startswith("-")
+        ):
             return 0
         return get_value_of_lp(
             int(asset.liquidity),
-            1.001**float(asset.tickLower),
-            1.001**float(asset.tickUpper),
+            1.001 ** float(asset.tickLower),
+            1.001 ** float(asset.tickUpper),
             historical_get_price(
                 asset.token0, numeraire, target_timestamp=target_timestamp
             ),
@@ -191,13 +194,13 @@ def historical_get_price(
             ),
         )
         # return get_value_of_lp(
-            # asset.position.liquidity_estimate,
-            # asset.position.lower_price,
-            # asset.position.upper_price,
-            # historical_get_price(
-                # asset.token0, numeraire, target_timestamp=target_timestamp
-            # ),
-            # historical_get_price(
-                # asset.token1, numeraire, target_timestamp=target_timestamp
-            # ),
+        # asset.position.liquidity_estimate,
+        # asset.position.lower_price,
+        # asset.position.upper_price,
+        # historical_get_price(
+        # asset.token0, numeraire, target_timestamp=target_timestamp
+        # ),
+        # historical_get_price(
+        # asset.token1, numeraire, target_timestamp=target_timestamp
+        # ),
         # )

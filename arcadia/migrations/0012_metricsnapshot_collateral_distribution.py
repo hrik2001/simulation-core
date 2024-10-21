@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('arcadia', '0011_oraclesnapshot_missed_assets'),
+        ("arcadia", "0011_oraclesnapshot_missed_assets"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='metricsnapshot',
-            name='collateral_distribution',
+            model_name="metricsnapshot",
+            name="collateral_distribution",
             field=models.JSONField(null=True),
         ),
     ]

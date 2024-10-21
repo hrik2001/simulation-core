@@ -4,40 +4,39 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ethena', '0022_fundingratemetrics_and_more'),
+        ("ethena", "0022_fundingratemetrics_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='apymetrics',
-            name='apy',
+            model_name="apymetrics",
+            name="apy",
             field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='apymetrics',
-            name='apy_base',
+            model_name="apymetrics",
+            name="apy_base",
             field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='apymetrics',
-            name='apy_base_7d',
+            model_name="apymetrics",
+            name="apy_base_7d",
             field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='apymetrics',
-            name='apy_reward',
+            model_name="apymetrics",
+            name="apy_reward",
             field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='apymetrics',
-            name='il7d',
+            model_name="apymetrics",
+            name="il7d",
             field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='apymetrics',
-            name='tvl_usd',
+            model_name="apymetrics",
+            name="tvl_usd",
             field=models.TextField(null=True),
         ),
     ]

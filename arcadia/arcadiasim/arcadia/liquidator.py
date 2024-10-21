@@ -1,13 +1,15 @@
-from .liquidation_engine import LiquidationEngine
-from ..models.time import SimulationTime
-from ..models.arcadia import AuctionInformation, MarginAccount
-from ..slippage.slippage import SlippageCalculator
-from ..exceptions import AuctionDoesExist
-from ..logging import configure_multiprocess_logging, get_logger
-from .utils.liquidator import is_liquidatable
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 from pydantic import model_serializer
+
+from ..exceptions import AuctionDoesExist
+from ..logging import configure_multiprocess_logging, get_logger
+from ..models.arcadia import AuctionInformation, MarginAccount
+from ..models.time import SimulationTime
+from ..slippage.slippage import SlippageCalculator
+from .liquidation_engine import LiquidationEngine
+from .utils.liquidator import is_liquidatable
 
 # from uuid import UUID, uuid4
 
@@ -78,9 +80,9 @@ class Liquidator:
         result_context["bid_revenue"] = current_amount_numeraire / (
             10**auction_information.numeraire.decimals
         )
-        result_context["trading_fees"] = (
-            trading_fee  # /(10**auction_information.numeraire.decimals)
-        )
+        result_context[
+            "trading_fees"
+        ] = trading_fee  # /(10**auction_information.numeraire.decimals)
         result_context["slippage"] = slippage / (
             10**auction_information.numeraire.decimals
         )

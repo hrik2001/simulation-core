@@ -5,35 +5,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0006_erc20_uniswaplpposition'),
+        ("core", "0006_erc20_uniswaplpposition"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='uniswaplpposition',
-            name='liquidity',
+            model_name="uniswaplpposition",
+            name="liquidity",
             field=models.CharField(max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='uniswaplpposition',
-            name='tickLower',
+            model_name="uniswaplpposition",
+            name="tickLower",
             field=models.CharField(max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='uniswaplpposition',
-            name='tickUpper',
+            model_name="uniswaplpposition",
+            name="tickUpper",
             field=models.CharField(max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='uniswaplpposition',
-            name='token0',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='erc_token0', to='core.erc20'),
+            model_name="uniswaplpposition",
+            name="token0",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="erc_token0",
+                to="core.erc20",
+            ),
         ),
         migrations.AlterField(
-            model_name='uniswaplpposition',
-            name='token1',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='erc_token1', to='core.erc20'),
+            model_name="uniswaplpposition",
+            name="token1",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="erc_token1",
+                to="core.erc20",
+            ),
         ),
     ]

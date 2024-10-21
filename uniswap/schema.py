@@ -1,6 +1,7 @@
 import graphene
 from graphene import ObjectType, String
 from graphene_django.types import DjangoObjectType
+
 from .models import PairCreated
 from .types import uniswap__PairCreated
 
@@ -18,5 +19,6 @@ class Query(ObjectType):
             queryset = queryset.filter(token1=token1)
 
         return queryset
+
 
 schema = graphene.Schema(query=Query)

@@ -1,8 +1,11 @@
 import json
+from typing import Any
+
 from django.core.serializers.json import DjangoJSONEncoder
 from django.forms.models import model_to_dict
-from ..models import SimulationRun, SummaryMetrics, TimeseriesData, PriceErrorDistribution
-from typing import Any
+
+from ..models import (PriceErrorDistribution, SimulationRun, SummaryMetrics,
+                      TimeseriesData)
 
 
 class SimulationJSONGenerator:

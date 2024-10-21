@@ -3,18 +3,22 @@ Provides the `ExternalMarket` class for modeling
 swaps in external liquidity venues.
 """
 from __future__ import annotations
-import os, sys
+
+import os
+import sys
 from collections import defaultdict
-from itertools import permutations
 from functools import cached_property
-from typing import Tuple, Dict, TYPE_CHECKING, List
+from itertools import permutations
+from typing import TYPE_CHECKING, Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
 from sklearn.isotonic import IsotonicRegression
 
 # Add '../core' to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from core.dex_quotes.DTO import TokenDTO
+
 
 class ExternalMarket:
     """
@@ -93,8 +97,9 @@ class ExternalMarket:
             if token_in in self.coin_addresses
         }
 
-
-    def fit_bounded(self, quotes: pd.DataFrame, num_bins: int = 100, iqr_factor: float = 1.5) -> None:
+    def fit_bounded(
+        self, quotes: pd.DataFrame, num_bins: int = 100, iqr_factor: float = 1.5
+    ) -> None:
         """
         Fit three different IsotonicRegressions based on quartiles of price impact
         at various price impact levels (filtered by bins) with outlier filtering.
@@ -109,10 +114,12 @@ class ExternalMarket:
             Multiplier for the IQR to determine outliers. Default is 1.5.
         """
         for i, j in self.pair_indices:
-            quotes_ = quotes.loc[(self.coin_addresses[i].lower(), self.coin_addresses[j].lower())]
+            quotes_ = quotes.loc[
+                (self.coin_addresses[i].lower(), self.coin_addresses[j].lower())
+            ]
 
             # Bin the input amounts
-            quotes_['bin'] = pd.qcut(quotes_['in_amount'], num_bins, duplicates='drop')
+            quotes_["bin"] = pd.qcut(quotes_["in_amount"], num_bins, duplicates="drop")
 
             # Initialize lists to store the binned data
             x_lower, y_lower = [], []
@@ -120,25 +127,28 @@ class ExternalMarket:
             x_upper, y_upper = [], []
 
             # Iterate through each bin to calculate quartiles and filter outliers
-            for bin_name, group in quotes_.groupby('bin'):
-                x_bin = group['in_amount'].median()
-                
+            for bin_name, group in quotes_.groupby("bin"):
+                x_bin = group["in_amount"].median()
+
                 # Calculate IQR for price impact
-                q1 = group['price_impact'].quantile(0.25)
-                q3 = group['price_impact'].quantile(0.75)
+                q1 = group["price_impact"].quantile(0.25)
+                q3 = group["price_impact"].quantile(0.75)
                 iqr = q3 - q1
-                
+
                 # Determine bounds for filtering
                 lower_bound = q1 - iqr_factor * iqr
                 upper_bound = q3 + iqr_factor * iqr
-                
+
                 # Filter out outliers
-                filtered_group = group[(group['price_impact'] >= lower_bound) & (group['price_impact'] <= upper_bound)]
-                
+                filtered_group = group[
+                    (group["price_impact"] >= lower_bound)
+                    & (group["price_impact"] <= upper_bound)
+                ]
+
                 # Calculate quartiles on filtered data
-                y_lower.append(filtered_group['price_impact'].quantile(0.25))
-                y_central.append(filtered_group['price_impact'].quantile(0.50))
-                y_upper.append(filtered_group['price_impact'].quantile(0.75))
+                y_lower.append(filtered_group["price_impact"].quantile(0.25))
+                y_central.append(filtered_group["price_impact"].quantile(0.50))
+                y_upper.append(filtered_group["price_impact"].quantile(0.75))
 
                 # # Filter for different quartile ranges
                 # lower_quantile_group = filtered_group[filtered_group['price_impact'] <= filtered_group['price_impact'].quantile(0.25)]
@@ -150,7 +160,7 @@ class ExternalMarket:
                 # y_lower.append(lower_quantile_group['price_impact'].median())
                 # y_central.append(central_quantile_group['price_impact'].median())
                 # y_upper.append(upper_quantile_group['price_impact'].median())
-                
+
                 x_lower.append(x_bin)
                 x_central.append(x_bin)
                 x_upper.append(x_bin)
@@ -170,8 +180,6 @@ class ExternalMarket:
             upper_bound_model.fit(x_upper, y_upper)
             self.models[i][f"{j}_upper"] = upper_bound_model
 
-
-
     def fit(self, quotes: pd.DataFrame) -> None:
         """
         Fit an IsotonicRegression to the price impact data for each
@@ -183,12 +191,14 @@ class ExternalMarket:
             DataFrame of 1inch quotes.
         """
         for i, j in self.pair_indices:
-            #quotes_ = quotes.loc[(self.coin_addresses[i].lower(), self.coin_addresses[j].lower())]
+            # quotes_ = quotes.loc[(self.coin_addresses[i].lower(), self.coin_addresses[j].lower())]
 
             x = quotes["in_amount"].values.reshape(-1, 1)
             y = quotes["price_impact"].values
 
-            model = IsotonicRegression(y_min=0, y_max=1, increasing=True, out_of_bounds="clip")
+            model = IsotonicRegression(
+                y_min=0, y_max=1, increasing=True, out_of_bounds="clip"
+            )
             model.fit(x, y)
             self.models[i][j] = model
 

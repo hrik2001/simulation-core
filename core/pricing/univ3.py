@@ -1,6 +1,7 @@
 import math
-from web3 import Web3
+
 import web3
+from web3 import Web3
 
 
 def mul_div(a, b, denominator):
@@ -270,17 +271,22 @@ def initiate_liquidity_position(
         * 10 ** (_token1_decimals - _token0_decimals)
     )
 
-    _liquidity_guess, _amount_0, _amount_1, _current_value_0, _current_value_1, _i = (
-        find_matching_liquidity(
-            _usd_value_invested,
-            _upper_price,
-            _current_price,
-            _lower_price,
-            _token0_price_in_usd,
-            _token0_decimals,
-            _token1_price_in_usd,
-            _token1_decimals,
-        )
+    (
+        _liquidity_guess,
+        _amount_0,
+        _amount_1,
+        _current_value_0,
+        _current_value_1,
+        _i,
+    ) = find_matching_liquidity(
+        _usd_value_invested,
+        _upper_price,
+        _current_price,
+        _lower_price,
+        _token0_price_in_usd,
+        _token0_decimals,
+        _token1_price_in_usd,
+        _token1_decimals,
     )
     adjusted_amount_0 = _amount_0 / (10**_token0_decimals)
     adjusted_amount_1 = _amount_1 / (10**_token1_decimals)
@@ -314,6 +320,7 @@ def get_value_of_lp(
     _total_value = _current_value_0 + _current_value_1
     return _total_value
 
+
 # Define the dummy ABI for the positions function
 dummy_abi = [
     {
@@ -340,6 +347,7 @@ dummy_abi = [
     }
 ]
 
+
 # Define the function to get positions details
 def get_positions_details(contract_address, w3, token_id):
     contract_address = Web3.to_checksum_address(contract_address)
@@ -348,7 +356,7 @@ def get_positions_details(contract_address, w3, token_id):
         result = contract.functions.positions(token_id).call()
     except web3.exceptions.ContractLogicError:
         return None
-    
+
     details = {
         "nonce": result[0],
         "operator": result[1],
@@ -363,7 +371,7 @@ def get_positions_details(contract_address, w3, token_id):
         "tokensOwed0": result[10],
         "tokensOwed1": result[11],
     }
-    
+
     return details
 
 
@@ -374,13 +382,17 @@ if __name__ == "__main__":
     token1_price_in_usd = 1
     interval_spread = 0.1  # %10
 
-    liquidity_guess, lower_price, upper_price, amount_0, amount_1 = (
-        initiate_liquidity_position(
-            usd_value_invested,
-            token0_price_in_usd,
-            token1_price_in_usd,
-            interval_spread,
-        )
+    (
+        liquidity_guess,
+        lower_price,
+        upper_price,
+        amount_0,
+        amount_1,
+    ) = initiate_liquidity_position(
+        usd_value_invested,
+        token0_price_in_usd,
+        token1_price_in_usd,
+        interval_spread,
     )
 
     print(

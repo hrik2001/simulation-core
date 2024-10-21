@@ -1,16 +1,19 @@
 import json
 import os
+from typing import List
+
 from django.conf import settings
 from django.db import models
-from core.models import Transaction, Chain
-from typing import List
 from web3 import Web3
+
+from core.models import Chain, Transaction
+
 
 def parquet_files_to_process(ingested, label):
     result = []
     if isinstance(ingested, str):
         ingested = json.loads(ingested)
-    
+
     os.chdir(os.path.join(settings.MEDIA_ROOT, f"logs__{label}"))
     if not isinstance(ingested, list):
         raise Exception("ingested should be a list")
@@ -24,6 +27,7 @@ def parquet_files_to_process(ingested, label):
             result.append(i)
     after_ingestion = list(set(result + ingested))
     return result, after_ingestion
+
 
 def update_timestamp(chain: Chain, entries: List[Transaction], model: models.Model):
     w3 = Web3(Web3.HTTPProvider(chain.rpc))

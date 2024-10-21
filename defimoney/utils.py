@@ -1,32 +1,33 @@
 from __future__ import annotations
-from core.dex_quotes.DTO import TOKEN_DTOs, STABLES, TokenDTO, COLLATERAL, USDC_OP_DTO, USDT_OP_DTO, USDC_ARB_DTO, USDT_ARB_DTO, WETH_OP_DTO, WETH_ARB_DTO, WBTC_OP_DTO, WBTC_ARB_DTO, WSTETH_OP_DTO, ARB_DTO, GMX_DTO, RDNT_DTO, WSTETH_ARB_DTO, PENDLE_DTO, OP_DTO, VELO_DTO
+
+from core.dex_quotes.DTO import (ARB_DTO, COLLATERAL, GMX_DTO, OP_DTO,
+                                 PENDLE_DTO, RDNT_DTO, STABLES, USDC_ARB_DTO,
+                                 USDC_OP_DTO, USDT_ARB_DTO, USDT_OP_DTO,
+                                 VELO_DTO, WBTC_ARB_DTO, WBTC_OP_DTO,
+                                 WETH_ARB_DTO, WETH_OP_DTO, WSTETH_ARB_DTO,
+                                 WSTETH_OP_DTO, TOKEN_DTOs, TokenDTO)
+
 """
 Provides the `ExternalMarket` class for modeling
 swaps in external liquidity venues.
 """
-from collections import defaultdict
-from itertools import permutations
-from functools import cached_property
-from typing import Tuple, Dict, TYPE_CHECKING, List
-import numpy as np
-import pandas as pd
-from web3 import Web3
-from sklearn.isotonic import IsotonicRegression
-
-
-import time
 import os
+import time
+from collections import defaultdict
+from functools import cached_property
+from itertools import permutations
+from typing import TYPE_CHECKING, Dict, List, Tuple
+
 import numpy as np
-from core.utils import price_defillama
-from core.models import Chain
-from typing import List
-from django.db.models import Q, F, Min, Max
-from django.db.models.functions import Lower
-from core.models import DexQuote
-from django.db.models.query import QuerySet
 import pandas as pd
+from django.db.models import F, Max, Min, Q
+from django.db.models.functions import Lower
+from django.db.models.query import QuerySet
+from sklearn.isotonic import IsotonicRegression
+from web3 import Web3
 
-
+from core.models import Chain, DexQuote
+from core.utils import price_defillama
 
 
 class ExternalMarket:
@@ -114,7 +115,9 @@ class ExternalMarket:
         """
         for i, j in self.pair_indices:
             # print(f"{self.coin_addresses[i].lower()=} {self.coin_addresses[j].lower()=}")
-            quotes_ = quotes.loc[(self.coin_addresses[i].lower(), self.coin_addresses[j].lower())] #.sort_values(by='price_impact', ascending=True)
+            quotes_ = quotes.loc[
+                (self.coin_addresses[i].lower(), self.coin_addresses[j].lower())
+            ]  # .sort_values(by='price_impact', ascending=True)
 
             x = quotes_["in_amount"].values.reshape(-1, 1)
             y = quotes_["price_impact"].values
@@ -197,7 +200,6 @@ class ExternalMarket:
         return self.name
 
 
-
 def get_stable_quotes(target: TokenDTO, stables: List[str]) -> pd.DataFrame:
     # Convert all input addresses to lowercase
     target_address = target.address.lower()
@@ -205,11 +207,10 @@ def get_stable_quotes(target: TokenDTO, stables: List[str]) -> pd.DataFrame:
 
     # Create the query
     quotes = DexQuote.objects.annotate(
-        src_lower=Lower('src'),
-        dst_lower=Lower('dst')
+        src_lower=Lower("src"), dst_lower=Lower("dst")
     ).filter(
-        (Q(src_lower__in=stables_lower) & Q(dst_lower=target_address)) |
-        (Q(dst_lower__in=stables_lower) & Q(src_lower=target_address))
+        (Q(src_lower__in=stables_lower) & Q(dst_lower=target_address))
+        | (Q(dst_lower__in=stables_lower) & Q(src_lower=target_address))
     )
 
     # return pd.DataFrame(quotes.values())
@@ -229,12 +230,13 @@ def get_stable_quotes(target: TokenDTO, stables: List[str]) -> pd.DataFrame:
 
     return result_df
 
+
 def find_debt_ceiling(market: ExternalMarket, df):
     i = 1
     j = 0
-    df['in_amount'] = pd.to_numeric(df['in_amount'], errors='coerce')
+    df["in_amount"] = pd.to_numeric(df["in_amount"], errors="coerce")
     # Drop rows with NaN values in 'in_amount' (if any were introduced by coercion)
-    df = df.dropna(subset=['in_amount'])
+    df = df.dropna(subset=["in_amount"])
     x = np.geomspace(df["in_amount"].min(), df["in_amount"].max(), 100)
     y = market.price_impact_many(i, j, x) * 100
     in_token = market.coins[i]
@@ -243,19 +245,22 @@ def find_debt_ceiling(market: ExternalMarket, df):
     x_sub_10 = x[sub_10_slippage_idx]
     y_sub_10 = y[sub_10_slippage_idx]
     print(y_sub_10)
-    
+
     # Find the kink in the curve using the second derivative
     dydx = np.gradient(y_sub_10)
     d2ydx2 = np.gradient(dydx)
-    
+
     # Find the index of the maximum point in the second derivative
     peak_idx = np.argmax(np.abs(d2ydx2))
     debt_ceiling_amount = x_sub_10[peak_idx] / 10**in_token.decimals
     # debt_ceiling_impact = y_sub_10[peak_idx]
     return debt_ceiling_amount
 
+
 def get_llamma_debt(dto: TokenDTO, contract_address: str):
-    w3 = Web3(Web3.HTTPProvider(Chain.objects.get(chain_name__iexact=dto.network.network).rpc))
+    w3 = Web3(
+        Web3.HTTPProvider(Chain.objects.get(chain_name__iexact=dto.network.network).rpc)
+    )
     contract_address = Web3.to_checksum_address(contract_address)
     contract_abi = [
         {
@@ -263,7 +268,7 @@ def get_llamma_debt(dto: TokenDTO, contract_address: str):
             "type": "function",
             "name": "total_debt",
             "inputs": [],
-            "outputs": [{"name": "", "type": "uint256"}]
+            "outputs": [{"name": "", "type": "uint256"}],
         }
     ]
 
@@ -274,18 +279,18 @@ def get_llamma_debt(dto: TokenDTO, contract_address: str):
 def collateral_debt_ceilings():
     # collateral = COLLATERAL[0]
     response = {
-            WETH_OP_DTO: {"debt_ceiling": 450},
-            WETH_ARB_DTO: {"debt_ceiling": 5400},
-            WBTC_OP_DTO: {"debt_ceiling": 14},
-            WBTC_ARB_DTO: {"debt_ceiling": 149},
-            WSTETH_OP_DTO: {"debt_ceiling": 357},
-            WSTETH_ARB_DTO: {"debt_ceiling": 1607},
-            OP_DTO: {"debt_ceiling": 1119402},
-            ARB_DTO: {"debt_ceiling": 12244897},
-            VELO_DTO: {"debt_ceiling": 5000000},
-            GMX_DTO: {"debt_ceiling": 120000},
-            PENDLE_DTO: {"debt_ceiling": 286738},
-            RDNT_DTO: {"debt_ceiling": 70257610},
+        WETH_OP_DTO: {"debt_ceiling": 450},
+        WETH_ARB_DTO: {"debt_ceiling": 5400},
+        WBTC_OP_DTO: {"debt_ceiling": 14},
+        WBTC_ARB_DTO: {"debt_ceiling": 149},
+        WSTETH_OP_DTO: {"debt_ceiling": 357},
+        WSTETH_ARB_DTO: {"debt_ceiling": 1607},
+        OP_DTO: {"debt_ceiling": 1119402},
+        ARB_DTO: {"debt_ceiling": 12244897},
+        VELO_DTO: {"debt_ceiling": 5000000},
+        GMX_DTO: {"debt_ceiling": 120000},
+        PENDLE_DTO: {"debt_ceiling": 286738},
+        RDNT_DTO: {"debt_ceiling": 70257610},
     }
     for collateral in COLLATERAL:
         flag = True
@@ -299,19 +304,24 @@ def collateral_debt_ceilings():
             except KeyError:
                 print("Asset is neither arbitrum nor optimism asset")
                 flag = False
-                
-        
+
         if not flag:
             continue
-        
+
         print(f"Trying {collateral_dto.symbol} {collateral_dto.address} on {chain}")
         # df_collateral = pd.DataFrame(get_stable_quotes(collateral_dto, [USDT_ARB_DTO, USDC_ARB_DTO, USDT_OP_DTO, USDC_OP_DTO]).values())
-        df_collateral = get_stable_quotes(collateral_dto, [USDT_ARB_DTO, USDC_ARB_DTO, USDT_OP_DTO, USDC_OP_DTO])
+        df_collateral = get_stable_quotes(
+            collateral_dto, [USDT_ARB_DTO, USDC_ARB_DTO, USDT_OP_DTO, USDC_OP_DTO]
+        )
         df_backup = df_collateral.copy(deep=True)
-        df_collateral['src'] = df_collateral['src_lower']
-        df_collateral['dst'] = df_collateral['dst_lower']
-        df_collateral.loc[df_collateral['src_lower'] != collateral.lower(), 'src'] = USDC_ARB_DTO.address.lower()
-        df_collateral.loc[df_collateral['dst_lower'] != collateral.lower(), 'dst'] = USDC_ARB_DTO.address.lower()
+        df_collateral["src"] = df_collateral["src_lower"]
+        df_collateral["dst"] = df_collateral["dst_lower"]
+        df_collateral.loc[
+            df_collateral["src_lower"] != collateral.lower(), "src"
+        ] = USDC_ARB_DTO.address.lower()
+        df_collateral.loc[
+            df_collateral["dst_lower"] != collateral.lower(), "dst"
+        ] = USDC_ARB_DTO.address.lower()
 
         # print(f"{df_collateral['src'].unique()=}")
         # print(f"{df_collateral['dst'].unique()=}")
@@ -327,7 +337,6 @@ def collateral_debt_ceilings():
         except ValueError as e:
             print(f"{collateral_dto.symbol} {chain} MESSED UP")
             continue
-
 
         time.sleep(1)
         # print(f"{collateral_dto.symbol} {chain} {dc} {dc_usd}")
@@ -348,22 +357,18 @@ def collateral_debt_ceilings():
         response[dto]["actual_debt"] = None
 
     llammas = {
-            WETH_ARB_DTO: "0xe38fb572099a8fdb51e0929cb2b439d0479fc43e",
-            WBTC_ARB_DTO: "0xb745f12ecf271484c79d3999ca12164fe1c4e5f9",
-            ARB_DTO: "0xec70ac48d2cc382987a176f64fe74d77d010f9d1",
-            WETH_OP_DTO: "0xd74a1f6b44395cf8c4833df5bc965c6c2b567476",
-            WBTC_OP_DTO: "0xc82b4c656ba6aa4a2ef6bfe6b511d206c93b405b",
-            WSTETH_OP_DTO: "0xfc6ec1f94f2ffce0f0bcb79592d765abd3e1baef"
-            
-
-            }
-
+        WETH_ARB_DTO: "0xe38fb572099a8fdb51e0929cb2b439d0479fc43e",
+        WBTC_ARB_DTO: "0xb745f12ecf271484c79d3999ca12164fe1c4e5f9",
+        ARB_DTO: "0xec70ac48d2cc382987a176f64fe74d77d010f9d1",
+        WETH_OP_DTO: "0xd74a1f6b44395cf8c4833df5bc965c6c2b567476",
+        WBTC_OP_DTO: "0xc82b4c656ba6aa4a2ef6bfe6b511d206c93b405b",
+        WSTETH_OP_DTO: "0xfc6ec1f94f2ffce0f0bcb79592d765abd3e1baef",
+    }
 
     final_response = dict()
     for dto, ceiling in response.items():
         if dto in llammas:
-            ceiling["actual_debt"] = get_llamma_debt(dto, llammas[dto])/1e18
+            ceiling["actual_debt"] = get_llamma_debt(dto, llammas[dto]) / 1e18
         final_response[f"{dto.symbol.lower()}-{dto.network.network.lower()}"] = ceiling
-        
+
     return final_response
- 

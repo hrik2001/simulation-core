@@ -1,5 +1,7 @@
 from django.db import models
-from core.models import Transaction, BaseModel
+
+from core.models import BaseModel, Transaction
+
 
 class Borrow(Transaction):
     pool_address = models.TextField(null=False)
@@ -13,11 +15,13 @@ class Borrow(Transaction):
     def __str__(self):
         return f"{self.account=} {self.by=} {self.to=} {self.amount=} {self.fee=} {self.referrer=}"
 
+
 class AuctionStarted(Transaction):
     pool_address = models.TextField(null=False)
     account = models.TextField(null=False)
     creditor = models.TextField(null=False)
     open_debt = models.TextField(null=False)
+
 
 class AuctionFinished(Transaction):
     pool_address = models.TextField(null=False)
@@ -30,11 +34,13 @@ class AuctionFinished(Transaction):
     bad_debt = models.TextField(null=False)
     surplus = models.TextField(null=False)
 
+
 class Repay(Transaction):
     pool_address = models.TextField(null=False)
     account = models.TextField(null=False)
     from_address = models.TextField(null=False)
     amount = models.TextField(null=False)
+
 
 class AccountAssets(BaseModel):
     account = models.TextField(unique=True)
@@ -55,6 +61,7 @@ class AccountAssets(BaseModel):
     def __str__(self):
         return f"Account={self.account} Debt={self.debt_usd} Collateral={self.collateral_value_usd}"
 
+
 class MetricSnapshot(BaseModel):
     weighted_cr = models.FloatField()
     weighted_cr_usdc = models.FloatField()
@@ -72,11 +79,16 @@ class MetricSnapshot(BaseModel):
     collateral_distribution2 = models.JSONField(null=True)
     total_supply_weth = models.DecimalField(max_digits=30, decimal_places=5, null=True)
     total_supply_usdc = models.DecimalField(max_digits=30, decimal_places=5, null=True)
-    total_liquidity_weth = models.DecimalField(max_digits=30, decimal_places=5, null=True)
-    total_liquidity_usdc = models.DecimalField(max_digits=30, decimal_places=5, null=True)
+    total_liquidity_weth = models.DecimalField(
+        max_digits=30, decimal_places=5, null=True
+    )
+    total_liquidity_usdc = models.DecimalField(
+        max_digits=30, decimal_places=5, null=True
+    )
 
     def __str__(self):
         return f"Snapshot @ {self.created_at}"
+
 
 class SimSnapshot(BaseModel):
     sim_id = models.TextField(unique=True)
@@ -100,13 +112,14 @@ class SimSnapshot(BaseModel):
     description = models.TextField(null=True, blank=True)
 
     class Meta:
-        db_table = 'sim_snapshot'
+        db_table = "sim_snapshot"
         indexes = [
-            models.Index(fields=['sim_id']),
+            models.Index(fields=["sim_id"]),
         ]
 
     def __str__(self):
-        return f'SimSnapshot {self.sim_id}'
+        return f"SimSnapshot {self.sim_id}"
+
 
 class OracleSnapshot(BaseModel):
     # Both are JSON fields and not hardcoded assets so that we can index new assets

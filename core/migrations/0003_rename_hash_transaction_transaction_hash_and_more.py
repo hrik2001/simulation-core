@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0002_remove_cryologsmetadata_new_extraction_and_more'),
+        ("core", "0002_remove_cryologsmetadata_new_extraction_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='transaction',
-            old_name='hash',
-            new_name='transaction_hash',
+            model_name="transaction",
+            old_name="hash",
+            new_name="transaction_hash",
         ),
         migrations.AddField(
-            model_name='transaction',
-            name='log_index',
+            model_name="transaction",
+            name="log_index",
             field=models.IntegerField(null=True),
         ),
         migrations.AddField(
-            model_name='transaction',
-            name='timestamp',
+            model_name="transaction",
+            name="timestamp",
             field=models.IntegerField(null=True),
         ),
         migrations.AddField(
-            model_name='transaction',
-            name='transaction_index',
+            model_name="transaction",
+            name="transaction_index",
             field=models.IntegerField(null=True),
         ),
     ]

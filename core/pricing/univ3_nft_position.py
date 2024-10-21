@@ -1,11 +1,14 @@
 import math
-from web3 import Web3
-import web3
 from collections import defaultdict
+
+import web3
+from web3 import Web3
+
 
 # Function to add or update the dictionary
 def add_or_update_dict(dictionary, key, value):
     dictionary[key] += value
+
 
 def mul_div(a, b, denominator):
     """Replicate Solidity's mulDiv for full precision multiplication and division."""
@@ -129,47 +132,47 @@ def get_amounts_from_ticks(tickCurrent, tickLower, tickUpper, liquidity):
     return amount0, amount1
 
 
-
 def get_nft_positions_details(nft_contract_address, w3, token_id):
-    
     abi = [
         {
-        "inputs": [{"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
-        "name": "positions",
-        "outputs": [
-            {"internalType": "uint96", "name": "nonce", "type": "uint96"},
-            {"internalType": "address", "name": "operator", "type": "address"},
-            {"internalType": "address", "name": "token0", "type": "address"},
-            {"internalType": "address", "name": "token1", "type": "address"},
-            {"internalType": "uint24", "name": "fee", "type": "uint24"},
-            {"internalType": "int24", "name": "tickLower", "type": "int24"},
-            {"internalType": "int24", "name": "tickUpper", "type": "int24"},
-            {"internalType": "uint128", "name": "liquidity", "type": "uint128"},
-            {
-                "internalType": "uint256",
-                "name": "feeGrowthInside0LastX128",
-                "type": "uint256",
-            },
-            {
-                "internalType": "uint256",
-                "name": "feeGrowthInside1LastX128",
-                "type": "uint256",
-            },
-            {"internalType": "uint128", "name": "tokensOwed0", "type": "uint128"},
-            {"internalType": "uint128", "name": "tokensOwed1", "type": "uint128"},
-        ],
-        "stateMutability": "view",
-        "type": "function",
+            "inputs": [
+                {"internalType": "uint256", "name": "tokenId", "type": "uint256"}
+            ],
+            "name": "positions",
+            "outputs": [
+                {"internalType": "uint96", "name": "nonce", "type": "uint96"},
+                {"internalType": "address", "name": "operator", "type": "address"},
+                {"internalType": "address", "name": "token0", "type": "address"},
+                {"internalType": "address", "name": "token1", "type": "address"},
+                {"internalType": "uint24", "name": "fee", "type": "uint24"},
+                {"internalType": "int24", "name": "tickLower", "type": "int24"},
+                {"internalType": "int24", "name": "tickUpper", "type": "int24"},
+                {"internalType": "uint128", "name": "liquidity", "type": "uint128"},
+                {
+                    "internalType": "uint256",
+                    "name": "feeGrowthInside0LastX128",
+                    "type": "uint256",
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "feeGrowthInside1LastX128",
+                    "type": "uint256",
+                },
+                {"internalType": "uint128", "name": "tokensOwed0", "type": "uint128"},
+                {"internalType": "uint128", "name": "tokensOwed1", "type": "uint128"},
+            ],
+            "stateMutability": "view",
+            "type": "function",
         }
     ]
-    
+
     contract_address = Web3.to_checksum_address(nft_contract_address)
     contract = w3.eth.contract(address=contract_address, abi=abi)
     try:
         result = contract.functions.positions(token_id).call()
     except web3.exceptions.ContractLogicError:
         return None
-    
+
     details = {
         "nonce": result[0],
         "operator": result[1],
@@ -184,11 +187,12 @@ def get_nft_positions_details(nft_contract_address, w3, token_id):
         "tokensOwed0": result[10],
         "tokensOwed1": result[11],
     }
-    
+
     return details
 
+
 # def get_uniswap_slot0(pool_address, w3):
-    
+
 #     abi = [
 #         {
 #         "inputs": [],
@@ -214,14 +218,14 @@ def get_nft_positions_details(nft_contract_address, w3, token_id):
 #         "type": "function",
 #     }
 #     ]
-    
+
 #     contract_address = Web3.to_checksum_address(pool_address)
 #     contract = w3.eth.contract(address=contract_address, abi=abi)
 #     try:
 #         result = contract.functions.slot0().call()
 #     except web3.exceptions.ContractLogicError:
 #         return None
-    
+
 #     details = {
 #         "sqrtPriceX96": result[0],
 #         "tick": result[1],
@@ -231,8 +235,9 @@ def get_nft_positions_details(nft_contract_address, w3, token_id):
 #         "feeProtocol": result[5],
 #         "unlocked": result[6]
 #     }
-    
+
 #     return details
+
 
 def get_slot0_info(pool_address, w3):
     abi_uniswap = [
@@ -242,9 +247,21 @@ def get_slot0_info(pool_address, w3):
             "outputs": [
                 {"internalType": "uint160", "name": "sqrtPriceX96", "type": "uint160"},
                 {"internalType": "int24", "name": "tick", "type": "int24"},
-                {"internalType": "uint16", "name": "observationIndex", "type": "uint16"},
-                {"internalType": "uint16", "name": "observationCardinality", "type": "uint16"},
-                {"internalType": "uint16", "name": "observationCardinalityNext", "type": "uint16"},
+                {
+                    "internalType": "uint16",
+                    "name": "observationIndex",
+                    "type": "uint16",
+                },
+                {
+                    "internalType": "uint16",
+                    "name": "observationCardinality",
+                    "type": "uint16",
+                },
+                {
+                    "internalType": "uint16",
+                    "name": "observationCardinalityNext",
+                    "type": "uint16",
+                },
                 {"internalType": "uint8", "name": "feeProtocol", "type": "uint8"},
                 {"internalType": "bool", "name": "unlocked", "type": "bool"},
             ],
@@ -252,7 +269,7 @@ def get_slot0_info(pool_address, w3):
             "type": "function",
         }
     ]
-    
+
     abi_aerodrome = [
         {
             "inputs": [],
@@ -260,99 +277,113 @@ def get_slot0_info(pool_address, w3):
             "outputs": [
                 {"internalType": "uint160", "name": "sqrtPriceX96", "type": "uint160"},
                 {"internalType": "int24", "name": "tick", "type": "int24"},
-                {"internalType": "uint16", "name": "observationIndex", "type": "uint16"},
-                {"internalType": "uint16", "name": "observationCardinality", "type": "uint16"},
-                {"internalType": "uint16", "name": "observationCardinalityNext", "type": "uint16"},
+                {
+                    "internalType": "uint16",
+                    "name": "observationIndex",
+                    "type": "uint16",
+                },
+                {
+                    "internalType": "uint16",
+                    "name": "observationCardinality",
+                    "type": "uint16",
+                },
+                {
+                    "internalType": "uint16",
+                    "name": "observationCardinalityNext",
+                    "type": "uint16",
+                },
                 {"internalType": "bool", "name": "unlocked", "type": "bool"},
             ],
             "stateMutability": "view",
             "type": "function",
         }
     ]
-    
+
     contract_address = Web3.to_checksum_address(pool_address)
-    
+
     # Try to use the Uniswap ABI
     try:
         contract = w3.eth.contract(address=contract_address, abi=abi_uniswap)
         result = contract.functions.slot0().call()
-        return {
-            "sqrtPriceX96": result[0],
-            "tick": result[1]
-        }
+        return {"sqrtPriceX96": result[0], "tick": result[1]}
     except (web3.exceptions.ContractLogicError, web3.exceptions.BadFunctionCallOutput):
         # If Uniswap ABI fails, use the Aerodrome ABI
         try:
             contract = w3.eth.contract(address=contract_address, abi=abi_aerodrome)
             result = contract.functions.slot0().call()
-            return {
-                "sqrtPriceX96": result[0],
-                "tick": result[1]
-            }
-        except (web3.exceptions.ContractLogicError, web3.exceptions.BadFunctionCallOutput):
+            return {"sqrtPriceX96": result[0], "tick": result[1]}
+        except (
+            web3.exceptions.ContractLogicError,
+            web3.exceptions.BadFunctionCallOutput,
+        ):
             return None
 
+
 def get_account_data(account_address, w3):
-    
-    account_abi = [{
-        "inputs": [],
-        "name": "generateAssetData",
-        "outputs": [
-            {
-                "internalType": "address[]",
-                "name": "assetAddresses",
-                "type": "address[]",
-            },
-            {"internalType": "uint256[]", "name": "assetIds", "type": "uint256[]"},
-            {"internalType": "uint256[]", "name": "assetAmounts", "type": "uint256[]"},
-        ],
-        "stateMutability": "view",
-        "type": "function",
-    }]
-    
+    account_abi = [
+        {
+            "inputs": [],
+            "name": "generateAssetData",
+            "outputs": [
+                {
+                    "internalType": "address[]",
+                    "name": "assetAddresses",
+                    "type": "address[]",
+                },
+                {"internalType": "uint256[]", "name": "assetIds", "type": "uint256[]"},
+                {
+                    "internalType": "uint256[]",
+                    "name": "assetAmounts",
+                    "type": "uint256[]",
+                },
+            ],
+            "stateMutability": "view",
+            "type": "function",
+        }
+    ]
+
     try:
         # Pool contract
         contract = w3.eth.contract(
-            address=Web3.to_checksum_address(account_address), 
-            abi=account_abi
+            address=Web3.to_checksum_address(account_address), abi=account_abi
         )
         data = contract.functions.generateAssetData().call()
         return data
     except Exception as e:
-        return f'Error fetching pool_oracle: {e}'
-    
+        return f"Error fetching pool_oracle: {e}"
+
 
 def get_position_state_info(contract_address, nft_token_id, w3):
     abi = [
         {
-        "inputs": [{"internalType": "uint256", "name": "position", "type": "uint256"}],
-        "name": "positionState",
-        "outputs": [
-            {"internalType": "int24", "name": "tickLower", "type": "int24"},
-            {"internalType": "int24", "name": "tickUpper", "type": "int24"},
-            {"internalType": "uint128", "name": "liquidity", "type": "uint128"},
-            {"internalType": "address", "name": "gauge", "type": "address"},
-        ],
-        "stateMutability": "view",
-        "type": "function",
+            "inputs": [
+                {"internalType": "uint256", "name": "position", "type": "uint256"}
+            ],
+            "name": "positionState",
+            "outputs": [
+                {"internalType": "int24", "name": "tickLower", "type": "int24"},
+                {"internalType": "int24", "name": "tickUpper", "type": "int24"},
+                {"internalType": "uint128", "name": "liquidity", "type": "uint128"},
+                {"internalType": "address", "name": "gauge", "type": "address"},
+            ],
+            "stateMutability": "view",
+            "type": "function",
         }
     ]
     contract_address = Web3.to_checksum_address(contract_address)
-    
+
     contract = w3.eth.contract(address=contract_address, abi=abi)
     result = contract.functions.positionState(nft_token_id).call()
-    
+
     return {
-            "tickLower": result[0],
-            "tickUpper": result[1],
-            "liquidity": result[2],
-            "gauge": result[3]
-        }
-    
-    
-    
+        "tickLower": result[0],
+        "tickUpper": result[1],
+        "liquidity": result[2],
+        "gauge": result[3],
+    }
+
+
 def get_arcadia_account_nft_position(asset_data, w3):
-    
     POOL_NFT_MAPPINGS = [
         # Uniswap v3 Pools
         {
@@ -363,7 +394,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x4200000000000000000000000000000000000006",
             "token1": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "decimal0": 18,
-            "decimal1": 6
+            "decimal1": 6,
         },
         {
             "name": "wETH-USDbC",
@@ -373,7 +404,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x4200000000000000000000000000000000000006",
             "token1": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
             "decimal0": 18,
-            "decimal1": 6
+            "decimal1": 6,
         },
         {
             "name": "wETH-wstETH",
@@ -383,7 +414,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x4200000000000000000000000000000000000006",
             "token1": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
             "decimal0": 18,
-            "decimal1": 18
+            "decimal1": 18,
         },
         {
             "name": "cbETH-wETH",
@@ -393,7 +424,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
             "token1": "0x4200000000000000000000000000000000000006",
             "decimal0": 18,
-            "decimal1": 18
+            "decimal1": 18,
         },
         {
             "name": "USDC-USDbC",
@@ -403,7 +434,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "token1": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
             "decimal0": 6,
-            "decimal1": 6
+            "decimal1": 6,
         },
         {
             "name": "DAI-USDbC",
@@ -413,9 +444,8 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
             "token1": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
             "decimal0": 18,
-            "decimal1": 6
+            "decimal1": 6,
         },
-        
         # Aerodrome Pools
         {
             "name": "wETH-wstETH",
@@ -425,7 +455,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x4200000000000000000000000000000000000006",
             "token1": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
             "decimal0": 18,
-            "decimal1": 18
+            "decimal1": 18,
         },
         {
             "name": "cbETH-wETH",
@@ -435,7 +465,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
             "token1": "0x4200000000000000000000000000000000000006",
             "decimal0": 18,
-            "decimal1": 18
+            "decimal1": 18,
         },
         {
             "name": "USDC-USDbC",
@@ -445,7 +475,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "token1": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
             "decimal0": 6,
-            "decimal1": 6
+            "decimal1": 6,
         },
         {
             "name": "wETH-USDC",
@@ -455,7 +485,7 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x4200000000000000000000000000000000000006",
             "token1": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "decimal0": 18,
-            "decimal1": 6
+            "decimal1": 6,
         },
         {
             "name": "AERO-wstETH",
@@ -465,12 +495,14 @@ def get_arcadia_account_nft_position(asset_data, w3):
             "token0": "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
             "token1": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
             "decimal0": 18,
-            "decimal1": 18
-        }
+            "decimal1": 18,
+        },
     ]
-    
+
     zero_indices = [index for index, value in enumerate(asset_data[1]) if value == 0]
-    non_zero_indices = [index for index, value in enumerate(asset_data[1]) if value != 0]
+    non_zero_indices = [
+        index for index, value in enumerate(asset_data[1]) if value != 0
+    ]
 
     result = defaultdict(int)
 
@@ -490,55 +522,63 @@ def get_arcadia_account_nft_position(asset_data, w3):
 
     for i in zero_indices:
         add_or_update_dict(result, asset_data[0][i], asset_data[2][i])
-    
+
     for i in non_zero_indices:
         staked_slipstream = "0x1Dc7A0f5336F52724B650E39174cfcbbEdD67bF1".lower()
         nft_contract = asset_data[0][i].lower()
         nft_token_id = asset_data[1][i]
-        
+
         if nft_contract == staked_slipstream:
-            staked_slipstream_data = get_position_state_info(nft_contract, nft_token_id, w3)
-            matching_pool = gauge_lookup.get(staked_slipstream_data['gauge'].lower())
-            
+            staked_slipstream_data = get_position_state_info(
+                nft_contract, nft_token_id, w3
+            )
+            matching_pool = gauge_lookup.get(staked_slipstream_data["gauge"].lower())
+
             if not matching_pool:
                 add_or_update_dict(result, nft_contract, 0)  # No matching pool found
                 continue  # Skip to the next iteration
-            
+
             lower_tick = staked_slipstream_data["tickLower"]
             upper_tick = staked_slipstream_data["tickUpper"]
             liquidity = staked_slipstream_data["liquidity"]
-            
+
         else:
-            nft_positions_details = get_nft_positions_details(nft_contract_address=nft_contract, w3=w3, token_id=nft_token_id)
-            
+            nft_positions_details = get_nft_positions_details(
+                nft_contract_address=nft_contract, w3=w3, token_id=nft_token_id
+            )
+
             if not nft_positions_details:
-                add_or_update_dict(result, nft_contract, 0)  # Records the NFT if it does not belong to Uniswap
+                add_or_update_dict(
+                    result, nft_contract, 0
+                )  # Records the NFT if it does not belong to Uniswap
                 continue  # Skip if nft_positions_details could not be fetched
-            
+
             # Extracting and normalizing token0 and token1 from nft_positions_details
             token0 = nft_positions_details["token0"].lower()
             token1 = nft_positions_details["token1"].lower()
 
             # Finding the matching pool using the lookup dictionary
             matching_pool = pool_lookup.get((nft_contract, token0, token1))
-            
+
             if not matching_pool:
                 add_or_update_dict(result, nft_contract, 0)  # No matching pool found
                 continue  # Skip to the next iteration
-            
+
             lower_tick = nft_positions_details["tickLower"]
             upper_tick = nft_positions_details["tickUpper"]
             liquidity = nft_positions_details["liquidity"]
-            
+
         slot0 = get_slot0_info(pool_address=matching_pool["pool"], w3=w3)
         if not slot0:
             continue  # Skip if slot0 details could not be fetched
-        
+
         current_tick = slot0["tick"]
-        
-        amount0, amount1 = get_amounts_from_ticks(current_tick, lower_tick, upper_tick, liquidity)
-                
+
+        amount0, amount1 = get_amounts_from_ticks(
+            current_tick, lower_tick, upper_tick, liquidity
+        )
+
         add_or_update_dict(result, matching_pool["token0"], amount0)
         add_or_update_dict(result, matching_pool["token1"], amount1)
-    
+
     return result

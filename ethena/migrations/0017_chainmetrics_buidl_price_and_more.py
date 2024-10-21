@@ -4,40 +4,39 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ethena', '0016_stakingmetrics'),
+        ("ethena", "0016_stakingmetrics"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='chainmetrics',
-            name='buidl_price',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="buidl_price",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='superstate_ustb_price',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="superstate_ustb_price",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='total_buidl_supply',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="total_buidl_supply",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='total_superstate_ustb_supply',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="total_superstate_ustb_supply",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='total_usdm_supply',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="total_usdm_supply",
+            field=models.TextField(default="0"),
         ),
         migrations.AddField(
-            model_name='chainmetrics',
-            name='usdm_price',
-            field=models.TextField(default='0'),
+            model_name="chainmetrics",
+            name="usdm_price",
+            field=models.TextField(default="0"),
         ),
     ]
