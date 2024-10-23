@@ -6,7 +6,7 @@ from celery import shared_task
 from .models import Chain, CryoLogsMetadata
 from web3 import Web3
 import pandas as pd
-from .dex_quotes.fetch_quotes import paraswap_job, kyperswap_job
+from .dex_quotes.fetch_quotes import paraswap_job, kyperswap_job, cowswap_job, okx_job
 
 
 def cryo_ingest_logs(
@@ -216,3 +216,11 @@ def task_paraswap_job(*args, **kwargs):
 @shared_task(name="task_kyperswap_job", time_limit=None, soft_time_limit=None)
 def task_kyperswap_job(*args, **kwargs):
     kyperswap_job(*args, **kwargs)
+
+@shared_task(name="task_cowswap_job", time_limit=None, soft_time_limit=None)
+def task_cowswap_job(*args, **kwargs):
+    cowswap_job(*args, **kwargs)
+
+@shared_task(name="task_okx_job", time_limit=None, soft_time_limit=None)
+def task_okx_job(*args, **kwargs):
+    okx_job(*args, **kwargs)

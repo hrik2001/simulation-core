@@ -4,7 +4,6 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 from ..DTO import network_mapping
 
-
 def get_quote(
     src_token: str, 
     src_decimals: int, 
