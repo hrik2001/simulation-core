@@ -228,6 +228,7 @@ CACHES = {
 MORALIS_KEY = os.environ.get("MORALIS_KEY")
 SUBGRAPH_KEY = os.environ.get("SUBGRAPH_KEY")
 DUNE_KEY = os.environ.get("DUNE_KEY")
+COINANALYZE_KEY = os.environ.get("COINANALYZE_KEY")
 
 if os.getenv("ENVIRONMENT", "").lower() == "production":
     if os.getenv("SENTRY_DSN") is not None:
@@ -241,3 +242,27 @@ if os.getenv("ENVIRONMENT", "").lower() == "production":
             # We recommend adjusting this value in production.
             profiles_sample_rate=1.0,
         )
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "root": {
+            "handlers": ["console"],
+            "propagate": True,
+        },
+    },
+}

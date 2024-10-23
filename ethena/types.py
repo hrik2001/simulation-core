@@ -1,7 +1,8 @@
 from graphene import ObjectType, JSONString, String, List
 from graphene_django import DjangoObjectType
 from .models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
-    CurvePoolInfo, StakingMetrics, ExitQueueMetrics
+    CurvePoolInfo, StakingMetrics, ExitQueueMetrics, ApyMetrics, UstbYieldMetrics, \
+    BuidlYieldMetrics, UsdmMetrics, BuidlRedemptionMetrics
 
 
 class SnapshotType(ObjectType):
@@ -43,3 +44,48 @@ class StakingMetricsType(DjangoObjectType):
 class ExitQueueMetricsType(DjangoObjectType):
     class Meta:
         model = ExitQueueMetrics
+
+
+class ApyMetricsType(DjangoObjectType):
+    class Meta:
+        model = ApyMetrics
+
+
+class ApyMetricApiType(ObjectType):
+    timestamp = String()
+    apy = String()
+
+
+class AggregatedApyMetricsType(ObjectType):
+    symbol = String()
+    metrics = List(ApyMetricApiType)
+
+
+class FundingMetricsApyType(ObjectType):
+    timestamp = String()
+    rate = String()
+
+class FundingRateMetricsType(ObjectType):
+    symbol = String()
+    exchange = String()
+    metrics = List(FundingMetricsApyType)
+
+
+class UstbYieldMetricsType(DjangoObjectType):
+    class Meta:
+        model = UstbYieldMetrics
+
+
+class BuidlYieldMetricsType(DjangoObjectType):
+    class Meta:
+        model = BuidlYieldMetrics
+
+
+class BuidlRedemptionMetricsType(DjangoObjectType):
+    class Meta:
+        model = BuidlRedemptionMetrics
+
+
+class UsdmMetricsType(DjangoObjectType):
+    class Meta:
+        model = UsdmMetrics

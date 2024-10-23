@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime, timezone, timedelta
+import time
+from datetime import datetime, timezone, timedelta, tzinfo
 from string import Template
 
 import dateutil.parser
@@ -15,8 +16,9 @@ from web3 import Web3, HTTPProvider
 from core.models import Chain
 from core.utils import price_defillama, price_defillama_multi
 from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, \
-    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics
-from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY
+    UniswapPoolSnapshots, CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, \
+    FundingRateMetrics, UstbYieldMetrics, BuidlYieldMetrics, UsdmMetrics, BuidlRedemptionMetrics
+from sim_core.settings import MORALIS_KEY, SUBGRAPH_KEY, DUNE_KEY, COINANALYZE_KEY
 
 RAY = 10 ** 27
 SECONDS_IN_YEAR = 365 * 24 * 60 * 60
@@ -79,11 +81,25 @@ SDAI_ABI = [supply_function, assets_function]
 DAI_ADDRESS = Web3.to_checksum_address("0x6b175474e89094c44da98b954eedeac495271d0f")
 DAI_ABI = [supply_function]
 
-BUIDL_ADDRESS = Web3.to_checksum_address("0x603bb6909be14f83282e03632280d91be7fb83b2")  # address of implementation contract of proxy BUIDL
+BUIDL_ADDRESS = Web3.to_checksum_address(
+    "0x7712c34205737192402172409a8f7ccef8aa2aec")  # address of implementation contract of proxy BUIDL
 BUIDL_ABI = [
     {
         "inputs": [],
         "name": "totalIssued",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "walletCount",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -115,7 +131,8 @@ USDM_ABI = [
     supply_function
 ]
 
-SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address("0x5419d3fa60c56104175684411a496879c4df21b5")  # address of implementation contract of proxy Superstate USTB
+SUPERSTATE_USTB_ADDRESS = Web3.to_checksum_address(
+    "0x43415eB6ff9DB7E26A15b704e7A3eDCe97d31C4e")  # address of implementation contract of proxy Superstate USTB
 SUPERSTATE_USTB_ABI = [
     {
         "inputs": [],
@@ -123,7 +140,7 @@ SUPERSTATE_USTB_ABI = [
         "outputs": [
             {
                 "internalType":
-                 "uint256",
+                    "uint256",
                 "name": "",
                 "type": "uint256"
             }
@@ -215,6 +232,54 @@ CURVE_POOL_ADDRESSES = [
     "0x57064f49ad7123c92560882a45518374ad982e85"
 ]
 
+YIELDS_BASE_URL = "https://yields.llama.fi"
+YIELD_POOLS = [
+    {"symbol": "DSR", "pool_id": "c8a24fee-ec00-4f38-86c0-9f6daebc4225"},
+    {"symbol": "sUSDe", "pool_id": "66985a81-9c51-46ca-9977-42b4fe7bc6df"},
+    {"symbol": "aaveUSDT", "pool_id": "f981a304-bb6c-45b8-b0c5-fd2f515ad23a"},
+    {"symbol": "aaveUSDC", "pool_id": "aa70268e-4b52-42bf-a116-608b370f9501"},
+    {"symbol": "USD3", "pool_id": "9c4e675e-7615-4d60-90ef-03d58c66b476"},
+    {"symbol": "hyUSD", "pool_id": "3378bced-4bde-4ccf-b742-7d5c8ebb7720"}
+]
+
+FUNDING_RATE_URL = "https://api.coinalyze.net/v1/funding-rate-history"
+FUNDING_RATE_DICT = [
+    {
+        "symbol": "BTCUSDT_PERP.A",
+        "exchange": "binance"
+    },
+    {
+        "symbol": "BTCUSDT.6",
+        "exchange": "bybit"
+    },
+    {
+        "symbol": "BTCUSDT_PERP.3",
+        "exchange": "okx"
+    },
+    {
+        "symbol": "BTC_USDC-PERPETUAL.2",
+        "exchange": "deribit"
+    },
+    {
+        "symbol": "ETHUSDT_PERP.A",
+        "exchange": "binance"
+    },
+    {
+        "symbol": "ETHUSDT.6",
+        "exchange": "bybit"
+    },
+    {
+        "symbol": "ETHUSDT_PERP.3",
+        "exchange": "okx"
+    },
+    {
+        "symbol": "ETH_USDC-PERPETUAL.2",
+        "exchange": "deribit"
+    }
+
+]
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -254,10 +319,13 @@ def update_chain_metrics():
             usdt_balance = usdt_contract.functions.balances(ETHENA_USDT_ADDRESS).call(block_identifier=block_number)
             buidl_supply = buidl_contract.functions.totalSupply().call(block_identifier=block_number)
             buidl_issued = buidl_contract.functions.totalIssued().call(block_identifier=block_number)
+            buidl_wallet_count = buidl_contract.functions.walletCount().call(block_identifier=block_number)
             usdm_supply = usdm_contract.functions.totalSupply().call(block_identifier=block_number)
             usdm_shares = usdm_contract.functions.totalShares().call(block_identifier=block_number)
-            superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(block_identifier=block_number)
-            superstate_ustb_balance = superstate_ustb_contract.functions.entityMaxBalance().call(block_identifier=block_number)
+            superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(
+                block_identifier=block_number)
+            superstate_ustb_balance = superstate_ustb_contract.functions.entityMaxBalance().call(
+                block_identifier=block_number)
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
@@ -265,10 +333,7 @@ def update_chain_metrics():
             dai_price = price_defillama("ethereum", DAI_ADDRESS, timestamp)
             usdt_price = price_defillama("ethereum", USDT_ADDRESS, timestamp)
             usdm_price = price_defillama("ethereum", USDM_ADDRESS, timestamp)
-            try:
-                superstate_ustb_price = price_defillama("ethereum", SUPERSTATE_USTB_ADDRESS, timestamp)
-            except Exception:
-                superstate_ustb_price = "0"
+            superstate_ustb_price = price_defillama("ethereum", SUPERSTATE_USTB_ADDRESS, timestamp)
             try:
                 buidl_price = price_defillama("ethereum", BUIDL_ADDRESS, timestamp)
             except Exception:
@@ -304,6 +369,7 @@ def update_chain_metrics():
                 total_buidl_issued=str(buidl_issued),
                 total_usdm_shares=str(usdm_shares),
                 total_superstate_ustb_balance=str(superstate_ustb_balance),
+                buidl_wallet_count=str(buidl_wallet_count)
             )
             chain_metrics.save()
         except ValueError:
@@ -496,6 +562,8 @@ def update_curve_pool_snapshots():
         }).json()
 
         for snapshot in response["data"]:
+            if snapshot["tvl_usd"] is None:
+                continue
             timestamp = snapshot.pop("timestamp")
             timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
             block_number = snapshot.pop("block_number")
@@ -526,7 +594,126 @@ def query_dune(query_id):
         base_url="https://api.dune.com",
         request_timeout=5000
     )
-    return dune.get_latest_result(query_id, batch_size=500)
+    return dune.get_latest_result(query_id, batch_size=500, max_age_hours=8)
+
+
+def update_apy_metrics():
+    for pool in YIELD_POOLS:
+        pool_url = f"{YIELDS_BASE_URL}/chart/{pool['pool_id']}"
+        response = requests.get(pool_url).json()
+        objects = []
+        for metric in response["data"]:
+            apy_metric = ApyMetrics(
+                timestamp=datetime.fromisoformat(metric["timestamp"].replace("Z", "+00:00")),
+                symbol=pool["symbol"],
+                pool_id=pool["pool_id"],
+                tvl_usd=str(metric["tvlUsd"]) if metric["tvlUsd"] is not None else None,
+                apy=str(metric["apy"]) if metric["apy"] is not None else None,
+                apy_base=str(metric["apyBase"]) if metric["apyBase"] is not None else None,
+                apy_reward=str(metric["apyReward"]) if metric["apyReward"] is not None else None,
+                il7d=str(metric["il7d"]) if metric["il7d"] is not None else None,
+                apy_base_7d=str(metric["apyBase7d"]) if metric["apyBase7d"] is not None else None,
+            )
+            objects.append(apy_metric)
+        ApyMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+
+def update_funding_rates():
+    to_dt = datetime.now()
+    from_dt = to_dt - timedelta(days=1)
+    to_ts = int(to_dt.timestamp())
+    from_ts = int(from_dt.timestamp())
+
+    objects = []
+
+    for item in FUNDING_RATE_DICT:
+        symbol = item["symbol"]
+        exchange = item["exchange"]
+
+        try:
+            logger.info(f"Fetching data for {symbol} on {exchange}...")
+            params = {
+                "symbols": symbol,
+                "interval": "4hour",
+                "from": from_ts,
+                "to": to_ts
+            }
+
+            headers = {"api_key": COINANALYZE_KEY}
+            response = requests.get(FUNDING_RATE_URL, headers=headers, params=params)
+            response.raise_for_status()
+
+            data = response.json()
+            for point in data[0]["history"]:
+                timestamp = datetime.fromtimestamp(point["t"], tz=timezone.utc)
+                rate = str(float(point["c"]))
+
+                objects.append(FundingRateMetrics(
+                    symbol=symbol,
+                    exchange=exchange,
+                    timestamp=timestamp,
+                    rate=rate,
+                ))
+
+            time.sleep(1)  # Add a small delay to avoid hitting rate limits
+        except Exception:
+            logger.exception(f"Failed to fetch data for {symbol} on {exchange}", exc_info=True)
+
+    FundingRateMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+
+def update_ustb_yield_metrics():
+    url = "https://api.superstate.co/v1/funds/1/yield"
+    response = requests.get(url)
+    response.raise_for_status()
+    data = response.json()
+    UstbYieldMetrics.objects.bulk_create([UstbYieldMetrics(
+        date=dateutil.parser.parse(data["as_of_date"]).replace(tzinfo=timezone.utc),
+        thirty_day=str(data["thirty_day"]) if data["thirty_day"] is not None else None,
+        seven_day=str(data["seven_day"]) if data["seven_day"] is not None else None,
+        one_day=str(data["one_day"]) if data["one_day"] is not None else None,
+    )], ignore_conflicts=True)
+
+
+def update_buidl_yield_metrics():
+    query_result = query_dune(4150762)
+    objects = []
+    for row in query_result.result.rows:
+        _row = {
+            "date": dateutil.parser.parse(row["time"]).replace(tzinfo=timezone.utc),
+            "amount": str(row["amount"]) if row["amount"] is not None else None,
+            "apy_7d": str(row["APY_7d"]) if row["APY_7d"] is not None else None,
+            "apy_30d": str(row["APY_30d"]) if row["APY_30d"] is not None else None,
+        }
+        objects.append(BuidlYieldMetrics(**_row))
+    BuidlYieldMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+
+def update_usdm_metrics():
+    query_result = query_dune(3050717)
+    objects = []
+    for row in query_result.result.rows:
+        if row["apy"] is not None:
+            _row = {
+                "date": dateutil.parser.parse(row["period"]).replace(tzinfo=timezone.utc),
+                "holders": str(row["holders"]) if row["holders"] is not None else None,
+                "index": str(row["index"]) if row["index"] is not None else None,
+                "apy": str(row["apy"]),
+            }
+            objects.append(UsdmMetrics(**_row))
+    UsdmMetrics.objects.bulk_create(objects, ignore_conflicts=True)
+
+
+def update_buidl_redemption_metrics():
+    query_result = query_dune(3543899)
+    objects = []
+    for row in query_result.result.rows:
+        _row = {
+            "date": dateutil.parser.parse(row["day"]).replace(tzinfo=timezone.utc),
+            "balance": str(row["balance_raw"]) if row["balance_raw"] is not None else None,
+        }
+        objects.append(BuidlRedemptionMetrics(**_row))
+    BuidlRedemptionMetrics.objects.bulk_create(objects, ignore_conflicts=True)
 
 
 @shared_task
@@ -587,7 +774,7 @@ def task__ethena__staking_metrics():
     query_result = query_dune(4069937)
     objects = []
     for row in query_result.result.rows:
-        _row = {**row, "day": dateutil.parser.parse(row["day"])}
+        _row = {**row, "day": dateutil.parser.parse(row["day"]).replace(tzinfo=timezone.utc)}
         objects.append(StakingMetrics(**_row))
     StakingMetrics.objects.bulk_create(objects, ignore_conflicts=True)
     logger.info("updating staking metrics")
@@ -600,8 +787,8 @@ def task__ethena__exit_queue_metrics():
     objects = []
     for row in query_result.result.rows:
         _row = {
-            "withdraw_day": dateutil.parser.parse(row["withdraw_day"]),
-            "unlock_day": dateutil.parser.parse(row["unlock_day"]),
+            "withdraw_day": dateutil.parser.parse(row["withdraw_day"]).replace(tzinfo=timezone.utc),
+            "unlock_day": dateutil.parser.parse(row["unlock_day"]).replace(tzinfo=timezone.utc),
             "usde": row["USDe"],
             "susde": row["sUSDe"],
             "total_usde": row["total_USDe"],
@@ -610,3 +797,45 @@ def task__ethena__exit_queue_metrics():
         objects.append(ExitQueueMetrics(**_row))
     ExitQueueMetrics.objects.bulk_create(objects, ignore_conflicts=True)
     logger.info("updating exit queue metrics")
+
+
+@shared_task
+def task__ethena__apy_metrics():
+    logger.info("running task to update apy metrics")
+    update_apy_metrics()
+    logger.info("updated apy metrics")
+
+
+@shared_task
+def task__ethena__funding_rate_metrics():
+    logger.info("running task to update funding rate metrics")
+    update_funding_rates()
+    logger.info("updated funding rate metrics")
+
+
+@shared_task
+def task__ethena__ustb_yield_metrics():
+    logger.info("running task to update ustb yield metrics")
+    update_ustb_yield_metrics()
+    logger.info("updated ustb yield metrics")
+
+
+@shared_task
+def task__ethena__buidl_metrics():
+    logger.info("running task to update buidl metrics")
+    try:
+        update_buidl_yield_metrics()
+    except Exception:
+        logger.exception("BUIDL Yield metrics error: %s", exc_info=True)
+    try:
+        update_buidl_redemption_metrics()
+    except Exception:
+        logger.exception("BUIDL redemption metrics error: %s", exc_info=True)
+    logger.info("updated buidl metrics")
+
+
+@shared_task
+def task__ethena__usdm_yield_metrics():
+    logger.info("running task to update usdm yield metrics")
+    update_usdm_metrics()
+    logger.info("updated usdm yield metrics")

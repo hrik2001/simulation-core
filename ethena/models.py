@@ -40,6 +40,12 @@ class ChainMetrics(BaseModel):
     total_usdm_shares = models.TextField(null=False, default="0")
     total_superstate_ustb_balance = models.TextField(null=False, default="0")
 
+    buidl_wallet_count = models.TextField(null=False, default="0")
+
+    class Meta(BaseModel.Meta):
+        indexes = [
+            models.Index(fields=['block_timestamp'], name='block_timestamp_idx'),
+        ]
 
 
 class CollateralMetrics(BaseModel):
@@ -98,3 +104,58 @@ class ExitQueueMetrics(BaseModel):
     susde = models.TextField(null=False)
     total_usde = models.TextField(null=False)
     total_susde = models.TextField(null=False)
+
+
+class ApyMetrics(BaseModel):
+    timestamp = models.DateTimeField(null=False)
+    pool_id = models.TextField(null=False)
+    symbol = models.TextField(null=False)
+    tvl_usd = models.TextField(null=True)
+    apy = models.TextField(null=True)
+    apy_base = models.TextField(null=True)
+    apy_reward = models.TextField(null=True)
+    il7d = models.TextField(null=True)
+    apy_base_7d = models.TextField(null=True)
+
+    class Meta(BaseModel.Meta):
+        constraints = [
+            models.UniqueConstraint(fields=['pool_id', 'timestamp'], name='pool_id_timestamp_idx'),
+        ]
+
+
+class FundingRateMetrics(BaseModel):
+    timestamp = models.DateTimeField(null=False)
+    symbol = models.TextField(null=False)
+    exchange = models.TextField(null=False)
+    rate = models.TextField(null=False)
+
+    class Meta(BaseModel.Meta):
+        constraints = [
+            models.UniqueConstraint(fields=['timestamp', 'symbol', 'exchange'], name='timestamp_asset_cex_rate_idx'),
+        ]
+
+
+class UstbYieldMetrics(BaseModel):
+    date = models.DateTimeField(null=False, unique=True)
+    one_day = models.TextField(null=False)
+    seven_day = models.TextField(null=False)
+    thirty_day = models.TextField(null=False)
+
+
+class BuidlYieldMetrics(BaseModel):
+    date = models.DateTimeField(null=False, unique=True)
+    amount = models.TextField(null=False)
+    apy_7d = models.TextField(null=False)
+    apy_30d = models.TextField(null=False)
+
+
+class BuidlRedemptionMetrics(BaseModel):
+    date = models.DateTimeField(null=False, unique=True)
+    balance = models.TextField(null=False)
+
+
+class UsdmMetrics(BaseModel):
+    date = models.DateTimeField(null=False, unique=True)
+    holders = models.TextField(null=False)
+    index = models.TextField(null=False)
+    apy = models.TextField(null=False)

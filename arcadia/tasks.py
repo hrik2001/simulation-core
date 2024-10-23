@@ -313,7 +313,7 @@ def sim(
         ~Q(debt_usd=0),
         numeraire__iexact=numeraire_address,
     )
-    numeraire = ERC20.objects.get(contract_address__iexact=numeraire_address)
+    numeraire = ERC20.objects.get(contract_address__iexact=numeraire_address, chain__chain_name__iexact="base")
     base = numeraire.chain
     w3 = Web3(Web3.HTTPProvider(base.rpc))
     numeraire = erc20_to_pydantic(numeraire)
@@ -506,7 +506,7 @@ def get_pool_risk_params(
         numeraire__iexact=numeraire_address,
     )
 
-    numeraire = ERC20.objects.get(contract_address__iexact=numeraire_address)
+    numeraire = ERC20.objects.get(contract_address__iexact=numeraire_address, chain__chain_name__iexact="base")
     base = numeraire.chain
     w3 = Web3(Web3.HTTPProvider(base.rpc))
     numeraire = erc20_to_pydantic(numeraire)
