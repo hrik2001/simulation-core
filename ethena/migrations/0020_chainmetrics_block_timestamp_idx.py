@@ -4,14 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("core", "0015_dexquotepair_ingest"),
-        ("ethena", "0019_exitqueuemetrics"),
+        ('core', '0015_dexquotepair_ingest'),
+        ('ethena', '0019_exitqueuemetrics'),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name="chainmetrics",
-            index=models.Index(fields=["block_timestamp"], name="block_timestamp_idx"),
+            model_name='chainmetrics',
+            index=models.Index(fields=['block_timestamp'], name='block_timestamp_idx'),
         ),
     ]

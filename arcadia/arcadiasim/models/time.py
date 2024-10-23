@@ -1,17 +1,16 @@
-from collections import defaultdict
-from typing import Any, Dict, List, Optional, Union
-
-import requests
-from web3 import Web3
-
-from ..caching import cache
+from .base import Base
+from .chain import Chain
+from .asset import Asset
+from .pricing import PricingMetadata
+from typing import Optional, List, Dict, Any, Union
 from ..entities.chain import ethereum
 from ..exceptions import PriceNotPopulated
 from ..logging import configure_multiprocess_logging, get_logger
-from .asset import Asset
-from .base import Base
-from .chain import Chain
-from .pricing import PricingMetadata
+import requests
+from web3 import Web3
+from collections import defaultdict
+
+from ..caching import cache
 
 
 class SimulationTime(Base):

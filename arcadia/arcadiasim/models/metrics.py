@@ -1,9 +1,9 @@
-from typing import Any, DefaultDict, Dict
+from .base import Base
+from .arcadia import AssetValueAndRiskFactors
+from typing import DefaultDict, Dict, Any
 
 # from arcadiasim.models.arcadia import MarginAccount
 from ..models.asset import Asset
-from .arcadia import AssetValueAndRiskFactors
-from .base import Base
 
 
 class SimulationMetrics(Base):

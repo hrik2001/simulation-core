@@ -4,19 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("ethena", "0011_rename_snapshots_curvepoolsnapshots_snapshot_and_more"),
+        ('ethena', '0011_rename_snapshots_curvepoolsnapshots_snapshot_and_more'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="chainmetrics",
-            name="dai_price",
-            field=models.TextField(default="0"),
+            model_name='chainmetrics',
+            name='dai_price',
+            field=models.TextField(default='0'),
         ),
         migrations.AddField(
-            model_name="chainmetrics",
-            name="usdt_price",
-            field=models.TextField(default="0"),
+            model_name='chainmetrics',
+            name='usdt_price',
+            field=models.TextField(default='0'),
         ),
     ]

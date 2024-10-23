@@ -5,18 +5,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("core", "0005_delete_transaction"),
-        ("uniswap", "0003_remove_paircreated_transaction_and_more"),
+        ('core', '0005_delete_transaction'),
+        ('uniswap', '0003_remove_paircreated_transaction_and_more'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="paircreated",
-            name="chain",
-            field=models.ForeignKey(
-                default=0, on_delete=django.db.models.deletion.CASCADE, to="core.chain"
-            ),
+            model_name='paircreated',
+            name='chain',
+            field=models.ForeignKey(default=0, on_delete=django.db.models.deletion.CASCADE, to='core.chain'),
             preserve_default=False,
         ),
     ]

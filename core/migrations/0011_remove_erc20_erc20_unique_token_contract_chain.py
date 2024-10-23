@@ -4,13 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("core", "0010_alter_erc20_unique_together_and_more"),
+        ('core', '0010_alter_erc20_unique_together_and_more'),
     ]
 
     operations = [
         migrations.RemoveConstraint(
-            model_name="erc20",
-            name="erc20_unique_token_contract_chain",
+            model_name='erc20',
+            name='erc20_unique_token_contract_chain',
         ),
     ]

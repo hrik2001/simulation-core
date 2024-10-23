@@ -1,20 +1,15 @@
+from .models import ERC20, UniswapLPPosition, Chain
 from time import sleep
-from typing import List
-
-from web3 import Web3
-
-from arcadia.arcadiasim.models.asset import Asset, SimCoreUniswapLPPosition
-from arcadia.utils import erc20_to_pydantic
-
 from .caching import cache
-from .models import ERC20, Chain, UniswapLPPosition
-from .pricing.univ3 import get_positions_details, get_value_of_lp
+from .pricing.univ3 import get_value_of_lp, get_positions_details
+from typing import List
+from web3 import Web3
+from arcadia.utils import erc20_to_pydantic
+from arcadia.arcadiasim.models.asset import Asset, SimCoreUniswapLPPosition
 
 COINGECKO_WINDOW_HOURS = 3
 COINGECKO_API_KEY = ""
 DEXGURU_API_KEY = ""
-
-
 class HistoricalPriceStrategyMethods:
     """
     Strategy class where all the possible historical price fetching strategies are stored
@@ -32,9 +27,7 @@ class HistoricalPriceStrategyMethods:
         **kwargs,
     ):
         crypto_symbol = asset.pricing_metadata["metadata"]["coingecko_id"]
-        numeraire_symbol = numeraire.pricing_metadata["metadata"][
-            "coingecko_vs_currency"
-        ]
+        numeraire_symbol = numeraire.pricing_metadata["metadata"]["coingecko_vs_currency"]
         window_hours = kwargs.get("window_hours", COINGECKO_WINDOW_HOURS)
         from_timestamp = target_timestamp - (window_hours * 3600)
         to_timestamp = target_timestamp + (window_hours * 3600)
@@ -112,6 +105,7 @@ class HistoricalPriceStrategyMethods:
             key=lambda x: abs(result["t"][x] - target_timestamp),
         )
         try:
+
             avg_price = (result["o"][closest_index] + result["c"][closest_index]) / 2
             print(avg_price)
             return avg_price
@@ -121,6 +115,7 @@ class HistoricalPriceStrategyMethods:
     def defillama_strategy(
         asset: ERC20, numeraire: ERC20 | str, *, target_timestamp: int, **kwargs
     ):
+
         name_mapping = {8453: "base", 1: "ethereum"}
         timestamp = int(target_timestamp)
         chain_name = name_mapping[asset.chain.chain_id]
@@ -151,9 +146,7 @@ def historical_get_price(
     if asset.pricing_metadata == {}:
         asset.pricing_metadata["strategy"] = "defillama_strategy"
     if not isinstance(asset, UniswapLPPosition):
-        return getattr(
-            HistoricalPriceStrategyMethods, asset.pricing_metadata["strategy"]
-        )(
+        return getattr(HistoricalPriceStrategyMethods, asset.pricing_metadata["strategy"])(
             asset,
             numeraire,
             target_timestamp=target_timestamp,
@@ -163,17 +156,15 @@ def historical_get_price(
         if asset.liquidity is None:
             w3 = Web3(Web3.HTTPProvider(asset.chain.rpc))
             position_details = get_positions_details(
-                asset.contract_address, w3, int(asset.token_id)
+                asset.contract_address,
+                w3,
+                int(asset.token_id)
             )
             asset.liquidity = str(position_details["liquidity"])
             asset.tickLower = str(position_details["tickLower"])
             asset.tickUpper = str(position_details["tickUpper"])
-            asset.token1 = ERC20.objects.get(
-                contract_address__iexact=position_details["token1"]
-            )
-            asset.token0 = ERC20.objects.get(
-                contract_address__iexact=position_details["token0"]
-            )
+            asset.token1 = ERC20.objects.get(contract_address__iexact=position_details["token1"])
+            asset.token0 = ERC20.objects.get(contract_address__iexact=position_details["token0"])
             asset.save()
 
         # getting price
@@ -188,7 +179,6 @@ def historical_get_price(
                 asset.token1, numeraire, target_timestamp=target_timestamp
             ),
         )
-
 
 def create_market_price_feed(
     assets: List[ERC20],
@@ -218,3 +208,4 @@ def create_market_price_feed(
                 target_timestamp=current_timestamp,
             )
     return context
+

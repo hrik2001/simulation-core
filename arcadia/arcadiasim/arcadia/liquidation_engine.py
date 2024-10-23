@@ -1,20 +1,30 @@
-from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List, Optional
-
-from ..exceptions import (AccountNotLiquidatable, AuctionDoesExist,
-                          AuctionDoesNotExist, NotEnoughLiquidity)
-from ..logging import configure_multiprocess_logging, get_logger
-from ..models.arcadia import (AuctionInformation, LiquidationConfig,
-                              MarginAccount)
+from ..models.arcadia import (
+    AuctionInformation,
+    MarginAccount,
+    LiquidationConfig,
+)
 from ..models.asset import Asset
-from ..models.base import Base
-from ..models.metrics import SimulationMetrics
 from ..models.time import SimulationTime
-from .utils.liquidator import (calculate_asked_share, calculate_bid_price,
-                               dry_run_update_portfolio_balance,
-                               is_account_fully_liquidated, is_liquidatable,
-                               prepare_assets_in_margin_account,
-                               update_portfolio_balance)
+from ..models.metrics import SimulationMetrics
+from .utils.liquidator import (
+    calculate_bid_price,
+    calculate_asked_share,
+    update_portfolio_balance,
+    dry_run_update_portfolio_balance,
+    is_liquidatable,
+    is_account_fully_liquidated,
+    prepare_assets_in_margin_account,
+)
+from typing import Dict, List, Optional, Any, DefaultDict
+from ..exceptions import (
+    AuctionDoesNotExist,
+    NotEnoughLiquidity,
+    AuctionDoesExist,
+    AccountNotLiquidatable,
+)
+from ..logging import configure_multiprocess_logging, get_logger
+from ..models.base import Base
+from collections import defaultdict
 
 
 class LiquidationEngine(Base):

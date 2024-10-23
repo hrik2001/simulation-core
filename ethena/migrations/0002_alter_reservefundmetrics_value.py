@@ -4,14 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("ethena", "0001_initial"),
+        ('ethena', '0001_initial'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name="reservefundmetrics",
-            name="value",
+            model_name='reservefundmetrics',
+            name='value',
             field=models.TextField(),
         ),
     ]

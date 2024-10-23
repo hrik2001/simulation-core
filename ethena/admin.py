@@ -1,8 +1,7 @@
 from django.contrib import admin
 
-from ethena.models import (ChainMetrics, CollateralMetrics, CurvePoolInfo,
-                           CurvePoolSnapshots, ReserveFundBreakdown,
-                           ReserveFundMetrics, UniswapPoolSnapshots)
+from ethena.models import ChainMetrics, CollateralMetrics, ReserveFundMetrics, ReserveFundBreakdown, UniswapPoolSnapshots, \
+    CurvePoolInfo, CurvePoolSnapshots
 
 admin.site.register(ChainMetrics)
 admin.site.register(CollateralMetrics)

@@ -1,17 +1,12 @@
-from typing import Any, Dict, Optional
-
 import requests
-from requests.exceptions import (ConnectionError, HTTPError, RequestException,
-                                 Timeout)
-
+from requests.exceptions import ConnectionError, Timeout, RequestException, HTTPError
+from typing import Dict, Any, Optional
 
 class RateLimitExceededException(Exception):
     """Exception raised for rate limit exceeded (429 Too Many Requests)."""
-
     def __init__(self, message: str, retry_after: Optional[int] = None):
         super().__init__(message)
         self.retry_after = retry_after
-
 
 def get_current_price(token_address: str, network: str) -> Optional[float]:
     """
@@ -28,19 +23,16 @@ def get_current_price(token_address: str, network: str) -> Optional[float]:
     url = f"{base_url}/{network}:{token_address}?searchWidth=6h"
 
     print(url)
-
+    
     response = requests.get(url)
     if response.status_code == 429:
-        retry_after = response.headers.get("Retry-After")
-        raise RateLimitExceededException(
-            "Rate limit exceeded.",
-            retry_after=int(retry_after) if retry_after else None,
-        )
+            retry_after = response.headers.get('Retry-After')
+            raise RateLimitExceededException("Rate limit exceeded.", retry_after=int(retry_after) if retry_after else None)
     response.raise_for_status()  # Raise an exception for HTTP errors
 
     data = response.json()
-    price_info = data.get("coins", {}).get(f"{network}:{token_address}", {})
-    return price_info.get("price")
+    price_info = data.get('coins', {}).get(f'{network}:{token_address}', {})
+    return price_info.get('price')
 
 
 # Example usage

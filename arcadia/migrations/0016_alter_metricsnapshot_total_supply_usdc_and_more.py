@@ -4,19 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("arcadia", "0015_metricsnapshot_total_supply_usdc_and_more"),
+        ('arcadia', '0015_metricsnapshot_total_supply_usdc_and_more'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name="metricsnapshot",
-            name="total_supply_usdc",
+            model_name='metricsnapshot',
+            name='total_supply_usdc',
             field=models.DecimalField(decimal_places=5, max_digits=30, null=True),
         ),
         migrations.AlterField(
-            model_name="metricsnapshot",
-            name="total_supply_weth",
+            model_name='metricsnapshot',
+            name='total_supply_weth',
             field=models.DecimalField(decimal_places=5, max_digits=30, null=True),
         ),
     ]

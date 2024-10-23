@@ -1,11 +1,10 @@
-import os
-import pickle
-
+from scipy.stats import truncnorm
 import numpy as np
+import pickle
+import os
 import pandas as pd
 import requests
 from arcadiasim.entities.asset import *
-from scipy.stats import truncnorm
 
 
 def borrow_model_arcadia_v1_short_term(n=1):
@@ -106,6 +105,7 @@ def borrow_model_moonwell_simple(n_samples, condition: float = 1):
 
 
 def lp_helper(df, lp_assets=[]):
+
     for lp_token in lp_assets:
         # Identifying the contract addresses
         t0_address = lp_token.token0.contract_address
@@ -121,6 +121,7 @@ def lp_helper(df, lp_assets=[]):
             min_balance = min(t0_balance, t1_balance)
 
             if round(min_balance, 2) > 0:
+
                 # Allocate LP tokens based on the smallest balance
                 row[lp_address] = 2 * min_balance
 
@@ -129,6 +130,7 @@ def lp_helper(df, lp_assets=[]):
                 row[t1_address] -= min_balance
                 return row
             else:
+
                 return row
 
         # Apply the function across the DataFrame rows

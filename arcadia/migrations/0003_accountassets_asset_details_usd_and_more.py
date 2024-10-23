@@ -4,33 +4,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("arcadia", "0002_accountassets"),
+        ('arcadia', '0002_accountassets'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="accountassets",
-            name="asset_details_usd",
+            model_name='accountassets',
+            name='asset_details_usd',
             field=models.JSONField(default=0),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name="accountassets",
-            name="collateral_value",
+            model_name='accountassets',
+            name='collateral_value',
             field=models.TextField(default=0),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name="accountassets",
-            name="collateral_value_usd",
+            model_name='accountassets',
+            name='collateral_value_usd',
             field=models.TextField(default=0),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name="accountassets",
-            name="numeraire",
-            field=models.TextField(default=""),
+            model_name='accountassets',
+            name='numeraire',
+            field=models.TextField(default=''),
             preserve_default=False,
         ),
     ]

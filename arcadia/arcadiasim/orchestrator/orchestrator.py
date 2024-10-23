@@ -1,23 +1,31 @@
-import logging
 import os
-import pickle
-import uuid
-from collections import defaultdict
-from copy import deepcopy
-from itertools import product
 from multiprocessing import Pool
-from typing import Any, Dict, List, Optional
+from itertools import product
+from collections import defaultdict
+from typing import List, Dict, Any, Optional
+from copy import deepcopy
+import logging
+import pickle
+from ..logging import (
+    multiprocessing_logging_queue,
+    CUSTOM_LOGGING_CONFIG,
+    get_logger,
+)
 
-from ..arcadia.liquidation_engine import LiquidationEngine
-from ..arcadia.liquidator import Liquidator
-from ..logging import (CUSTOM_LOGGING_CONFIG, get_logger,
-                       multiprocessing_logging_queue)
-from ..models.arcadia import (AssetMetadata, AssetsInMarginAccount,
-                              AssetValueAndRiskFactors, MarginAccount, Ranges)
 from ..models.asset import Asset
 from ..models.base import Base
 from ..models.time import SimulationTime
+from ..arcadia.liquidation_engine import LiquidationEngine
+from ..arcadia.liquidator import Liquidator
 from ..pipeline.pipeline import Pipeline
+from ..models.arcadia import (
+    MarginAccount,
+    AssetsInMarginAccount,
+    AssetMetadata,
+    AssetValueAndRiskFactors,
+    Ranges,
+)
+import uuid
 from ..utils import get_mongodb_db
 
 
@@ -49,6 +57,7 @@ class Orchestrator(Base):
         self.logger = get_logger(__name__)
 
     def prepare_simulation(self):
+
         global_parameter_set = []
         orchestrator_id = uuid.uuid4()
         self.orchestrator_id = orchestrator_id
@@ -142,6 +151,7 @@ class Orchestrator(Base):
 
     @staticmethod
     def worker(params):
+
         (
             start_timestamp,
             end_timestamp,
@@ -186,18 +196,18 @@ class Orchestrator(Base):
 
         # Liquidation Engine
         liquidation_engine_config = {}
-        liquidation_engine_config[
-            "base"
-        ] = self.liquidation_engine.liquidation_config.base
-        liquidation_engine_config[
-            "maximum_auction_duration"
-        ] = self.liquidation_engine.liquidation_config.maximum_auction_duration
-        liquidation_engine_config[
-            "start_price_multiplier"
-        ] = self.liquidation_engine.liquidation_config.start_price_multiplier
-        liquidation_engine_config[
-            "min_price_multiplier"
-        ] = self.liquidation_engine.liquidation_config.min_price_multiplier
+        liquidation_engine_config["base"] = (
+            self.liquidation_engine.liquidation_config.base
+        )
+        liquidation_engine_config["maximum_auction_duration"] = (
+            self.liquidation_engine.liquidation_config.maximum_auction_duration
+        )
+        liquidation_engine_config["start_price_multiplier"] = (
+            self.liquidation_engine.liquidation_config.start_price_multiplier
+        )
+        liquidation_engine_config["min_price_multiplier"] = (
+            self.liquidation_engine.liquidation_config.min_price_multiplier
+        )
         liquidation_engine_config["lending_pool"] = dict(
             self.liquidation_engine.liquidation_config.lending_pool
         )
@@ -229,11 +239,14 @@ class Orchestrator(Base):
         return sim_context
 
     def execute(self):
+
         db = get_mongodb_db()
         with multiprocessing_logging_queue() as logging_queue:
+
             self.logger.info(f"[ORCHESTRATOR] {self.sim_orchestrator()}")
 
             with Pool(os.cpu_count()) as pool:
+
                 params = self.prepare_simulation()
                 params = [(*i, logging_queue) for i in params]
                 results = pool.imap_unordered(Orchestrator.worker, params)
@@ -283,6 +296,7 @@ class OrchestratorSensitivity(Base):
         self.logger = get_logger(__name__)
 
     def prepare_simulation(self):
+
         global_parameter_set = []
         orchestrator_id = uuid.uuid4()
         self.orchestrator_id = orchestrator_id
@@ -375,6 +389,7 @@ class OrchestratorSensitivity(Base):
 
     @staticmethod
     def worker(params):
+
         (
             start_timestamp,
             end_timestamp,
@@ -419,18 +434,18 @@ class OrchestratorSensitivity(Base):
 
         # Liquidation Engine
         liquidation_engine_config = {}
-        liquidation_engine_config[
-            "base"
-        ] = self.liquidation_engine.liquidation_config.base
-        liquidation_engine_config[
-            "maximum_auction_duration"
-        ] = self.liquidation_engine.liquidation_config.maximum_auction_duration
-        liquidation_engine_config[
-            "start_price_multiplier"
-        ] = self.liquidation_engine.liquidation_config.start_price_multiplier
-        liquidation_engine_config[
-            "min_price_multiplier"
-        ] = self.liquidation_engine.liquidation_config.min_price_multiplier
+        liquidation_engine_config["base"] = (
+            self.liquidation_engine.liquidation_config.base
+        )
+        liquidation_engine_config["maximum_auction_duration"] = (
+            self.liquidation_engine.liquidation_config.maximum_auction_duration
+        )
+        liquidation_engine_config["start_price_multiplier"] = (
+            self.liquidation_engine.liquidation_config.start_price_multiplier
+        )
+        liquidation_engine_config["min_price_multiplier"] = (
+            self.liquidation_engine.liquidation_config.min_price_multiplier
+        )
         liquidation_engine_config["lending_pool"] = dict(
             self.liquidation_engine.liquidation_config.lending_pool
         )
@@ -462,9 +477,12 @@ class OrchestratorSensitivity(Base):
         return sim_context
 
     def execute(self):
+
         db = get_mongodb_db()
         with multiprocessing_logging_queue() as logging_queue:
+
             with Pool(os.cpu_count()) as pool:
+
                 params = self.prepare_simulation()
                 self.logger.info(f"[ORCHESTRATOR] {self.sim_orchestrator()}")
                 params = [(*i, logging_queue) for i in params]

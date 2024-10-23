@@ -268,22 +268,17 @@ def initiate_liquidity_position(
         * 10 ** (_token1_decimals - _token0_decimals)
     )
 
-    (
-        _liquidity_guess,
-        _amount_0,
-        _amount_1,
-        _current_value_0,
-        _current_value_1,
-        _i,
-    ) = find_matching_liquidity(
-        _usd_value_invested,
-        _upper_price,
-        _current_price,
-        _lower_price,
-        _token0_price_in_usd,
-        _token0_decimals,
-        _token1_price_in_usd,
-        _token1_decimals,
+    _liquidity_guess, _amount_0, _amount_1, _current_value_0, _current_value_1, _i = (
+        find_matching_liquidity(
+            _usd_value_invested,
+            _upper_price,
+            _current_price,
+            _lower_price,
+            _token0_price_in_usd,
+            _token0_decimals,
+            _token1_price_in_usd,
+            _token1_decimals,
+        )
     )
     adjusted_amount_0 = _amount_0 / (10**_token0_decimals)
     adjusted_amount_1 = _amount_1 / (10**_token1_decimals)
@@ -325,17 +320,13 @@ if __name__ == "__main__":
     token1_price_in_usd = 1
     interval_spread = 0.1  # %10
 
-    (
-        liquidity_guess,
-        lower_price,
-        upper_price,
-        amount_0,
-        amount_1,
-    ) = initiate_liquidity_position(
-        usd_value_invested,
-        token0_price_in_usd,
-        token1_price_in_usd,
-        interval_spread,
+    liquidity_guess, lower_price, upper_price, amount_0, amount_1 = (
+        initiate_liquidity_position(
+            usd_value_invested,
+            token0_price_in_usd,
+            token1_price_in_usd,
+            interval_spread,
+        )
     )
 
     print(

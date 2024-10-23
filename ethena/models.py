@@ -44,7 +44,7 @@ class ChainMetrics(BaseModel):
 
     class Meta(BaseModel.Meta):
         indexes = [
-            models.Index(fields=["block_timestamp"], name="block_timestamp_idx"),
+            models.Index(fields=['block_timestamp'], name='block_timestamp_idx'),
         ]
 
 
@@ -119,9 +119,7 @@ class ApyMetrics(BaseModel):
 
     class Meta(BaseModel.Meta):
         constraints = [
-            models.UniqueConstraint(
-                fields=["pool_id", "timestamp"], name="pool_id_timestamp_idx"
-            ),
+            models.UniqueConstraint(fields=['pool_id', 'timestamp'], name='pool_id_timestamp_idx'),
         ]
 
 
@@ -133,10 +131,7 @@ class FundingRateMetrics(BaseModel):
 
     class Meta(BaseModel.Meta):
         constraints = [
-            models.UniqueConstraint(
-                fields=["timestamp", "symbol", "exchange"],
-                name="timestamp_asset_cex_rate_idx",
-            ),
+            models.UniqueConstraint(fields=['timestamp', 'symbol', 'exchange'], name='timestamp_asset_cex_rate_idx'),
         ]
 
 

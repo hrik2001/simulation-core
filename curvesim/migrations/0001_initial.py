@@ -5,6 +5,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     initial = True
 
     dependencies = []
@@ -13,15 +14,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="SimulationParameters",
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("A", models.IntegerField()),
                 ("fee", models.FloatField()),
                 ("D", models.FloatField()),
@@ -34,15 +27,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="SimulationRun",
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("run_date", models.DateTimeField(auto_now_add=True)),
                 (
                     "parameters",
@@ -60,15 +45,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="PriceErrorDistribution",
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("price_error", models.FloatField()),
                 ("frequency", models.FloatField()),
                 (
@@ -84,15 +61,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="SummaryMetrics",
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("pool_value_virtual_annualized_returns", models.FloatField()),
                 ("pool_value_annualized_returns", models.FloatField()),
                 ("pool_balance_median", models.FloatField()),
@@ -116,15 +85,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="TimeseriesData",
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("timestamp", models.DateTimeField()),
                 ("pool_value_virtual", models.FloatField()),
                 ("pool_value", models.FloatField()),
@@ -146,15 +107,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Pool",
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("address", models.CharField(max_length=42)),
                 ("name", models.CharField(max_length=100)),
                 ("params_dict", models.JSONField()),

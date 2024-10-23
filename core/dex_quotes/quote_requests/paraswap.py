@@ -1,18 +1,17 @@
-from datetime import datetime, timedelta
-from typing import Any, Dict
-
 import requests
-from requests.exceptions import ConnectionError, RequestException, Timeout
+from requests.exceptions import ConnectionError, Timeout, RequestException
+from typing import Dict, Any
+from datetime import datetime, timedelta
 
 
 def get_quote(
-    src_token: str,
-    src_decimals: int,
-    dest_token: str,
-    dest_decimals: int,
-    usd_amount: float,
+    src_token: str, 
+    src_decimals: int, 
+    dest_token: str, 
+    dest_decimals: int, 
+    usd_amount: float, 
     market_price: float,
-    network_id: int,
+    network_id: int
 ) -> Dict[str, Any]:
     """
     Fetches the swap rate between two tokens using the ParaSwap API.
@@ -43,7 +42,7 @@ def get_quote(
         "side": "SELL",
         "network": str(network_id),
         "slippage": 9999,  # 100% slippage tolerance
-        "maxImpact": 100,
+        "maxImpact": 100
     }
 
     try:
@@ -51,38 +50,34 @@ def get_quote(
         response = requests.get(api_url, params=params)
         response.raise_for_status()  # Raise an exception for HTTP errors
 
-        if "priceRoute" in response.json():
-            quote_raw = response.json()["priceRoute"]
+        if 'priceRoute' in response.json():
+
+            quote_raw = response.json()['priceRoute']
 
             # extract
-            src_amount = float(quote_raw["srcAmount"])
-            dest_amount = float(quote_raw["destAmount"])
-            src_usd = float(quote_raw["srcUSD"])
-            dest_usd = float(quote_raw["destUSD"])
-            aggregator = str("paraswap")
+            src_amount = float(quote_raw['srcAmount'])
+            dest_amount = float(quote_raw['destAmount'])
+            src_usd = float(quote_raw['srcUSD'])
+            dest_usd = float(quote_raw['destUSD'])
+            aggregator = str('paraswap')
 
-            # format row
+            # format row 
 
             row = {
-                "network": network_id,
-                "dex_aggregator": aggregator,
-                "src": src_token,
-                "src_decimals": src_decimals,
-                "dst": dest_token,
-                "dest_decimals": dest_decimals,
-                "in_amount_usd": usd_amount,
-                "in_amount": src_amount,
-                "out_amount": dest_amount,
-                "market_price": market_price,
-                "price": (src_amount / (10**src_decimals))
-                / (dest_amount / (10**dest_decimals)),  # execution_price"
-                "price_impact": (src_usd - dest_usd) / src_usd,  # impact_cost
-                "timestamp": round(
-                    (datetime.now() + timedelta(minutes=30))
-                    .replace(minute=0, second=0, microsecond=0)
-                    .timestamp()
-                ),
-            }
+                    "network": network_id,
+                    "dex_aggregator": aggregator, 
+                    "src": src_token,
+                    "src_decimals": src_decimals,
+                    "dst": dest_token,
+                    "dest_decimals": dest_decimals,
+                    "in_amount_usd": usd_amount,
+                    "in_amount": src_amount, 
+                    "out_amount": dest_amount,
+                    "market_price": market_price, 
+                    "price": (src_amount/(10**src_decimals)) / (dest_amount/(10**dest_decimals)), #execution_price"
+                    "price_impact": (src_usd-dest_usd) / src_usd, #impact_cost
+                    "timestamp": round((datetime.now() + timedelta(minutes=30)).replace(minute=0, second=0, microsecond=0).timestamp())
+                }
 
             # print(row)
 
@@ -100,7 +95,6 @@ def get_quote(
     except Exception as e:
         print(f"Unexpected error: {e}")
         return {"error": "UnexpectedError", "message": str(e)}
-
 
 # Example usage
 # quote_paraswap = get_paraswap_rate(

@@ -1,7 +1,6 @@
-from typing import Any, Dict, List, Optional, Union
-
-from .asset import Asset
+from typing import List, Dict, Any, Optional, Union
 from .base import Base
+from .asset import Asset
 
 
 class AssetValueAndRiskFactors(Base):

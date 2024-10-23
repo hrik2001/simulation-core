@@ -1,7 +1,5 @@
 from django.contrib import admin
-
-from .models import (PriceErrorDistribution, SimulationParameters,
-                     SimulationRun, SummaryMetrics, TimeseriesData)
+from .models import SimulationParameters, SimulationRun, TimeseriesData, PriceErrorDistribution, SummaryMetrics
 
 admin.site.register(SimulationParameters)
 admin.site.register(SimulationRun)

@@ -4,14 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("arcadia", "0018_accountassets_position_distribution"),
+        ('arcadia', '0018_accountassets_position_distribution'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="accountassets",
-            name="position_distribution_usd",
+            model_name='accountassets',
+            name='position_distribution_usd',
             field=models.JSONField(null=True),
         ),
     ]

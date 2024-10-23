@@ -4,19 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("arcadia", "0012_metricsnapshot_collateral_distribution"),
+        ('arcadia', '0012_metricsnapshot_collateral_distribution'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="accountassets",
-            name="liquidation_value",
+            model_name='accountassets',
+            name='liquidation_value',
             field=models.TextField(null=True),
         ),
         migrations.AddField(
-            model_name="accountassets",
-            name="used_margin",
+            model_name='accountassets',
+            name='used_margin',
             field=models.TextField(null=True),
         ),
     ]

@@ -1,8 +1,7 @@
-from typing import Optional
-
 from .base import Base
 from .chain import Chain
 from .pricing import PricingMetadata
+from typing import Optional
 
 
 class Asset(Base):
@@ -41,7 +40,6 @@ class ConcentratedLiquidityAsset(Asset):
     fee: int
     position: ConcentratedLiquidityAssetPosition
 
-
 class SimCoreUniswapLPPosition(Asset):
     token0: Asset
     token1: Asset
@@ -50,6 +48,7 @@ class SimCoreUniswapLPPosition(Asset):
     tickUpper: str
     liquidity: str
     token_id: str
+
 
     def __str__(self):
         return f"{self.token0}-{self.token1}-{self.token_id}"

@@ -1,10 +1,7 @@
-from datetime import datetime
-
 from celery import shared_task
-
-from .models import DebtMetadataSnapshot
 from .utils import collateral_debt_ceilings
-
+from .models import DebtMetadataSnapshot
+from datetime import datetime
 
 @shared_task
 def task__defimoney__debt_ceiling_snapshot():

@@ -4,13 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("core", "0003_rename_hash_transaction_transaction_hash_and_more"),
+        ('core', '0003_rename_hash_transaction_transaction_hash_and_more'),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name="cryologsmetadata",
-            name="extracted",
+            model_name='cryologsmetadata',
+            name='extracted',
         ),
     ]

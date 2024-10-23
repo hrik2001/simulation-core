@@ -4,13 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("core", "0004_remove_cryologsmetadata_extracted"),
-        ("uniswap", "0003_remove_paircreated_transaction_and_more"),
+        ('core', '0004_remove_cryologsmetadata_extracted'),
+        ('uniswap', '0003_remove_paircreated_transaction_and_more'),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name="Transaction",
+            name='Transaction',
         ),
     ]

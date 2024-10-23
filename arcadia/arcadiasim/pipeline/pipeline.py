@@ -2,22 +2,21 @@
 A pipeline is one simulation instance
 """
 
-import os
-import uuid
-from collections import defaultdict
-from typing import Any, List, Optional
+from ..models.asset import Asset
+from ..models.chain import Chain
+from ..models.base import Base
 
-import numpy as np
-
+from ..models.time import SimulationTime
 from ..arcadia.liquidation_engine import LiquidationEngine
 from ..arcadia.liquidator import Liquidator
-from ..logging import configure_multiprocess_logging, get_logger
 from ..models.arcadia import MarginAccount
-from ..models.asset import Asset
-from ..models.base import Base
-from ..models.chain import Chain
-from ..models.time import SimulationTime
+from ..logging import configure_multiprocess_logging, get_logger
 from ..utils import get_mongodb_db
+from typing import List, Optional, Any
+from collections import defaultdict
+import uuid
+import numpy as np
+import os
 
 
 class Pipeline(Base):
@@ -54,6 +53,7 @@ class Pipeline(Base):
         # self.log_fd = open(os.path.join(log_directory, log_file), "w")
 
     def sim_params(self):
+
         sim_params = {}
         for account in self.accounts:
             for asset in account.assets:
@@ -85,6 +85,7 @@ class Pipeline(Base):
 
             assets = {}
             for asset in account.assets:
+
                 asset_dict = {}
 
                 asset_dict["share"] = asset.metadata.share
@@ -106,9 +107,7 @@ class Pipeline(Base):
             account_normalised["asset_in_margin_account"] = assets
 
             # numeraire
-            account_normalised["debt"] = account.debt / (
-                10**account.numeraire.decimals
-            )
+            account_normalised["debt"] = account.debt / (10**account.numeraire.decimals)
             account_normalised["numeraire"] = account.numeraire.symbol
 
             accounts[account.address] = account_normalised
@@ -131,9 +130,9 @@ class Pipeline(Base):
 
         state_context["prices"] = self.sim_price()
 
-        state_context[
-            "total_protocol_revenue"
-        ] = self.liquidation_engine.protocol_revenue / (10**self.numeraire.decimals)
+        state_context["total_protocol_revenue"] = (
+            self.liquidation_engine.protocol_revenue / (10**self.numeraire.decimals)
+        )
 
         # non_liquidated_account = healthy accounts + in auction
         non_liquidated_accounts = []
@@ -142,6 +141,7 @@ class Pipeline(Base):
                 margin_account.address
                 not in self.liquidation_engine.all_liquidated_accounts
             ):
+
                 collateral = {}
                 for asset in margin_account.assets:
                     collateral_asset_name = asset.asset.symbol
@@ -188,9 +188,9 @@ class Pipeline(Base):
         state_context["auction_to_end"] = self.liquidation_engine.auctions_to_end
 
         # liquidated accounts
-        state_context[
-            "all_liquidated_accounts"
-        ] = self.liquidation_engine.all_liquidated_accounts
+        state_context["all_liquidated_accounts"] = (
+            self.liquidation_engine.all_liquidated_accounts
+        )
 
         return state_context
 
@@ -241,9 +241,7 @@ class Pipeline(Base):
                 prices_per_asset = {}
                 for i in account.assets:
                     start_timestamp = min(self.simulation_time.prices[i.asset])
-                    initial_price = self.simulation_time.prices[i.asset][
-                        start_timestamp
-                    ]
+                    initial_price = self.simulation_time.prices[i.asset][start_timestamp]
                     prices_per_asset[i.asset.symbol] = (
                         i.metadata.amount / (10**i.asset.decimals)
                     ) * initial_price
@@ -260,15 +258,17 @@ class Pipeline(Base):
         result_context["total_insolvent_value"] = total_insolvent_value / (
             10**self.numeraire.decimals
         )
-        result_context[
-            "total_protocol_revenue"
-        ] = self.liquidation_engine.protocol_revenue / (10**self.numeraire.decimals)
+        result_context["total_protocol_revenue"] = (
+            self.liquidation_engine.protocol_revenue / (10**self.numeraire.decimals)
+        )
 
         # position-weighted collateral ratio
         collateral_value = 0
         total_debt = 0
         for account in non_liquidated_accounts:
+
             if not account.address in self.liquidation_engine.auction_information:
+
                 total_debt += account.debt
                 for i in account.assets:
                     collateral_value += (

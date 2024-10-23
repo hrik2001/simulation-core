@@ -3,7 +3,6 @@ import json
 import os
 from functools import lru_cache
 from typing import TextIO
-
 import requests
 from django.conf import settings
 

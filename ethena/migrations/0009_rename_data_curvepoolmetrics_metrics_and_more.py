@@ -4,24 +4,25 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("ethena", "0008_rename_uniswapstats_uniswapmetrics"),
+        ('ethena', '0008_rename_uniswapstats_uniswapmetrics'),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name="curvepoolmetrics",
-            old_name="data",
-            new_name="metrics",
+            model_name='curvepoolmetrics',
+            old_name='data',
+            new_name='metrics',
         ),
         migrations.RenameField(
-            model_name="curvepoolsnapshots",
-            old_name="data",
-            new_name="snapshots",
+            model_name='curvepoolsnapshots',
+            old_name='data',
+            new_name='snapshots',
         ),
         migrations.RenameField(
-            model_name="uniswapmetrics",
-            old_name="data",
-            new_name="metrics",
+            model_name='uniswapmetrics',
+            old_name='data',
+            new_name='metrics',
         ),
     ]

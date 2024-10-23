@@ -1,1 +1,2 @@
-from . import kyperswap, paraswap
+from . import kyperswap
+from . import paraswap
