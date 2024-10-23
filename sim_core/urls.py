@@ -31,4 +31,5 @@ urlpatterns = [
     path('protocols/defimoney', include('defimoney.urls')),
     path('api/', include('core.urls')),
     path('explorer/', include('explorer.urls')),
+    path('ecps/', include('ecps.urls')),
 ]

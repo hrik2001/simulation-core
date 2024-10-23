@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'ethena',
     'defimoney',
     'curvesim',
+    'ecps',
     "django_celery_beat",  # for scheduling tasks
     "graphene_django",
     "django_celery_results",

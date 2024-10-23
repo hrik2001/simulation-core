@@ -7,10 +7,16 @@
 If you don't the environment yet, first create one:
 ```
 # python3 -m venv venv
+# source venv/bin/activate
 # pip install -r requirements.txt
 ```
 
-From the project root, activate the environment:
+During the instalation, you might have an error related to a missing OS library. To obtain it, [you need to install PostgreSQL](https://www.postgresqltutorial.com/postgresql-getting-started/) on your OS. On MacOS, you can just use `brew`:
+```
+# brew install postgresql
+```
+
+If you already have the environment installed, just activate it:
 ```
 # source ./venv/bin/activate
 ```
@@ -41,7 +47,7 @@ Generate simple slippage graph at a specific Unix timestamp:
 # python3 cli/main.py plot --collateral=coinbase-wrapped-btc --debt=usd-coin --network=ethereum --plot=simple --timestamp=1722526011
 ```
 
-Generate regression slippage graph with regression:
+Generate slippage graph with regression line:
 ```
 # python3 cli/main.py plot --collateral=coinbase-wrapped-btc --debt=usd-coin --network=ethereum --plot=regression --timestamp=now
 ```
