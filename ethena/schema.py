@@ -6,6 +6,7 @@ from django.db.models import F
 from django.db.models.functions import JSONObject
 from graphene import Int, String
 
+from django.core.cache import cache
 from ethena.models import ReserveFundMetrics, CollateralMetrics, ChainMetrics, ReserveFundBreakdown, \
     UniswapPoolSnapshots, \
     CurvePoolInfo, CurvePoolSnapshots, StakingMetrics, ExitQueueMetrics, ApyMetrics, FundingRateMetrics, \
@@ -126,6 +127,11 @@ class Query(graphene.ObjectType):
         return queryset
 
     def resolve_reserve_fund_breakdown(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        key = f"reserve-fund-breakdown-{start_time}-{end_time}-{limit}-{sort_by}"
+        cached_response = cache.get(key, None)
+        if cached_response is not None:
+            return cached_response
+
         queryset = ReserveFundBreakdown.objects.all()
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
@@ -137,6 +143,8 @@ class Query(graphene.ObjectType):
             queryset = queryset.order_by('created_at')
         if limit:
             queryset = queryset[:limit]
+
+        cache.set(key, queryset, timeout=3600)
         return queryset
 
     def resolve_curve_pool_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
