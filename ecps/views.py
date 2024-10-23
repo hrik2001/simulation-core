@@ -12,6 +12,12 @@ class SimulateSlashingRequest(forms.Form):
 
 @csrf_exempt
 def post_simulate_slashing(request):
+
+    if request.method == 'OPTIONS':
+        response = JsonResponse({})
+        response['Allow'] = 'POST, OPTIONS'
+        return response
+
     if request.method != 'POST':
     	return JsonResponse({'error': 'Invalid request method'}, status=400)
 
@@ -36,6 +42,12 @@ class SimulatePenaltyRequest(forms.Form):
 
 @csrf_exempt
 def post_simulate_inactivity(request):
+
+    if request.method == 'OPTIONS':
+        response = JsonResponse({})
+        response['Allow'] = 'POST, OPTIONS'
+        return response
+        
     if request.method != 'POST':
     	return JsonResponse({'error': 'Invalid request method'}, status=400)
 
