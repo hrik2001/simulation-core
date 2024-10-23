@@ -85,6 +85,11 @@ class Query(graphene.ObjectType):
                                  sort_by=String())
 
     def resolve_chain_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        key = f"chain-metrics-{start_time}-{end_time}-{limit}-{sort_by}"
+        cached_response = cache.get(key, None)
+        if cached_response is not None:
+            return cached_response
+
         queryset = ChainMetrics.objects.all()
         if start_time:
             queryset = queryset.filter(block_timestamp__gte=datetime.fromtimestamp(start_time))
@@ -96,9 +101,16 @@ class Query(graphene.ObjectType):
             queryset = queryset.order_by('block_timestamp')
         if limit:
             queryset = queryset[:limit]
+
+        cache.set(key, queryset, timeout=3600)
         return queryset
 
     def resolve_collateral_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        key = f"collateral-metrics-{start_time}-{end_time}-{limit}-{sort_by}"
+        cached_response = cache.get(key, None)
+        if cached_response is not None:
+            return cached_response
+
         queryset = CollateralMetrics.objects.all()
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
@@ -110,9 +122,16 @@ class Query(graphene.ObjectType):
             queryset = queryset.order_by('created_at')
         if limit:
             queryset = queryset[:limit]
+
+        cache.set(key, queryset, timeout=3600)
         return queryset
 
     def resolve_reserve_fund_metrics(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
+        key = f"reserve-fund-metrics-{start_time}-{end_time}-{limit}-{sort_by}"
+        cached_response = cache.get(key, None)
+        if cached_response is not None:
+            return cached_response
+
         queryset = ReserveFundMetrics.objects.all()
         if start_time:
             queryset = queryset.filter(timestamp__gte=datetime.fromtimestamp(start_time))
@@ -124,6 +143,8 @@ class Query(graphene.ObjectType):
             queryset = queryset.order_by('timestamp')
         if limit:
             queryset = queryset[:limit]
+
+        cache.set(key, queryset, timeout=3600)
         return queryset
 
     def resolve_reserve_fund_breakdown(self, info, start_time=None, end_time=None, limit=None, sort_by=None):
