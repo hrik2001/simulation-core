@@ -42,10 +42,15 @@ ARIBTRUM_DTO = chainDTO(
     
 ) 
 
+BASE_DTO = chainDTO(
+    network="Base",
+    network_id=8453
+    
+) 
+
 ETHEREUM_DTO = chainDTO(
     network="Ethereum",
     network_id=1
-    
 )
 
 network_mapping = {
@@ -71,6 +76,11 @@ USDT_ARB = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
 DAI_ARB= "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1" # same
 FRAX_ARB = "0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F"
 
+CRVUSD_BASE = "0x417Ac0e078398C154EdFadD9Ef675d30Be60Af93"
+USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+USDT_BASE = "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2"
+DAI_BASE= "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb"
+
 CRVUSD_ETH = "0xf939e0a03fb07f59a73314e73794be0e57ac1b4e"
 USDC_ETH = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 USDT_ETH = "0xdac17f958d2ee523a2206206994597c13d831ec7"
@@ -93,6 +103,10 @@ ARB = "0x912ce59144191c1204e64559fe8253a0e49e6548"
 GMX = "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a"
 PENDLE = "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8"
 RDNT = "0x3082CC23568eA640225c2467653dB90e9250AaA0"
+
+WETH_BASE = "0x4200000000000000000000000000000000000006"
+CBETH_BASE = "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22"
+CBBTC_BASE = "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf"
 
 # crvusd
 WETH_ETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
@@ -572,6 +586,46 @@ RDNT_DTO = TokenDTO(
     network=ARIBTRUM_DTO,
     min_trade_size=500,
     max_trade_size=5_000_000,
+)
+
+WETH_BASE_DTO = TokenDTO(
+    address=WETH_BASE,
+    name="Wrapped Ether (Base)",
+    symbol="WETH",
+    decimals=18,
+    network=BASE_DTO,
+    min_trade_size=0.1,
+    max_trade_size=30000,
+)
+
+CBETH_BASE_DTO = TokenDTO(
+    address=CBETH_BASE,
+    name="Coinbase Wrapped ETH (Base)",
+    symbol="cbETH",
+    decimals=18,
+    network=BASE_DTO,
+    min_trade_size=0.1,
+    max_trade_size=30000,
+)
+
+CBBTC_BASE_DTO = TokenDTO(
+    address=CBBTC_BASE,
+    name="Coinbase Wrapped BTC (Base)",
+    symbol="cbBTC",
+    decimals=18,
+    network=BASE_DTO,
+    min_trade_size=0.1,
+    max_trade_size=30000,
+)
+
+USDC_BASE_DTO = TokenDTO(
+    address=USDC_BASE,
+    name="USDC BASE",
+    symbol="USDC",
+    decimals=6,
+    network=BASE_DTO,
+    min_trade_size=0.1,
+    max_trade_size=30000,
 )
 
 TOKEN_DTOs = {

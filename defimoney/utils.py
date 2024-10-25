@@ -1,5 +1,5 @@
 from __future__ import annotations
-from core.dex_quotes.DTO import TOKEN_DTOs, STABLES, TokenDTO, COLLATERAL, USDC_OP_DTO, USDT_OP_DTO, USDC_ARB_DTO, USDT_ARB_DTO, WETH_OP_DTO, WETH_ARB_DTO, WBTC_OP_DTO, WBTC_ARB_DTO, WSTETH_OP_DTO, ARB_DTO, GMX_DTO, RDNT_DTO, WSTETH_ARB_DTO, PENDLE_DTO, OP_DTO, VELO_DTO
+from core.dex_quotes.DTO import TOKEN_DTOs, STABLES, TokenDTO, COLLATERAL, USDC_OP_DTO, USDT_OP_DTO, USDC_ARB_DTO, USDT_ARB_DTO, WETH_OP_DTO, WETH_ARB_DTO, WBTC_OP_DTO, WBTC_ARB_DTO, WSTETH_OP_DTO, ARB_DTO, GMX_DTO, RDNT_DTO, WSTETH_ARB_DTO, PENDLE_DTO, OP_DTO, VELO_DTO, USDC_BASE_DTO, WETH_BASE_DTO, CBBTC_BASE_DTO, CBETH_BASE_DTO
 """
 Provides the `ExternalMarket` class for modeling
 swaps in external liquidity venues.
@@ -286,27 +286,33 @@ def collateral_debt_ceilings():
             GMX_DTO: {"debt_ceiling": 120000},
             PENDLE_DTO: {"debt_ceiling": 286738},
             RDNT_DTO: {"debt_ceiling": 70257610},
+            WETH_BASE_DTO: {"debt_ceiling": 8237.72},
+            CBBTC_BASE_DTO: {"debt_ceiling": 209.82},
+            CBETH_BASE_DTO: {"debt_ceiling": 2778.25},
     }
-    for collateral in COLLATERAL:
-        flag = True
-        try:
-            collateral_dto = TOKEN_DTOs["Optimism"][collateral]
-            chain = "optimism"
-        except KeyError:
-            try:
-                collateral_dto = TOKEN_DTOs["Arbitrum"][collateral]
-                chain = "arbitrum"
-            except KeyError:
-                print("Asset is neither arbitrum nor optimism asset")
-                flag = False
+    # for collateral in COLLATERAL:
+        # flag = True
+        # try:
+            # collateral_dto = TOKEN_DTOs["Optimism"][collateral]
+            # chain = "optimism"
+        # except KeyError:
+            # try:
+                # collateral_dto = TOKEN_DTOs["Arbitrum"][collateral]
+                # chain = "arbitrum"
+            # except KeyError:
+                # print("Asset is neither arbitrum nor optimism asset")
+                # flag = False
                 
         
-        if not flag:
-            continue
+        # if not flag:
+            # continue
         
+    for collateral_dto in response.keys():
+        chain = collateral_dto.network.network.lower()
+        collateral = collateral_dto.address
         print(f"Trying {collateral_dto.symbol} {collateral_dto.address} on {chain}")
         # df_collateral = pd.DataFrame(get_stable_quotes(collateral_dto, [USDT_ARB_DTO, USDC_ARB_DTO, USDT_OP_DTO, USDC_OP_DTO]).values())
-        df_collateral = get_stable_quotes(collateral_dto, [USDT_ARB_DTO, USDC_ARB_DTO, USDT_OP_DTO, USDC_OP_DTO])
+        df_collateral = get_stable_quotes(collateral_dto, [USDT_ARB_DTO, USDC_ARB_DTO, USDT_OP_DTO, USDC_OP_DTO, USDC_BASE_DTO])
         df_backup = df_collateral.copy(deep=True)
         df_collateral['src'] = df_collateral['src_lower']
         df_collateral['dst'] = df_collateral['dst_lower']
@@ -348,20 +354,28 @@ def collateral_debt_ceilings():
         response[dto]["actual_debt"] = None
 
     llammas = {
-            WETH_ARB_DTO: "0xe38fb572099a8fdb51e0929cb2b439d0479fc43e",
-            WBTC_ARB_DTO: "0xb745f12ecf271484c79d3999ca12164fe1c4e5f9",
-            ARB_DTO: "0xec70ac48d2cc382987a176f64fe74d77d010f9d1",
-            WETH_OP_DTO: "0xd74a1f6b44395cf8c4833df5bc965c6c2b567476",
-            WBTC_OP_DTO: "0xc82b4c656ba6aa4a2ef6bfe6b511d206c93b405b",
-            WSTETH_OP_DTO: "0xfc6ec1f94f2ffce0f0bcb79592d765abd3e1baef"
-            
+        WETH_ARB_DTO: "0xe38fb572099a8fdb51e0929cb2b439d0479fc43e",
+        WBTC_ARB_DTO: "0xb745f12ecf271484c79d3999ca12164fe1c4e5f9",
+        WSTETH_ARB_DTO: "0xE927e8B43Da90f017b146Eff5f99515372630DD1",
+        ARB_DTO: "0xec70ac48d2cc382987a176f64fe74d77d010f9d1",
+        # GMX_DTO: "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a",
+        PENDLE_DTO: "0xFF75fa72bbc5DB02FceB948901614A1155925592",
+        RDNT_DTO: "0xE304eF44F4240E44d0A8E954c22e5007a93a4378",
+        OP_DTO: "0x13aa7dBB49d414A321b403EabB1B4231e61C7b29",
+        WETH_OP_DTO: "0xd74a1f6b44395cf8c4833df5bc965c6c2b567476",
+        WBTC_OP_DTO: "0xc82b4c656ba6aa4a2ef6bfe6b511d206c93b405b",
+        WSTETH_OP_DTO: "0xfc6ec1f94f2ffce0f0bcb79592d765abd3e1baef",
+        WETH_BASE_DTO: "0xA929A836148E0635aB5EDf5B474d664601aDD2cE",
+        CBETH_BASE_DTO: "0xdf887F7a76744df87CF8111349657688E73257dc",
+        CBBTC_BASE_DTO: "0xA86e8d5ed6F07DAb21C44e55e8576742760a7aFB"
 
-            }
+    }
 
 
     final_response = dict()
     for dto, ceiling in response.items():
         if dto in llammas:
+            print(f"{dto=}")
             ceiling["actual_debt"] = get_llamma_debt(dto, llammas[dto])/1e18
         final_response[f"{dto.symbol.lower()}-{dto.network.network.lower()}"] = ceiling
         
