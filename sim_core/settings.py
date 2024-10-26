@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import sentry_sdk
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,57 +25,57 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-tf1!one#d4d^o*g#4a0307009xcw9nm7656u72$z^@1uye2%39'
+SECRET_KEY = "django-insecure-tf1!one#d4d^o*g#4a0307009xcw9nm7656u72$z^@1uye2%39"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("ENVIRONMENT", None) != "production"
 
-ALLOWED_HOSTS = ['data-core.up.railway.app', "127.0.0.1", "localhost", "api.llamarisk.com"]
-CSRF_TRUSTED_ORIGINS = ['https://data-core.up.railway.app', 'https://api.llamarisk.com']
+ALLOWED_HOSTS = ["data-core.up.railway.app", "127.0.0.1", "localhost", "api.llamarisk.com"]
+CSRF_TRUSTED_ORIGINS = ["https://data-core.up.railway.app", "https://api.llamarisk.com"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'filebrowser',
-    'explorer',
+    "filebrowser",
+    "explorer",
     "corsheaders",
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'core',
-    'uniswap',
-    'arcadia',
-    'ethena',
-    'defimoney',
-    'curvesim',
-    'ecps',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "core",
+    "uniswap",
+    "arcadia",
+    "ethena",
+    "defimoney",
+    "curvesim",
+    "ecps",
     "django_celery_beat",  # for scheduling tasks
     "graphene_django",
     "django_celery_results",
 ]
-EXPLORER_CONNECTIONS = { 'Default': 'default' }
-EXPLORER_DEFAULT_CONNECTION = 'default'
+EXPLORER_CONNECTIONS = {"Default": "default"}
+EXPLORER_DEFAULT_CONNECTION = "default"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
-    'django.middleware.security.SecurityMiddleware',
+    "django.middleware.security.SecurityMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 # CORS_ALLOWED_ORIGINS = [
-    # '*',
+# '*',
 # ]
 
 # settings.py
@@ -104,37 +105,37 @@ CORS_ALLOW_HEADERS = [
 ]
 
 
-ROOT_URLCONF = 'sim_core.urls'
+ROOT_URLCONF = "sim_core.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'sim_core.wsgi.application'
+WSGI_APPLICATION = "sim_core.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 # if os.environ.get('ENVIRONMENT') == 'local':
-    # DATABASES = {
-        # 'default': {
-            # 'ENGINE': 'django.db.backends.sqlite3',
-            # 'NAME': BASE_DIR / 'db.sqlite3',
-        # }
-    # }
+# DATABASES = {
+# 'default': {
+# 'ENGINE': 'django.db.backends.sqlite3',
+# 'NAME': BASE_DIR / 'db.sqlite3',
+# }
+# }
 # elif os.environ.get('ENVIRONMENT') == 'production':
 POSTGRES_DB = os.environ.get("POSTGRES_DB")  # database name
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")  # database user password
@@ -149,7 +150,15 @@ DATABASES = {
         "PASSWORD": POSTGRES_PASSWORD,
         "HOST": POSTGRES_HOST,
         "PORT": POSTGRES_PORT,
-    }
+    },
+    "test": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "curve_sim_test",
+        "USER": "francescomangia",
+        "PASSWORD": "",
+        "HOST": "localhost",
+        "PORT": "5432",
+    },
 }
 
 
@@ -158,16 +167,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -175,9 +184,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -199,30 +208,32 @@ STATICFILES_FINDERS = (
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 MEDIA_ROOT = (BASE_DIR / Path("media")).resolve().as_posix()
 CELERY_BROKER_URL = os.environ.get("REDIS_URL")
 # CELERY_RESULT_BACKEND = os.environ["REDIS_URL"]
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_RESULT_EXTENDED = True
 
-FILEBROWSER_DIRECTORY = ''
-DIRECTORY = ''
+FILEBROWSER_DIRECTORY = ""
+DIRECTORY = ""
 
 # CACHES = {
-    # 'default': {
-        # 'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        # 'LOCATION': 'unique-snowflake',
-    # }
+# 'default': {
+# 'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+# 'LOCATION': 'unique-snowflake',
+# }
 # }
 CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379'),  # Use REDIS_URL from the environment, default to localhost
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get(
+            "REDIS_URL", "redis://127.0.0.1:6379"
+        ),  # Use REDIS_URL from the environment, default to localhost
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
-        'CACHE': None,
+        "CACHE": None,
     }
 }
 

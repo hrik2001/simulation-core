@@ -15,10 +15,10 @@ class Migration(migrations.Migration):
             name="SimulationParameters",
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("A", models.IntegerField()),
-                ("fee", models.FloatField()),
-                ("D", models.FloatField()),
-                ("fee_mul", models.FloatField()),
+                ("A", models.IntegerField(null=True)),
+                ("fee", models.FloatField(null=True)),
+                ("D", models.FloatField(null=True)),
+                ("fee_mul", models.FloatField(null=True)),
             ],
             options={
                 "unique_together": {("A", "fee", "D", "fee_mul")},
