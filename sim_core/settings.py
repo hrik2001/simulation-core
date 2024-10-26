@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     "arcadia",
     "ethena",
     "defimoney",
-    "curvesim",
+    "curvesim_simulations",
     "ecps",
     "django_celery_beat",  # for scheduling tasks
     "graphene_django",
