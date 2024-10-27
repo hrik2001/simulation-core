@@ -5,34 +5,92 @@ import logging
 
 import curvesim
 from curvesim.metrics.results.sim_results import SimResults
+from .models import SimulationParameters, SimulationRun, TimeseriesData, SummaryMetrics, PriceErrorDistribution
+from django.utils.timezone import make_aware
+from datetime import datetime
+from pandas import DataFrame
 
 
 @shared_task(name="run_simulation_task")
 def run_simulation_task():
     print(f"Simulation task started at {timezone.now()}")
 
-    # Fetch enabled pools
     enabled_pools = Pool.objects.filter(enabled=True)
 
     for pool in enabled_pools:
         logging.info(f"Running simulation for pool {pool.name}")
-        results = _run_simulation(pool)
+        _run_and_save_simulation(pool)
 
     return f"Found {enabled_pools.count()} enabled pools"
 
 
-def _run_simulation(pool: Pool):
-    # Fetch the latest simulation run
-    pool_obj = curvesim.pool.get(pool.address)
-
-    # Estraiamo i parametri dal params_dict
-    A_params = pool.params_dict["A"]  # lista [100, 200]
-    fee_params = pool.params_dict["fee"]  # lista [0.01]
-
-    raw_results: SimResults = curvesim.autosim(pool.address, A=[1707629], fee=[1000000])
-    return _format_results(raw_results)
+def _run_and_save_simulation(pool: Pool):
+    params = pool.params_dict
+    raw_results: SimResults = curvesim.autosim(pool.address, **params)
+    _format_and_save_results(raw_results)
+    logging.info(f"Simulation for pool {pool.name} completed")
 
 
-def _format_results(raw_results: SimResults):
-    # Estraiamo i dati da raw_results e li formattiamo per salvarli nel database
-    pass
+def _format_and_save_results(results: SimResults) -> None:
+
+    summary_df = results.summary(full=True)
+
+    for index, summary_row in summary_df.iterrows():
+
+        sim_params, _ = _get_or_create_simulation_parameters(summary_row)
+
+        sim_run = SimulationRun.objects.create(parameters=sim_params)
+        data_per_trade: DataFrame = results.data_per_trade[results.data_per_trade["run"] == index]
+        price_error_distribution = data_per_trade["price_error"].value_counts(normalize=True)
+
+        _save_timeseries_data(sim_run, data_per_trade)
+        _save_price_error_distribution(sim_run, price_error_distribution)
+        _save_summary_metrics(sim_run, summary_row)
+
+
+def _get_or_create_simulation_parameters(summary_row: DataFrame) -> tuple[SimulationParameters, bool]:
+    return SimulationParameters.objects.get_or_create(
+        A=summary_row["A"],
+        D=summary_row["D"],
+        fee=summary_row["fee"],
+        fee_mul=summary_row["fee_mul"],
+        admin_fee=summary_row["admin_fee"],
+    )
+
+
+def _save_timeseries_data(sim_run: SimulationRun, data_per_trade: DataFrame) -> None:
+    for _, row in data_per_trade.iterrows():
+        TimeseriesData.objects.create(
+            simulation_run=sim_run,
+            timestamp=make_aware(datetime.strptime(row["timestamp"], "%Y-%m-%d %H:%M:%S+00:00")),
+            pool_value_virtual=row["pool_value_virtual"],
+            pool_value=row["pool_value"],
+            pool_balance=row["pool_balance"],
+            liquidity_density=row["liquidity_density"],
+            pool_volume=row["pool_volume"],
+            arb_profit=row["arb_profit"],
+            pool_fees=row["pool_fees"],
+        )
+
+
+def _save_price_error_distribution(sim_run: SimulationRun, price_error_distribution: DataFrame) -> None:
+    for error_value, frequency in price_error_distribution.items():
+        PriceErrorDistribution.objects.get_or_create(
+            simulation_run=sim_run, price_error=error_value, defaults={"frequency": frequency}
+        )
+
+
+def _save_summary_metrics(sim_run: SimulationRun, summary_row: DataFrame) -> None:
+    SummaryMetrics.objects.create(
+        simulation_run=sim_run,
+        pool_value_virtual_annualized_returns=summary_row["pool_value_virtual_annualized_returns"],
+        pool_value_annualized_returns=summary_row["pool_value_annualized_returns"],
+        pool_balance_median=summary_row["pool_balance_median"],
+        pool_balance_min=summary_row["pool_balance_min"],
+        liquidity_density_median=summary_row["liquidity_density_median"],
+        liquidity_density_min=summary_row["liquidity_density_min"],
+        pool_volume_sum=summary_row["pool_volume_sum"],
+        arb_profit_sum=summary_row["arb_profit_sum"],
+        pool_fees_sum=summary_row["pool_fees_sum"],
+        price_error_median=summary_row["price_error_median"],
+    )
