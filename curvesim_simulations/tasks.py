@@ -21,7 +21,7 @@ def run_simulation_task():
         logging.info(f"Running simulation for pool {pool.name}")
         _run_and_save_simulation(pool)
 
-    return f"Found {enabled_pools.count()} enabled pools"
+    return f"Run and saves simulations for {enabled_pools.count()} pools"
 
 
 def _run_and_save_simulation(pool: Pool):
