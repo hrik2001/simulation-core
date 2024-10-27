@@ -123,7 +123,13 @@ class HistoricalPriceStrategyMethods:
         data = cache.cached_request_get(url)
         if not data["is_internally_cached"]:
             sleep(1)
-        price = data["coins"][f"{chain_name}:{asset.contract_address}"]["price"]
+        # price = data["coins"][f"{chain_name}:{asset.contract_address}"]["price"]
+        price = None
+        for d in list(data["coins"].keys()):
+            if d.lower() == f"{chain_name}:{asset.contract_address}".lower():
+                price = data["coins"][d]["price"]
+        if price is None:
+            raise KeyError
         if numeraire == "usd":
             return price
         else:
