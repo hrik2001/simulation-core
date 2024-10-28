@@ -26,6 +26,7 @@ def run_simulation_task():
 
 def _run_and_save_simulation(pool: Pool):
     params = pool.params_dict
+    logging.info(f"Running simulation for pool {pool.name} with parameters {params}")
     raw_results: SimResults = curvesim.autosim(pool.address, **params)
     _format_and_save_results(raw_results)
     logging.info(f"Simulation for pool {pool.name} completed")
@@ -62,7 +63,7 @@ def _save_timeseries_data(sim_run: SimulationRun, data_per_trade: DataFrame) -> 
     for _, row in data_per_trade.iterrows():
         TimeseriesData.objects.create(
             simulation_run=sim_run,
-            timestamp=make_aware(datetime.strptime(row["timestamp"], "%Y-%m-%d %H:%M:%S+00:00")),
+            timestamp=row["timestamp"].to_pydatetime(),
             pool_value_virtual=row["pool_value_virtual"],
             pool_value=row["pool_value"],
             pool_balance=row["pool_balance"],
@@ -81,16 +82,17 @@ def _save_price_error_distribution(sim_run: SimulationRun, price_error_distribut
 
 
 def _save_summary_metrics(sim_run: SimulationRun, summary_row: DataFrame) -> None:
+    summary_row = summary_row.to_dict()
     SummaryMetrics.objects.create(
         simulation_run=sim_run,
-        pool_value_virtual_annualized_returns=summary_row["pool_value_virtual_annualized_returns"],
-        pool_value_annualized_returns=summary_row["pool_value_annualized_returns"],
-        pool_balance_median=summary_row["pool_balance_median"],
-        pool_balance_min=summary_row["pool_balance_min"],
-        liquidity_density_median=summary_row["liquidity_density_median"],
-        liquidity_density_min=summary_row["liquidity_density_min"],
-        pool_volume_sum=summary_row["pool_volume_sum"],
-        arb_profit_sum=summary_row["arb_profit_sum"],
-        pool_fees_sum=summary_row["pool_fees_sum"],
-        price_error_median=summary_row["price_error_median"],
+        pool_value_virtual_annualized_returns=summary_row["pool_value_virtual annualized_returns"],
+        pool_value_annualized_returns=summary_row["pool_value annualized_returns"],
+        pool_balance_median=summary_row["pool_balance median"],
+        pool_balance_min=summary_row["pool_balance min"],
+        liquidity_density_median=summary_row["liquidity_density median"],
+        liquidity_density_min=summary_row["liquidity_density min"],
+        pool_volume_sum=summary_row["pool_volume sum"],
+        arb_profit_sum=summary_row["arb_profit sum"],
+        pool_fees_sum=summary_row["pool_fees sum"],
+        price_error_median=summary_row["price_error median"],
     )
