@@ -9,7 +9,6 @@ class SimulationParameters(models.Model):
     admin_fee = models.FloatField()
 
     class Meta:
-        db_table = "curvesim_simulationparameters"
         unique_together = ("A", "fee", "D", "fee_mul", "admin_fee")
 
     def __str__(self):
@@ -21,7 +20,6 @@ class SimulationRun(models.Model):
     run_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "curvesim_simulationrun"
         unique_together = ("parameters", "run_date")
 
     def __str__(self):
@@ -38,9 +36,6 @@ class TimeseriesData(models.Model):
     pool_volume = models.FloatField()
     arb_profit = models.FloatField()
     pool_fees = models.FloatField()
-
-    class Meta:
-        db_table = "curvesim_timeseriesdata"
 
     def __str__(self):
         return f"Timeseries data for {self.simulation_run} at {self.timestamp}"
@@ -59,9 +54,6 @@ class SummaryMetrics(models.Model):
     pool_fees_sum = models.FloatField()
     price_error_median = models.FloatField()
 
-    class Meta:
-        db_table = "curvesim_summarymetrics"
-
     def __str__(self):
         return f"Summary metrics for {self.simulation_run}"
 
@@ -70,9 +62,6 @@ class PriceErrorDistribution(models.Model):
     simulation_run = models.ForeignKey(SimulationRun, on_delete=models.CASCADE, related_name="price_error_distribution")
     price_error = models.FloatField()
     frequency = models.FloatField()
-
-    class Meta:
-        db_table = "curvesim_priceerrordistribution"
 
     def __str__(self):
         return f"Price error distribution for {self.simulation_run}: {self.price_error}"
