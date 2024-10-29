@@ -56,6 +56,7 @@ ETHEREUM_DTO = chainDTO(
 network_mapping = {
     OPTIMISM_DTO.network_id: OPTIMISM_DTO,
     ARIBTRUM_DTO.network_id: ARIBTRUM_DTO,
+    BASE_DTO.network_id: BASE_DTO,
     ETHEREUM_DTO.network_id: ETHEREUM_DTO
 
     # Add more chainDTO instances as needed

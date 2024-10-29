@@ -7,6 +7,7 @@ from .quote_requests import kyperswap, paraswap, cowswap, okx
 from .price_fetcher import get_current_price
 from .DTO import TOKEN_DTOs
 from core.models import DexQuote, DexQuotePair
+from django.db.models import Q
 
 MAXIMUM_PRICE_IMPACT = 0.99 # stop requesting quotes above this amount
 SLEEP_TIME_BETWEEN_REQUESTS = 1.1 # seconds
@@ -20,6 +21,9 @@ def kyperswap_job(network = None, num_samples = 30):
         print(f'{network}')
 
         asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True)
+        # asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True).filter(Q(src_asset__symbol__iexact="AERO") | Q(dst_asset__symbol__iexact="AERO")).filter(Q(dst_asset__symbol__iexact="DAI") | Q(src_asset__symbol__iexact="DAI") | Q(dst_asset__symbol__iexact="USDC") | Q(src_asset__symbol__iexact="USDC") | Q(dst_asset__symbol__iexact="USDT") | Q(src_asset__symbol__iexact="USDT") | Q(dst_asset__symbol__iexact="crvUSD") | Q(src_asset__symbol__iexact="crvUSD"))
+        # print(asset_permutations)
+        # input("check?")
 
         for permutation in asset_permutations:
             sell_token = permutation.src_asset
@@ -44,6 +48,7 @@ def kyperswap_job(network = None, num_samples = 30):
 
                 except Exception as e:
                     print(f"Failed to save entry to DB: {e}")
+                    # raise e
 
                 if price_impact > MAXIMUM_PRICE_IMPACT: 
                     break
@@ -55,10 +60,14 @@ def paraswap_job(network = None, num_samples = 30):
     stopping_criteria = 0 
     price_impact = 0
 
+    network="base"
     if network is not None:
         print(f'{network}')
 
-        asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True)
+        # asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True)
+        asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True).filter(Q(src_asset__symbol__iexact="AERO") | Q(dst_asset__symbol__iexact="AERO")).filter(Q(dst_asset__symbol__iexact="DAI") | Q(src_asset__symbol__iexact="DAI") | Q(dst_asset__symbol__iexact="USDC") | Q(src_asset__symbol__iexact="USDC") | Q(dst_asset__symbol__iexact="USDT") | Q(src_asset__symbol__iexact="USDT") | Q(dst_asset__symbol__iexact="crvUSD") | Q(src_asset__symbol__iexact="crvUSD"))
+        print(asset_permutations)
+        input("check?")
 
         for permutation in asset_permutations:
             sell_token = permutation.src_asset

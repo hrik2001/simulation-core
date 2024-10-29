@@ -182,7 +182,13 @@ def price_defillama_multi(chain_name: str, contract_addresses: list[str], timest
     prices = {}
     for address in contract_addresses:
         try:
-            price = data["coins"][f"{chain_name}:{address}"]["price"]
+            # price = data["coins"][f"{chain_name}:{address}"]["price"]
+            price = None
+            for d in list(data["coins"].keys()):
+                if d.lower() == f"{chain_name}:{address}".lower():
+                    price = data["coins"][d]["price"]
+            if price is None:
+                raise KeyError
             prices[address] = price
         except KeyError:
             logging.exception(f"Missing data for coin: {data=} {chain_name=} {contract_addresses=}", exc_info=True)
