@@ -120,3 +120,4 @@ websockets==12.0
 whitenoise==6.6.0
 wrapt==1.16.0
 yarl==1.9.4
+git+https://github.com/FrancescoMangia/curvesim.git#egg=curvesim_lib

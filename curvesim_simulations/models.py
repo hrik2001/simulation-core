@@ -3,15 +3,16 @@ from django.db import models
 
 class SimulationParameters(models.Model):
     A = models.IntegerField()
-    fee = models.FloatField()
     D = models.FloatField()
+    fee = models.FloatField()
     fee_mul = models.FloatField()
+    admin_fee = models.FloatField()
 
     class Meta:
-        unique_together = ("A", "fee", "D", "fee_mul")
+        unique_together = ("A", "fee", "D", "fee_mul", "admin_fee")
 
     def __str__(self):
-        return f"A: {self.A}, fee: {self.fee}, D: {self.D}, fee_mul: {self.fee_mul}"
+        return f"A: {self.A}, D: {self.D}, fee: {self.fee}, fee_mul: {self.fee_mul}, admin_fee: {self.admin_fee}"
 
 
 class SimulationRun(models.Model):

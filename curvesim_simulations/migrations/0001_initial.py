@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="runs",
-                        to="curvesim.simulationparameters",
+                        to="curvesim_simulations.simulationparameters",
                     ),
                 ),
             ],
@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="price_error_distribution",
-                        to="curvesim.simulationrun",
+                        to="curvesim_simulations.simulationrun",
                     ),
                 ),
             ],
@@ -77,7 +77,7 @@ class Migration(migrations.Migration):
                     models.OneToOneField(
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="summary_metrics",
-                        to="curvesim.simulationrun",
+                        to="curvesim_simulations.simulationrun",
                     ),
                 ),
             ],
@@ -99,7 +99,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="timeseries_data",
-                        to="curvesim.simulationrun",
+                        to="curvesim_simulations.simulationrun",
                     ),
                 ),
             ],
