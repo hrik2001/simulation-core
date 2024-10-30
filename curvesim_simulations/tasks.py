@@ -9,6 +9,7 @@ from .models import SimulationParameters, SimulationRun, TimeseriesData, Summary
 from django.utils.timezone import make_aware
 from datetime import datetime
 from pandas import DataFrame
+from django.utils import timezone
 
 
 @shared_task(name="run_simulation_task")
@@ -28,11 +29,11 @@ def _run_and_save_simulation(pool: Pool):
     params = pool.params_dict
     logging.info(f"Running simulation for pool {pool.name} with parameters {params}")
     raw_results: SimResults = curvesim.autosim(pool.address, **params)
-    _format_and_save_results(raw_results)
+    _format_and_save_results(raw_results, pool.name)
     logging.info(f"Simulation for pool {pool.name} completed")
 
 
-def _format_and_save_results(results: SimResults) -> None:
+def _format_and_save_results(results: SimResults, pool_name: str) -> None:
 
     summary_df = results.summary(full=True)
 
@@ -40,7 +41,11 @@ def _format_and_save_results(results: SimResults) -> None:
 
         sim_params, _ = _get_or_create_simulation_parameters(summary_row)
 
-        sim_run = SimulationRun.objects.create(parameters=sim_params)
+        sim_run = SimulationRun.objects.create(
+            parameters=sim_params,
+            pool_name=pool_name,
+            run_date=timezone.now().replace(hour=0, minute=0, second=0, microsecond=0),
+        )
         data_per_trade: DataFrame = results.data_per_trade[results.data_per_trade["run"] == index]
         price_error_distribution = data_per_trade["price_error"].value_counts(normalize=True)
 
