@@ -17,10 +17,11 @@ class SimulationParameters(models.Model):
 
 class SimulationRun(models.Model):
     parameters = models.ForeignKey(SimulationParameters, on_delete=models.CASCADE, related_name="runs")
-    run_date = models.DateTimeField(auto_now_add=True)
+    run_date = models.DateTimeField()
+    pool_name = models.CharField(max_length=100, null=True)
 
     class Meta:
-        unique_together = ("parameters", "run_date")
+        unique_together = ("parameters", "run_date", "pool_name")
 
     def __str__(self):
         return f"Run for {self.parameters} on {self.run_date}"
