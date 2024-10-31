@@ -151,14 +151,14 @@ DATABASES = {
         "HOST": POSTGRES_HOST,
         "PORT": POSTGRES_PORT,
     },
-    "test": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "curve_sim_test",
-        "USER": "francescomangia",
-        "PASSWORD": "",
-        "HOST": "localhost",
-        "PORT": "5432",
-    },
+    # "test": {
+    #     "ENGINE": "django.db.backends.postgresql",
+    #     "NAME": "curve_sim_test",
+    #     "USER": "francescomangia",
+    #     "PASSWORD": "",
+    #     "HOST": "localhost",
+    #     "PORT": "5432",
+    # },
 }
 
 
