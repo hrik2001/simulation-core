@@ -30,6 +30,7 @@ urlpatterns = [
     path("protocols/arcadia", include("arcadia.urls")),
     path("protocols/ethena", include("ethena.urls")),
     path("protocols/defimoney", include("defimoney.urls")),
+    path("protocols/curvesim", include("curvesim_simulations.urls")),
     path("api/", include("core.urls")),
     path("explorer/", include("explorer.urls")),
     path("ecps/", include("ecps.urls")),
