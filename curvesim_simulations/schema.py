@@ -66,7 +66,7 @@ class Query(graphene.ObjectType):
         return {
             "simulations": [
                 {
-                    "id": sim.id,
+                    "id": sim.pool_name,
                     "run_date": sim.run_date,
                     "A": sim.parameters.A,
                     "fee": sim.parameters.fee,
@@ -77,7 +77,6 @@ class Query(graphene.ObjectType):
             ],
             "pools": [
                 {
-                    "id": pool.id,
                     "name": pool.name,
                     "address": pool.address,
                     "params": pool.params_dict,
