@@ -2,7 +2,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
 from django.http import JsonResponse
 from django.db.models import Q
-from .models import DexQuote
+from .models import DexQuote, Chain
 
 
 class DexQuoteListView(ListView):
@@ -99,3 +99,20 @@ class DexQuoteListView(ListView):
                     'total_items': 0
                 }
             }, safe=False)
+
+class ChainListView(ListView):
+    model = Chain
+
+    def get_queryset(self):
+
+        return super().get_queryset().order_by('chain_id')
+
+    def render_to_response(self, context, **response_kwargs):
+        context = self.get_context_data()
+        page_obj = context.get('object_list', None)
+
+        if page_obj is not None:
+            return JsonResponse({'chains': list(page_obj.values())}, safe=False)
+
+        else:
+            return JsonResponse({'chains': []}, safe=False)
