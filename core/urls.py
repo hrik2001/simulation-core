@@ -1,8 +1,8 @@
 from django.urls import path
-from .views import DexQuoteListView, ChainListView
+from .views import DexQuoteListView, DexQuotePairListView, ChainListView
 
 urlpatterns = [
     path('quotes/', DexQuoteListView.as_view(), name='get_quotes'),
-    path('chains', ChainListView.as_view(), name='get_chains'),
+    path('chains/', ChainListView.as_view(), name='get_chains'),
+    path('quote-pairs/', DexQuotePairListView.as_view(), name='get_quote_pairs'),
 ]
-

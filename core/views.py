@@ -1,9 +1,8 @@
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
 from django.http import JsonResponse
-from django.db.models import Q
-from .models import DexQuote, Chain
-
+from django.db.models import Q, F
+from .models import DexQuote, DexQuotePair, Chain
 
 class DexQuoteListView(ListView):
     model = DexQuote
@@ -19,18 +18,17 @@ class DexQuoteListView(ListView):
         dex_aggregator = self.request.GET.get("dex_aggregator")
         tokens = self.request.GET.get("tokens")  # Comma-separated token addresses
 
-        if start_timestamp:
-            try:
-                start_timestamp = int(start_timestamp)
-                queryset = queryset.filter(timestamp__gte=start_timestamp)
-            except ValueError:
-                return queryset.none()
-        if end_timestamp:
-            try:
-                end_timestamp = int(end_timestamp)
-                queryset = queryset.filter(timestamp__lte=end_timestamp)
-            except ValueError:
-                return queryset.none()
+        if start_timestamp and isinstance(start_timestamp, int):
+            start_timestamp = int(start_timestamp)
+            queryset = queryset.filter(timestamp__gte=start_timestamp)
+        else:
+            return queryset.none()
+
+        if end_timestamp and isinstance(end_timestamp, int):
+            end_timestamp = int(end_timestamp)
+            queryset = queryset.filter(timestamp__lte=end_timestamp)
+        else:
+            return queryset.none()
 
         if src:
             queryset = queryset.filter(src__iexact=src)
@@ -49,19 +47,17 @@ class DexQuoteListView(ListView):
         queryset = queryset.order_by('-timestamp')
 
         max_rows = self.request.GET.get('max_rows', self.DEFAULT_MAX_ROWS)
-        try:
+        if max_rows:
             max_rows = int(max_rows)
-        except ValueError:
+        else:
             max_rows = self.DEFAULT_MAX_ROWS
 
-        page = self.request.GET.get('page', 1)
         paginator = Paginator(queryset, max_rows)
 
-        try:
+        page = self.request.GET.get('page', 1)
+        if isinstance(page, int):
             queryset = paginator.page(page)
-        except PageNotAnInteger:
-            queryset = paginator.page(1)
-        except EmptyPage:
+        else:
             queryset = paginator.page(paginator.num_pages)
 
         return queryset
@@ -70,7 +66,7 @@ class DexQuoteListView(ListView):
         context = self.get_context_data()
         page_obj = context.get('object_list', None)
 
-        if page_obj is not None:
+        if page_obj:
             quotes_list = list(page_obj.object_list.values(
                 'dst', 'in_amount', 'out_amount', 'price', 'price_impact', 'src', 'timestamp'
             ))
@@ -111,8 +107,74 @@ class ChainListView(ListView):
         context = self.get_context_data()
         page_obj = context.get('object_list', None)
 
-        if page_obj is not None:
+        if page_obj:
             return JsonResponse({'chains': list(page_obj.values())}, safe=False)
-
         else:
             return JsonResponse({'chains': []}, safe=False)
+
+class DexQuotePairListView(ListView):
+    model = DexQuotePair
+    DEFAULT_MAX_ROWS = 10000
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('src_asset__chain').annotate(
+            src_id=F('src_asset'),
+            dst_id=F('dst_asset'),
+            src_symbol=F('src_asset__symbol'),
+            dst_symbol=F('dst_asset__symbol'),
+            src_name=F('src_asset__name'),
+            dst_name=F('dst_asset__name'),
+            chain_id=F('src_asset__chain__chain_id'),
+        )
+
+        chain_id = self.request.GET.get("chain_id")
+        if chain_id and isinstance(chain_id, int):
+            queryset = queryset.filter(chain_id__iexact=chain_id)
+        else:
+            return queryset.none()
+
+        queryset = queryset.order_by('chain_id')
+
+        max_rows = self.request.GET.get('max_rows', self.DEFAULT_MAX_ROWS)
+        if max_rows:
+            max_rows = int(max_rows)
+        else:
+            max_rows = self.DEFAULT_MAX_ROWS            
+
+        paginator = Paginator(queryset, max_rows)
+
+        page = self.request.GET.get('page', 1)
+        if isinstance(page, int):
+            queryset = paginator.page(page)
+        else:
+            queryset = paginator.page(paginator.num_pages)
+
+        return queryset
+
+    def render_to_response(self, context, **response_kwargs):
+        context = self.get_context_data()
+        page_obj = context.get('object_list', None)
+
+        if page_obj:
+
+            pagination_info = {
+                'current_page': page_obj.number,
+                'total_pages': page_obj.paginator.num_pages,
+                'total_items': page_obj.paginator.count,
+            }
+
+            return JsonResponse({
+                'quote_pairs': list(page_obj.object_list.values(
+                    'src_id', 'dst_id', 'src_name', 'dst_name', 'src_symbol', 'dst_symbol', 'chain_id')),
+                'pagination': pagination_info
+            }, safe=False)
+
+        else:
+            return JsonResponse({
+                'quote_pairs': [],
+                'pagination': {
+                    'current_page': 0,
+                    'total_pages': 0,
+                    'total_items': 0
+                }
+            }, safe=False)
