@@ -1,9 +1,21 @@
+
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django import forms
 from .services import simulate_slashing, simulate_inactivity
+from django.core.cache import cache
 import json
+from enum import Enum
+
+class HttpMethod(str, Enum):
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    DELETE = "DELETE"
+    OPTIONS = "OPTIONS"
+    HEAD = "HEAD"
+    PATCH = "PATCH"
 
 class SimulateSlashingRequest(forms.Form):
     staking_share = forms.FloatField(min_value=0., max_value=100.)
@@ -11,14 +23,14 @@ class SimulateSlashingRequest(forms.Form):
     slashed_validator_share = forms.FloatField(min_value=0., max_value=100.)
 
 @csrf_exempt
-def post_simulate_slashing(request):
+def post_simulate_slashing(request) -> JsonResponse:
 
-    if request.method == 'OPTIONS':
+    if request.method == HttpMethod.OPTIONS:
         response = JsonResponse({})
-        response['Allow'] = 'POST, OPTIONS'
+        response['Allow'] = ','.join([HttpMethod.POST, HttpMethod.OPTIONS])
         return response
 
-    if request.method != 'POST':
+    if request.method != HttpMethod.POST:
     	return JsonResponse({'error': 'Invalid request method'}, status=400)
 
     data = json.loads(request.body)
@@ -41,14 +53,14 @@ class SimulatePenaltyRequest(forms.Form):
     inactive_share = forms.FloatField(min_value=0., max_value=100.)
 
 @csrf_exempt
-def post_simulate_inactivity(request):
+def post_simulate_inactivity(request) -> JsonResponse:
 
-    if request.method == 'OPTIONS':
+    if request.method == HttpMethod.OPTIONS:
         response = JsonResponse({})
-        response['Allow'] = 'POST, OPTIONS'
+        response['Allow'] = ','.join([HttpMethod.POST,HttpMethod.OPTIONS])
         return response
         
-    if request.method != 'POST':
+    if request.method != HttpMethod.POST:
     	return JsonResponse({'error': 'Invalid request method'}, status=400)
 
     data = json.loads(request.body)
@@ -68,3 +80,20 @@ def post_simulate_inactivity(request):
     	'leave_exit_queue_epoch': leave_exit_queue_epoch,
     	'inactivity_leak_stop_epoch': inactivity_leak_stop_epoch})
     
+
+def get_parameters(request) -> JsonResponse:
+
+    if request.method == HttpMethod.OPTIONS:
+        response = JsonResponse({})
+        response['Allow'] = ','.join([HttpMethod.GET,HttpMethod.OPTIONS])
+        return response
+
+    if request.method != HttpMethod.GET:
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+    response = cache.get('ecps_parameters', None)
+    if not response:
+        return JsonResponse({'error': 'Cache not ready yet'}, status=503)
+
+    return JsonResponse(response, safe=False)
+
