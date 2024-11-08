@@ -95,15 +95,16 @@ def curve_api_call(path):
 @shared_task
 def task_curve__update_debt_ceiling():
     chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name.lower()
     timestamp = datetime.now(tz=timezone.utc)
     cutoff_time = timestamp - timedelta(hours=6)
 
-    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain}")
+    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
     available_markets = [market for market in markets if market["borrowable"] > 0]
 
     for market in available_markets:
         controller = market["address"]
-        all_users = curve_batch_api_call(f"/v1/crvusd/users/{chain}/{controller}/users")
+        all_users = curve_batch_api_call(f"/v1/crvusd/users/{chain_name}/{controller}/users")
 
         active_users = []
         for user in all_users:
@@ -118,7 +119,7 @@ def task_curve__update_debt_ceiling():
         for user in active_users:
             user_address = user["user"]
             try:
-                response = curve_api_call(f"/v1/crvusd/users/{chain}/{user_address}/{controller}/stats")
+                response = curve_api_call(f"/v1/crvusd/users/{chain_name}/{user_address}/{controller}/stats")
                 user_data.append(response)
             except Exception as e:
                 logger.error("Failed to retrieve user positions: User: %s, Controller: %s, Error: %s",
@@ -132,11 +133,12 @@ def task_curve__update_debt_ceiling():
 @shared_task
 def task_curve__update_controller_metadata():
     chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name.lower()
 
     web3 = Web3(HTTPProvider(chain.rpc))
     block_number = web3.eth.get_block("latest")["number"]
 
-    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain}")
+    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
     for market in markets:
         controller = market["address"]
         controller_contract = web3.eth.contract(address=controller, abi=CONTROLLER_ABI)
