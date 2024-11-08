@@ -5,10 +5,10 @@ import requests
 from celery import shared_task
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
+from web3 import HTTPProvider, Web3
 
 from core.models import Chain
-from curve.models import DebtCeiling
-
+from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,48 @@ session = requests.Session()
 session.mount("http://", adapter)
 session.mount("https://", adapter)
 
+CONTROLLER_ABI = [
+    {
+        "stateMutability": "view",
+        "type": "function",
+        "name": "amm",
+        "inputs": [],
+        "outputs": [{"name": "", "type": "address"}]
+    },
+    {
+        "stateMutability": "view",
+        "type": "function",
+        "name": "monetary_policy",
+        "inputs": [],
+        "outputs": [{"name": "", "type": "address"}]
+    }
+]
+AMM_ABI = [
+    {
+        "stateMutability": "view",
+        "type": "function",
+        "name": "A",
+        "inputs": [],
+        "outputs": [{"name": "", "type": "uint256"}]
+    },
+    {
+        "stateMutability": "view",
+        "type": "function",
+        "name": "get_p",
+        "inputs": [],
+        "outputs": [{"name": "", "type": "uint256"}]
+    },
+    {
+        "stateMutability": "view",
+        "type": "function",
+        "name": "price_oracle",
+        "inputs": [],
+        "outputs": [{"name": "", "type": "uint256"}]
+    },
+]
+
+CRV_USD_ADDRESS = Web3.to_checksum_address("0xf939e0a03fb07f59a73314e73794be0e57ac1b4e")
+CRV_USD_AGG_ADDRESS = Web3.to_checksum_address("0x18672b1b0c623a30089A280Ed9256379fb0E4E62")
 
 def curve_batch_api_call(path):
     url = f"{BASE_URL}{path}"
@@ -85,3 +127,66 @@ def task_curve__update_debt_ceiling():
         market["users"] = user_data
 
         DebtCeiling(timestamp=timestamp, chain=chain, controller=controller, data=market).save()
+
+
+@shared_task
+def task_curve__update_controller_metadata():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+
+    web3 = Web3(HTTPProvider(chain.rpc))
+    block_number = web3.eth.get_block("latest")["number"]
+
+    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain}")
+    for market in markets:
+        controller = market["address"]
+        controller_contract = web3.eth.contract(address=controller, abi=CONTROLLER_ABI)
+        amm = controller_contract.functions.amm().call(block_identifier=block_number)
+        monetary_policy = controller_contract.functions.monetary_policy().call(block_identifier=block_number)
+
+        amm_address = Web3.to_checksum_address(amm)
+        amm_contract = web3.eth.contract(address=amm_address, abi=AMM_ABI)
+        A = amm_contract.functions.A().call(block_identifier=block_number)
+        amm_price = amm_contract.functions.get_p().call(block_identifier=block_number)
+        oracle_price = amm_contract.functions.price_oracle().call(block_identifier=block_number)
+
+        ControllerMetadata(
+            chain=chain,
+            controller=controller,
+            block_number=block_number,
+            amm=amm,
+            monetary_policy=monetary_policy,
+            A=A,
+            amm_price=amm_price,
+            oracle_price=oracle_price,
+        ).save()
+
+
+@shared_task
+def task_curve__update_curve_usd_metrics():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    web3 = Web3(HTTPProvider(chain.rpc))
+    block_number = web3.eth.get_block("latest")["number"]
+
+    crv_usd_contract = web3.eth.contract(address=CRV_USD_ADDRESS, abi=[
+        {
+            "inputs": [],
+            "name": "totalSupply",
+            "outputs": [{"name": "", "type": "uint256"}],
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ])
+    total_supply = crv_usd_contract.functions.totalSupply().call(block_identifier=block_number)
+
+    crv_usd_agg_contract = web3.eth.contract(address=CRV_USD_AGG_ADDRESS, abi=[
+        {
+            "stateMutability": "view",
+            "type": "function",
+            "name": "price",
+            "inputs": [],
+            "outputs": [{"name": "", "type": "uint256"}]
+        }
+    ])
+    price = crv_usd_agg_contract.functions.price().call(block_identifier=block_number)
+
+    CurveMetrics(chain=chain, block_number=block_number, total_supply=total_supply, price=price).save()
