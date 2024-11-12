@@ -30,7 +30,7 @@ def plot_simple(quotes_df, in_token, out_token, timestamp, liquidation_bonus=0.0
     for ts in quotes_df['timestamp'].unique(): 
         plt.scatter(quotes_df[quotes_df['timestamp'] == ts]['in_amount'],  
                     quotes_df[quotes_df['timestamp'] == ts]['price_impact'],  
-                    label=f'{datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')}', alpha=0.5)
+                    label=f'{datetime.datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")}', alpha=0.5)
 
     price_impact = quotes_df['in_amount'].iloc[np.abs(quotes_df['price_impact'] - liquidation_bonus).argmin()]
     plt.axvline(x=price_impact, color='r', linestyle='--', label=f'{liquidation_bonus*100}% price impact = {int(price_impact)}')

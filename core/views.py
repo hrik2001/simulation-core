@@ -18,20 +18,21 @@ class DexQuoteListView(ListView):
         dex_aggregator = self.request.GET.get("dex_aggregator")
         tokens = self.request.GET.get("tokens")  # Comma-separated token addresses
 
-        if start_timestamp and isinstance(start_timestamp, int):
-            start_timestamp = int(start_timestamp)
-            queryset = queryset.filter(timestamp__gte=start_timestamp)
-        else:
-            return queryset.none()
+        if start_timestamp:
+            if start_timestamp.isdigit():
+                queryset = queryset.filter(timestamp__gte=int(start_timestamp))
+            else:
+                return queryset.none()
 
-        if end_timestamp and isinstance(end_timestamp, int):
-            end_timestamp = int(end_timestamp)
-            queryset = queryset.filter(timestamp__lte=end_timestamp)
-        else:
-            return queryset.none()
+        if end_timestamp:
+            if end_timestamp.isdigit():
+                queryset = queryset.filter(timestamp__lte=int(end_timestamp))
+            else:
+                return queryset.none()
 
         if src:
             queryset = queryset.filter(src__iexact=src)
+
         if dst:
             queryset = queryset.filter(dst__iexact=dst)
 
@@ -46,19 +47,25 @@ class DexQuoteListView(ListView):
 
         queryset = queryset.order_by('-timestamp')
 
-        max_rows = self.request.GET.get('max_rows', self.DEFAULT_MAX_ROWS)
+        max_rows = self.request.GET.get('max_rows')
         if max_rows:
-            max_rows = int(max_rows)
+            if max_rows.isdigit():
+                max_rows = int(max_rows)
+            else:
+                return queryset.none()
         else:
             max_rows = self.DEFAULT_MAX_ROWS
-
+            
         paginator = Paginator(queryset, max_rows)
 
-        page = self.request.GET.get('page', 1)
-        if isinstance(page, int):
-            queryset = paginator.page(page)
+        page = self.request.GET.get('page')
+        if page:
+            if page.isdigit():
+                queryset = paginator.page(int(page))
+            else:
+                return queryset.none()
         else:
-            queryset = paginator.page(paginator.num_pages)
+            queryset = paginator.page(1)
 
         return queryset
 
@@ -127,27 +134,27 @@ class DexQuotePairListView(ListView):
             chain_id=F('src_asset__chain__chain_id'),
         )
 
-        chain_id = self.request.GET.get("chain_id")
-        if chain_id and isinstance(chain_id, int):
-            queryset = queryset.filter(chain_id__iexact=chain_id)
-        else:
-            return queryset.none()
-
         queryset = queryset.order_by('chain_id')
 
-        max_rows = self.request.GET.get('max_rows', self.DEFAULT_MAX_ROWS)
+        max_rows = self.request.GET.get('max_rows')
         if max_rows:
-            max_rows = int(max_rows)
+            if max_rows.isdigit():
+                max_rows = int(max_rows)
+            else:
+                return queryset.none()
         else:
-            max_rows = self.DEFAULT_MAX_ROWS            
-
+            max_rows = self.DEFAULT_MAX_ROWS
+                         
         paginator = Paginator(queryset, max_rows)
 
-        page = self.request.GET.get('page', 1)
-        if isinstance(page, int):
-            queryset = paginator.page(page)
+        page = self.request.GET.get('page')
+        if page:
+            if page.isdigit():
+                queryset = paginator.page(int(page))
+            else:
+                return queryset.none()
         else:
-            queryset = paginator.page(paginator.num_pages)
+            queryset = paginator.page(1)
 
         return queryset
 
