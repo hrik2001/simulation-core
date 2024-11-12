@@ -324,8 +324,12 @@ def update_chain_metrics():
             usdm_shares = usdm_contract.functions.totalShares().call(block_identifier=block_number)
             superstate_ustb_supply = superstate_ustb_contract.functions.totalSupply().call(
                 block_identifier=block_number)
-            superstate_ustb_balance = superstate_ustb_contract.functions.entityMaxBalance().call(
-                block_identifier=block_number)
+            try:
+                superstate_ustb_balance = superstate_ustb_contract.functions.entityMaxBalance().call(
+                    block_identifier=block_number)
+            except Exception:
+                logger.error("Unable to fetch superstate ustb balance:", exc_info=True)
+                superstate_ustb_balance = "0"
 
             usde_price = price_defillama("ethereum", USDE_ADDRESS, timestamp)
             susde_price = price_defillama("ethereum", SUSDE_ADDRESS, timestamp)
