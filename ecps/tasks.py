@@ -21,8 +21,8 @@ def cache_ecps_parameters(rated_network_api_key: str, blockpi_network_api_key: s
 
 	network_state = get_network_state(rated_network_api_key)
 	if network_state:
-		ecps_parameters['staking_share'] = network_state.results[0].validatorCount / ETHEREUM_MAX_VALIDATOR_COUNT
-		ecps_parameters['client_diversity'] = [cp.dict() for cp in network_state.results[0].clientPercentages]
+		ecps_parameters['staking_share'] = network_state.results[0].validator_count / ETHEREUM_MAX_VALIDATOR_COUNT
+		ecps_parameters['client_diversity'] = [cp.dict() for cp in network_state.results[0].client_percentages]
 		
 	time.sleep(1)
 
@@ -32,15 +32,15 @@ def cache_ecps_parameters(rated_network_api_key: str, blockpi_network_api_key: s
 
 	ecps_parameters['exit_queue_length'] = get_exit_queue_length(blockpi_network_api_key)
 
-	cache.set('ecps_parameters', ecps_parameters)
+	cache.set('ecps_parameters', ecps_parameters, timeout=None)
 
 class ClientPercentage(BaseModel):
     client: str
     percentage: float
 
 class RatedNetworkData(BaseModel):
-	validator_count: int
-	client_percentages: List[ClientPercentage]
+	validator_count: int = Field(alias="validatorCount")
+	client_percentages: List[ClientPercentage] = Field(alias="clientPercentages")
 
 class RatedNetworkApiResponse(BaseModel):
 	results: List[RatedNetworkData]
