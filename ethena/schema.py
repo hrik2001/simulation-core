@@ -89,6 +89,7 @@ class Query(graphene.ObjectType):
         cached_response = cache.get(key, None)
         if cached_response is not None:
             return cached_response
+        print("cached_response", cached_response)
 
         queryset = ChainMetrics.objects.all()
         if start_time:
