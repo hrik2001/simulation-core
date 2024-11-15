@@ -109,6 +109,7 @@ WETH_BASE = "0x4200000000000000000000000000000000000006"
 CBETH_BASE = "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22"
 CBBTC_BASE = "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf"
 WSTETH_BASE = "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452"
+AERO_BASE = "0x940181a94A35A4569E4529A3CDfB74e38FD98631"
 
 # crvusd
 WETH_ETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
@@ -624,6 +625,16 @@ WSTETH_BASE_DTO = TokenDTO(
     address=WSTETH_BASE,
     name="Wrapped liquid staked Ether 2.0 (Base)",
     symbol="wstETH",
+    decimals=18,
+    network=BASE_DTO,
+    min_trade_size=0.1,
+    max_trade_size=30000,
+)
+
+AERO_DTO = TokenDTO(
+    address=WSTETH_BASE,
+    name="AERO",
+    symbol="AERO",
     decimals=18,
     network=BASE_DTO,
     min_trade_size=0.1,

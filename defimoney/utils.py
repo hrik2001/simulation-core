@@ -1,5 +1,5 @@
 from __future__ import annotations
-from core.dex_quotes.DTO import TOKEN_DTOs, STABLES, TokenDTO, COLLATERAL, USDC_OP_DTO, USDT_OP_DTO, USDC_ARB_DTO, USDT_ARB_DTO, WETH_OP_DTO, WETH_ARB_DTO, WBTC_OP_DTO, WBTC_ARB_DTO, WSTETH_OP_DTO, ARB_DTO, GMX_DTO, RDNT_DTO, WSTETH_ARB_DTO, PENDLE_DTO, OP_DTO, VELO_DTO, USDC_BASE_DTO, WETH_BASE_DTO, CBBTC_BASE_DTO, CBETH_BASE_DTO, WSTETH_BASE_DTO
+from core.dex_quotes.DTO import TOKEN_DTOs, STABLES, TokenDTO, COLLATERAL, USDC_OP_DTO, USDT_OP_DTO, USDC_ARB_DTO, USDT_ARB_DTO, WETH_OP_DTO, WETH_ARB_DTO, WBTC_OP_DTO, WBTC_ARB_DTO, WSTETH_OP_DTO, ARB_DTO, GMX_DTO, RDNT_DTO, WSTETH_ARB_DTO, PENDLE_DTO, OP_DTO, VELO_DTO, USDC_BASE_DTO, WETH_BASE_DTO, CBBTC_BASE_DTO, CBETH_BASE_DTO, WSTETH_BASE_DTO, AERO_DTO
 """
 Provides the `ExternalMarket` class for modeling
 swaps in external liquidity venues.
@@ -289,7 +289,8 @@ def collateral_debt_ceilings():
             WETH_BASE_DTO: {"debt_ceiling": 8237.72},
             CBBTC_BASE_DTO: {"debt_ceiling": 209.82},
             CBETH_BASE_DTO: {"debt_ceiling": 2778.25},
-            WSTETH_BASE_DTO: {"debt_ceiling": None}
+            WSTETH_BASE_DTO: {"debt_ceiling": None},
+            AERO_DTO: {"debt_ceiling": None}
     }
     # for collateral in COLLATERAL:
         # flag = True
@@ -375,7 +376,7 @@ def collateral_debt_ceilings():
         CBBTC_BASE_DTO: "0xA86e8d5ed6F07DAb21C44e55e8576742760a7aFB",
         GMX_DTO: "0xa8ED217624218a4c65e6d577A26D7810E2f8f790",
         VELO_DTO: "0x7e0242FCAA2d4844C6fF0769fac9c9cF5f8DE2d6",
-        WSTETH_BASE_DTO: "0x72765c346e139eF09d104955dD0bd3d4F45441bF"
+        WSTETH_BASE_DTO: "0x72765c346e139eF09d104955dD0bd3d4F45441bF",
 
     }
 
