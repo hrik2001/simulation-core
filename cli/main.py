@@ -1,5 +1,6 @@
-import argparse
-import sys, os
+import click
+import sys
+import os
 import matplotlib.pyplot as plt
 import datetime
 from scipy.interpolate import make_smoothing_spline, BSpline
@@ -10,70 +11,88 @@ from plotting import plot_simple, plot_regression
 from quotes import get_quotes
 
 # Add '../core' to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from core.dex_quotes.DTO import TOKEN_DTOs, NAME_TO_ADDRESS_PER_NETWORK
 
 LIQUIDATION_BONUS = 0.075
-PAGE_SIZE=1000
-PAGE_SLEEP=1
+PAGE_SIZE = 1000
+PAGE_SLEEP = 1
 
-if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="A CLI tool to interact with the simulation backend")
-    subparser = parser.add_subparsers(dest='command', required=True)
+def validate_asset(ctx, param, value, network):
+    """Validate that an asset exists in the specified network."""
+    if value not in NAME_TO_ADDRESS_PER_NETWORK[network]:
+        raise click.BadParameter(f"{value} is not a supported asset for network {network}")
+    return value
 
-    plot_subparser = subparser.add_parser('plot', help='Enable plotting mode')
-    plot_subparser.add_argument("--collateral", type=str, required='plot', help="Collateral asset coingecko name")
-    plot_subparser.add_argument("--debt", type=str, required='plot', help="Debt asset coingecko name")
-    plot_subparser.add_argument("--timestamp", type=str, required=False, help="Approximate unix timestamp (accepts 'now' for latest timestamp)")
-    plot_subparser.add_argument("--network", type=str, required='plot', help="Network", choices=['ethereum', 'arbitrum', 'optimism'])
-    plot_subparser.add_argument("--plot-type", type=str, required='plot', help="Plot type", choices=['simple', 'regression'])
 
-    list_subparser = subparser.add_parser('list', help='List supported collateral and debt assets per network')
+def get_unix_timestamp(timestamp_str):
+    """Convert timestamp string to unix timestamp."""
+    if timestamp_str is None:
+        return None
 
-    args = parser.parse_args()
+    if timestamp_str.lower() == "now":
+        return int(
+            (
+                datetime.datetime.now(datetime.timezone.utc)
+                - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+            ).total_seconds()
+        )
 
-    if args.command == 'list':
-        for network, assets in NAME_TO_ADDRESS_PER_NETWORK.items():
-            print(f'> {network}')
-            for asset_name in assets:
-                print(f'    > {asset_name}')
-        quit()
+    try:
+        return int(timestamp_str)
+    except ValueError:
+        raise click.BadParameter("Timestamp must be 'now' or a unix timestamp as an integer")
 
-    if args.collateral not in NAME_TO_ADDRESS_PER_NETWORK[args.network]:
-        print(f'{args.collateral} is not a supported collateral asset')
-        quit()
-    collateral_token_address = NAME_TO_ADDRESS_PER_NETWORK[args.network][args.collateral]
 
-    if args.debt not in NAME_TO_ADDRESS_PER_NETWORK[args.network]:
-        print(f'{args.debt} is not a supported debt asset')
-        quit()
-    debt_token_address = NAME_TO_ADDRESS_PER_NETWORK[args.network][args.debt]
+@click.group()
+def cli():
+    """A CLI tool to interact with the simulation backend"""
+    pass
 
-    print(f"Collateral asset: {args.collateral} ({collateral_token_address})")
-    print(f"Debt asset: {args.debt} ({debt_token_address})")
 
-    unix_timestamp = None
-    if args.timestamp != None:
-        if args.timestamp == "now": # compute unix timestamp in a platform-independent way  
-            unix_timestamp = int((datetime.datetime.now(datetime.timezone.utc) - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)).total_seconds())
-        else:
-            try:
-                unix_timestamp = int(args.timestamp)
-            except:
-                print("not a valid timestamp (value values are 'now' or a unix timestamp as an integer')")
-                unix_timestamp = int((datetime.datetime.now(datetime.timezone.utc) - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)).total_seconds())
-   
+@cli.command()
+def list():
+    """List supported collateral and debt assets per network"""
+    for network, assets in NAME_TO_ADDRESS_PER_NETWORK.items():
+        click.echo(f"> {network}")
+        for asset_name in assets:
+            click.echo(f"    > {asset_name}")
+
+
+@cli.command()
+@click.option("--collateral", required=True, help="Collateral asset coingecko name")
+@click.option("--debt", required=True, help="Debt asset coingecko name")
+@click.option("--network", required=True, type=click.Choice(["ethereum", "arbitrum", "optimism"]))
+@click.option("--timestamp", required=False, help="Approximate unix timestamp (accepts 'now' for latest timestamp)")
+@click.option("--plot-type", required=True, type=click.Choice(["simple", "regression"]))
+def plot(collateral, debt, network, timestamp, plot_type):
+    """Enable plotting mode"""
+    # Validate assets for the given network
+    validate_asset(None, None, collateral, network)
+    validate_asset(None, None, debt, network)
+
+    collateral_token_address = NAME_TO_ADDRESS_PER_NETWORK[network][collateral]
+    debt_token_address = NAME_TO_ADDRESS_PER_NETWORK[network][debt]
+
+    click.echo(f"Collateral asset: {collateral} ({collateral_token_address})")
+    click.echo(f"Debt asset: {debt} ({debt_token_address})")
+
+    unix_timestamp = get_unix_timestamp(timestamp)
+
     quotes = get_quotes(collateral_token_address, debt_token_address, PAGE_SIZE, PAGE_SLEEP)
-
-    capitalized_network_name = args.network.capitalize()
+    capitalized_network_name = network.capitalize()
     collateral_token = TOKEN_DTOs[capitalized_network_name][collateral_token_address]
-    debt_token =TOKEN_DTOs[capitalized_network_name][debt_token_address]
+    debt_token = TOKEN_DTOs[capitalized_network_name][debt_token_address]
 
     market = ExternalMarket((collateral_token, debt_token))
     market.fit(quotes)
 
-    if args.plot_type == "simple":
+    if plot_type == "simple":
         plot_simple(quotes, collateral_token, debt_token, unix_timestamp, LIQUIDATION_BONUS)
-    elif args.plot_type == "regression":
-        plot_regression(quotes, 0, 1, market, scale='log')
+    elif plot_type == "regression":
+        plot_regression(quotes, 0, 1, market, scale="log")
+
+
+if __name__ == "__main__":
+    cli()
