@@ -1,11 +1,7 @@
 import click
 import sys
 import os
-import matplotlib.pyplot as plt
 import datetime
-from scipy.interpolate import make_smoothing_spline, BSpline
-import numpy as np
-from lmfit.models import StepModel, ConstantModel
 from external_market import ExternalMarket
 from plotting import plot_simple, plot_regression
 from quotes import get_quotes
