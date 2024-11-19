@@ -632,7 +632,7 @@ WSTETH_BASE_DTO = TokenDTO(
 )
 
 AERO_DTO = TokenDTO(
-    address=WSTETH_BASE,
+    address=AERO_BASE,
     name="AERO",
     symbol="AERO",
     decimals=18,
