@@ -224,3 +224,7 @@ def task_cowswap_job(*args, **kwargs):
 @shared_task(name="task_okx_job", time_limit=None, soft_time_limit=None)
 def task_okx_job(*args, **kwargs):
     okx_job(*args, **kwargs)
+
+@shared_task(name="test_error")
+def task__test_error():
+    raise Exception("test")

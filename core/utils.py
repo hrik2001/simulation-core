@@ -6,6 +6,7 @@ from core.models import ERC20, Chain, UniswapLPPosition
 from core.pricing.univ3 import get_positions_details
 from datetime import datetime
 from time import sleep
+from django.conf import settings
 
 # Define a minimal ABI to interact with an ERC20 token
 erc20_abi = [
@@ -194,3 +195,17 @@ def price_defillama_multi(chain_name: str, contract_addresses: list[str], timest
             logging.exception(f"Missing data for coin: {data=} {chain_name=} {contract_addresses=}", exc_info=True)
             prices[address] = 1
     return prices
+
+def send_telegram_message(message: str):
+    if settings.TELEGRAM_BOT_TOKEN:
+        url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": settings.TELEGRAM_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML"
+        }
+        try:
+            response = requests.post(url, data=payload)
+            response.raise_for_status()
+        except Exception as e:
+            print(f"Failed to send Telegram message: {e}")
