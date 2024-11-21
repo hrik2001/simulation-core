@@ -204,6 +204,9 @@ def send_telegram_message(message: str):
             "text": message,
             "parse_mode": "HTML"
         }
+        if settings.TELEGRAM_TOPIC_ID:
+            payload["message_thread_id"] = settings.TELEGRAM_TOPIC_ID
+
         try:
             response = requests.post(url, data=payload)
             response.raise_for_status()
