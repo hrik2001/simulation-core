@@ -26,6 +26,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-tf1!one#d4d^o*g#4a0307009xcw9nm7656u72$z^@1uye2%39"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", None)
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("ENVIRONMENT", None) != "production"
@@ -73,6 +75,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.ExceptionMiddleware"
 ]
 
 # CORS_ALLOWED_ORIGINS = [

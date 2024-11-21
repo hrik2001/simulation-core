@@ -3,6 +3,7 @@ from django.views.generic import ListView
 from django.http import JsonResponse
 from django.db.models import Q, F
 from .models import DexQuote, DexQuotePair, Chain
+from .tasks import task__test_error
 
 class DexQuoteListView(ListView):
     model = DexQuote
@@ -185,3 +186,11 @@ class DexQuotePairListView(ListView):
                     'total_items': 0
                 }
             }, safe=False)
+
+def trigger_test_error(request):
+    results = {}
+    task__test_error.delay()
+
+    task__test_error()
+
+    return JsonResponse(results, status=200)
