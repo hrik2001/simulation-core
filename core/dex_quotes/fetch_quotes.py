@@ -64,10 +64,10 @@ def paraswap_job(network = None, num_samples = 30):
     if network is not None:
         print(f'{network}')
 
-        # asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True)
-        asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True).filter(Q(src_asset__symbol__iexact="AERO") | Q(dst_asset__symbol__iexact="AERO")).filter(Q(dst_asset__symbol__iexact="DAI") | Q(src_asset__symbol__iexact="DAI") | Q(dst_asset__symbol__iexact="USDC") | Q(src_asset__symbol__iexact="USDC") | Q(dst_asset__symbol__iexact="USDT") | Q(src_asset__symbol__iexact="USDT") | Q(dst_asset__symbol__iexact="crvUSD") | Q(src_asset__symbol__iexact="crvUSD"))
-        print(asset_permutations)
-        input("check?")
+        asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True)
+        # asset_permutations = DexQuotePair.objects.filter(src_asset__chain__chain_name__iexact=network, ingest=True).filter(Q(src_asset__symbol__iexact="AERO") | Q(dst_asset__symbol__iexact="AERO")).filter(Q(dst_asset__symbol__iexact="DAI") | Q(src_asset__symbol__iexact="DAI") | Q(dst_asset__symbol__iexact="USDC") | Q(src_asset__symbol__iexact="USDC") | Q(dst_asset__symbol__iexact="USDT") | Q(src_asset__symbol__iexact="USDT") | Q(dst_asset__symbol__iexact="crvUSD") | Q(src_asset__symbol__iexact="crvUSD"))
+        # print(asset_permutations)
+        # input("check?")
 
         for permutation in asset_permutations:
             sell_token = permutation.src_asset
