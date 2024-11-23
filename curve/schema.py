@@ -8,12 +8,13 @@ from graphene import Int, String
 
 from core.models import Chain
 from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr
+    CurveLlammaEvents, CurveCr, CurveMarkets
 from curve.types import DebtCeilingType, ControllerMetadataType, CurveMetricsType, AggregatedSnapshotsType, \
-    SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType
+    SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType, CurveMarketsType
 
 
 class Query(graphene.ObjectType):
+    markets = graphene.List(CurveMarketsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
     debt_ceiling = graphene.List(DebtCeilingType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                                  chain=String(), controller=String())
     controller_metadata = graphene.List(ControllerMetadataType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
@@ -27,6 +28,27 @@ class Query(graphene.ObjectType):
                                   chain=String(), controller=String())
     cr = graphene.List(CurveCrType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                        chain=String(), controller=String())
+
+    def resolve_markets(self, info, start_time=None, end_time=None, limit=None, sort_by=None, chain=None):
+        queryset = CurveMarkets.objects.all()
+
+        if chain is None:
+            chain = "ethereum"
+        chain_obj = Chain.objects.get(chain_name__iexact=chain)
+        queryset = queryset.filter(chain=chain_obj)
+
+        if start_time:
+            queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(created_at__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('created_at')
+        if limit:
+            queryset = queryset[:limit]
+
+        return queryset
 
     def resolve_debt_ceiling(self, info, start_time=None, end_time=None, limit=None, sort_by=None, chain=None, controller=None):
         queryset = DebtCeiling.objects.all()

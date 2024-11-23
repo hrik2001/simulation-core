@@ -10,7 +10,7 @@ from web3 import HTTPProvider, Web3
 
 from core.models import Chain
 from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr
+    CurveLlammaEvents, CurveCr, CurveMarkets
 
 logger = logging.getLogger(__name__)
 
@@ -323,15 +323,27 @@ def task_curve__update_curve_llamma_events():
 
 
 @shared_task
-def task_curve__update_curve_cr():
+def task_curve__update_curve_markets():
     chain = Chain.objects.get(chain_name__iexact="ethereum")
     chain_name = chain.chain_name.lower()
 
+    total_loans, agg_cr = 0, 0
     markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
+    markets_to_keep = []
     for market in markets:
         try:
             controller = market["address"]
+            if controller.lower() == "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76".lower():
+                continue
+            markets_to_keep.append(market)
+
             data = curve_api_call(f"/v1/crvusd/liquidations/{chain_name}/{controller}/cr/distribution")
             CurveCr(chain=chain, controller=controller, mean=data["mean"], median=data["median"]).save()
+
+            total_loans += market["n_loans"]
+            agg_cr += market["n_loans"] * data["mean"]
         except Exception:
             logger.error("Unable to retrieve cr:", exc_info=True)
+
+    system_cr = agg_cr / total_loans
+    CurveMarkets(chain=chain, markets=markets_to_keep, system_cr=system_cr).save()

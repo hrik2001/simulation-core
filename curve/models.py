@@ -85,3 +85,9 @@ class CurveCr(BaseModel):
     controller = TextField()
     mean = TextField()
     median = TextField()
+
+
+class CurveMarkets(BaseModel):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    markets = JSONField()
+    system_cr = TextField()
