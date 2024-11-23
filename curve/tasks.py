@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from string import Template
 
 import requests
 from celery import shared_task
@@ -10,7 +11,7 @@ from web3 import HTTPProvider, Web3
 
 from core.models import Chain
 from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr, CurveMarkets
+    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses
 
 logger = logging.getLogger(__name__)
 
@@ -136,9 +137,12 @@ def task_curve__update_debt_ceiling():
                 logger.error("Failed to retrieve user positions: User: %s, Controller: %s, Error: %s",
                              user_address, controller, e, exc_info=True)
 
+        user_data.sort(key=lambda x: x["debt"])
+        top5_idx = int(len(user_data) * (1 - 0.05))
+        top5_debt = [x["debt"] for x in user_data[top5_idx:]]
         market["users"] = user_data
 
-        DebtCeiling(timestamp=timestamp, chain=chain, controller=controller, data=market).save()
+        DebtCeiling(timestamp=timestamp, chain=chain, controller=controller, data=market, top5_debt=top5_debt).save()
 
 
 @shared_task
@@ -203,31 +207,6 @@ def task_curve__update_curve_usd_metrics():
     price = crv_usd_agg_contract.functions.price().call(block_identifier=block_number)
 
     CurveMetrics(chain=chain, block_number=block_number, total_supply=total_supply, price=price).save()
-
-
-@shared_task
-def task_curve__update_curve_usd_snapshots():
-    chain = Chain.objects.get(chain_name__iexact="ethereum")
-    chain_name = chain.chain_name.lower()
-
-    objects = []
-    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
-    for market in markets:
-        controller = market["address"]
-        snapshots = curve_api_call(f"/v1/crvusd/markets/{chain_name}/{controller}/snapshots")
-        for snapshot in snapshots["data"]:
-            timestamp = datetime.fromisoformat(snapshot.pop("dt"))
-            if timestamp.tzinfo is None:
-                timestamp = timestamp.replace(tzinfo=timezone.utc)
-
-            objects.append(CurveMarketSnapshot(
-                chain=chain,
-                controller=controller,
-                timestamp=timestamp,
-                data=snapshot,
-            ))
-
-    CurveMarketSnapshot.objects.bulk_create(objects, ignore_conflicts=True)
 
 
 def get_llamma_url(chain, url_part, model):
@@ -331,12 +310,12 @@ def task_curve__update_curve_markets():
     markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
     markets_to_keep = []
     for market in markets:
-        try:
-            controller = market["address"]
-            if controller.lower() == "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76".lower():
-                continue
-            markets_to_keep.append(market)
+        controller = market["address"]
+        if controller.lower() == "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76".lower():
+            continue
+        markets_to_keep.append(market)
 
+        try:
             data = curve_api_call(f"/v1/crvusd/liquidations/{chain_name}/{controller}/cr/distribution")
             CurveCr(chain=chain, controller=controller, mean=data["mean"], median=data["median"]).save()
 
@@ -347,3 +326,54 @@ def task_curve__update_curve_markets():
 
     system_cr = agg_cr / total_loans
     CurveMarkets(chain=chain, markets=markets_to_keep, system_cr=system_cr).save()
+
+
+def update_curve_usd_helper(model, url_template, timestamp_field):
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name.lower()
+
+    objects = []
+    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
+    for market in markets:
+        controller = market["address"]
+        snapshots = curve_api_call(url_template.substitute(chain_name=chain_name, controller=controller))
+        for snapshot in snapshots["data"]:
+            timestamp = datetime.fromisoformat(snapshot.pop(timestamp_field))
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
+
+            objects.append(model(
+                chain=chain,
+                controller=controller,
+                timestamp=timestamp,
+                data=snapshot,
+            ))
+
+    model.objects.bulk_create(objects, ignore_conflicts=True)
+
+
+@shared_task
+def task_curve__update_curve_usd_snapshots():
+    update_curve_usd_helper(
+        CurveMarketSnapshot,
+        Template("/v1/crvusd/markets/${chain_name}/${controller}/snapshots"),
+        "dt"
+    )
+
+
+@shared_task
+def task_curve__update_curve_usd_soft_liquidations():
+    update_curve_usd_helper(
+        CurveMarketSoftLiquidations,
+        Template("/v1/crvusd/liquidations/${chain_name}/${controller}/soft_liquidation_ratio"),
+        "timestamp"
+    )
+
+
+@shared_task
+def task_curve__update_curve_usd_losses():
+    update_curve_usd_helper(
+        CurveMarketLosses,
+        Template("/v1/crvusd/liquidations/${chain_name}/${controller}/losses/history"),
+        "timestamp"
+    )

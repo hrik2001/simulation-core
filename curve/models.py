@@ -9,6 +9,7 @@ class DebtCeiling(BaseModel):
     controller = TextField()
     timestamp = DateTimeField()
     data = JSONField()
+    top5_debt = TextField(default="0")
 
     class Meta(BaseModel.Meta):
         indexes = [
@@ -91,3 +92,27 @@ class CurveMarkets(BaseModel):
     chain = ForeignKey(Chain, on_delete=CASCADE)
     markets = JSONField()
     system_cr = TextField()
+
+
+class CurveMarketSoftLiquidations(BaseModel):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    controller = TextField()
+    timestamp = DateTimeField(null=True)
+    data = JSONField()
+
+    class Meta(BaseModel.Meta):
+        constraints = [
+            UniqueConstraint(fields=['chain', 'controller', 'timestamp'], name='soft_liquidation_asset_chain_ts_idx'),
+        ]
+
+
+class CurveMarketLosses(BaseModel):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    controller = TextField()
+    timestamp = DateTimeField(null=True)
+    data = JSONField()
+
+    class Meta(BaseModel.Meta):
+        constraints = [
+            UniqueConstraint(fields=['chain', 'controller', 'timestamp'], name='losses_asset_chain_ts_idx'),
+        ]

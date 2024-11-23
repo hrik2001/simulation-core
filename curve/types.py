@@ -26,7 +26,7 @@ class CurveMetricsType(DjangoObjectType):
 
 
 class SnapshotType(ObjectType):
-    snapshot = JSONString()
+    data = JSONString()
     timestamp = String()
 
 

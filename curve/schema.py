@@ -8,9 +8,59 @@ from graphene import Int, String
 
 from core.models import Chain
 from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr, CurveMarkets
+    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses
 from curve.types import DebtCeilingType, ControllerMetadataType, CurveMetricsType, AggregatedSnapshotsType, \
     SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType, CurveMarketsType
+
+
+def _curve_market_helper(model, start_time=None, end_time=None, limit=None, sort_by=None,
+                         chain=None, controller=None):
+    queryset = model.objects.all()
+
+    if chain is None:
+        chain = "ethereum"
+    chain_obj = Chain.objects.get(chain_name__iexact=chain)
+    queryset = queryset.filter(chain=chain_obj)
+
+    if controller:
+        queryset = queryset.filter(controller=controller)
+
+    if start_time:
+        queryset = queryset.filter(timestamp__gte=datetime.fromtimestamp(start_time))
+    if end_time:
+        queryset = queryset.filter(timestamp__lte=datetime.fromtimestamp(end_time))
+    if limit:
+        queryset = queryset[:limit]
+    if not sort_by:
+        sort_by = "timestamp"
+
+    aggregated_data = (
+        queryset
+        .values('controller')
+        .annotate(
+            snapshots=ArrayAgg(
+                JSONObject(data=F('data'), timestamp=F('timestamp')),
+                ordering=sort_by
+            )
+        )
+    )
+
+    result = []
+    for data in aggregated_data:
+        snapshots = [
+            SnapshotType(
+                data=item['data'],
+                timestamp=item['timestamp'],
+            )
+            for item in data['snapshots']
+        ]
+        result.append(AggregatedSnapshotsType(
+            chain=chain,
+            controller=data['controller'],
+            snapshots=snapshots
+        ))
+
+    return result
 
 
 class Query(graphene.ObjectType):
@@ -22,6 +72,10 @@ class Query(graphene.ObjectType):
     curve_metrics = graphene.List(CurveMetricsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
     market_snapshots = graphene.List(AggregatedSnapshotsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                                      chain=String(), controller=String())
+    soft_liquidations = graphene.List(AggregatedSnapshotsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
+                                      chain=String(), controller=String())
+    market_losses = graphene.List(AggregatedSnapshotsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
+                                  chain=String(), controller=String())
     llamma_trades = graphene.List(CurveLlammaTradesType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                                   chain=String(), controller=String())
     llamma_events = graphene.List(CurveLlammaEventsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
@@ -112,52 +166,15 @@ class Query(graphene.ObjectType):
 
     def resolve_market_snapshots(self, info, start_time=None, end_time=None, limit=None, sort_by=None,
                                  chain=None, controller=None):
-        queryset = CurveMarketSnapshot.objects.all()
+        return _curve_market_helper(CurveMarketSnapshot, start_time, end_time, limit, sort_by, chain, controller)
 
-        if chain is None:
-            chain = "ethereum"
-        chain_obj = Chain.objects.get(chain_name__iexact=chain)
-        queryset = queryset.filter(chain=chain_obj)
+    def resolve_soft_liquidations(self, info, start_time=None, end_time=None, limit=None, sort_by=None,
+                                  chain=None, controller=None):
+        return _curve_market_helper(CurveMarketSoftLiquidations, start_time, end_time, limit, sort_by, chain, controller)
 
-        if controller:
-            queryset = queryset.filter(controller=controller)
-
-        if start_time:
-            queryset = queryset.filter(timestamp__gte=datetime.fromtimestamp(start_time))
-        if end_time:
-            queryset = queryset.filter(timestamp__lte=datetime.fromtimestamp(end_time))
-        if limit:
-            queryset = queryset[:limit]
-        if not sort_by:
-            sort_by = "timestamp"
-
-        aggregated_data = (
-            queryset
-            .values('controller')
-            .annotate(
-                snapshots=ArrayAgg(
-                    JSONObject(snapshot=F('data'), timestamp=F('timestamp')),
-                    ordering=sort_by
-                )
-            )
-        )
-
-        result = []
-        for data in aggregated_data:
-            snapshots = [
-                SnapshotType(
-                    snapshot=item['snapshot'],
-                    timestamp=item['timestamp'],
-                )
-                for item in data['snapshots']
-            ]
-            result.append(AggregatedSnapshotsType(
-                chain=chain,
-                controller=data['controller'],
-                snapshots=snapshots
-            ))
-
-        return result
+    def resolve_market_losses(self, info, start_time=None, end_time=None, limit=None, sort_by=None,
+                              chain=None, controller=None):
+        return _curve_market_helper(CurveMarketLosses, start_time, end_time, limit, sort_by, chain, controller)
 
     def resolve_llamma_trades(self, info, start_time=None, end_time=None, limit=None, sort_by=None,
                               chain=None, controller=None):
