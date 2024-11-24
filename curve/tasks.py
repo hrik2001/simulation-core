@@ -114,6 +114,8 @@ def task_curve__update_debt_ceiling():
     markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
     available_markets = [market for market in markets if market["borrowable"] > 0]
 
+    all_user_data = []
+
     for market in available_markets:
         controller = market["address"]
         all_users = curve_batch_api_call(f"/v1/crvusd/users/{chain_name}/{controller}/users")
@@ -133,16 +135,22 @@ def task_curve__update_debt_ceiling():
             try:
                 response = curve_api_call(f"/v1/crvusd/users/{chain_name}/{user_address}/{controller}/stats")
                 user_data.append(response)
+                all_user_data.append(response)
             except Exception as e:
                 logger.error("Failed to retrieve user positions: User: %s, Controller: %s, Error: %s",
                              user_address, controller, e, exc_info=True)
 
         user_data.sort(key=lambda x: x["debt"])
         top5_idx = int(len(user_data) * (1 - 0.05))
-        top5_debt = [x["debt"] for x in user_data[top5_idx:]]
+        top5_debt = sum([x["debt"] for x in user_data[top5_idx:]])
         market["users"] = user_data
 
         DebtCeiling(timestamp=timestamp, chain=chain, controller=controller, data=market, top5_debt=top5_debt).save()
+
+    all_user_data.sort(key=lambda x: x["debt"])
+    top5_idx = int(len(all_user_data) * (1 - 0.05))
+    top5_debt = sum([x["debt"] for x in all_user_data[top5_idx:]])
+    DebtCeiling(timestamp=timestamp, chain=chain, controller="overall", data={}, top5_debt=top5_debt).save()
 
 
 @shared_task
