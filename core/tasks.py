@@ -82,7 +82,7 @@ def task_cryo_logs(
     os.chdir(os.path.join(settings.MEDIA_ROOT, f"logs__{label}"))
     metadata.save()
 
-@shared_task(name="task_web3py_logs")
+@shared_task(name="task_web3py_logs", time_limit=None, soft_time_limit=None)
 def task_web3py_logs(
         contract_address,
         event_signature,
