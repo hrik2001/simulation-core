@@ -1,5 +1,7 @@
 import logging
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from string import Template
 
 import requests
 from celery import shared_task
@@ -8,7 +10,8 @@ from urllib3 import Retry
 from web3 import HTTPProvider, Web3
 
 from core.models import Chain
-from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics
+from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
+    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +70,7 @@ AMM_ABI = [
 CRV_USD_ADDRESS = Web3.to_checksum_address("0xf939e0a03fb07f59a73314e73794be0e57ac1b4e")
 CRV_USD_AGG_ADDRESS = Web3.to_checksum_address("0x18672b1b0c623a30089A280Ed9256379fb0E4E62")
 
-def curve_batch_api_call(path):
+def curve_batch_api_call(path, condition=None):
     url = f"{BASE_URL}{path}"
     items = []
     page = 1
@@ -77,7 +80,16 @@ def curve_batch_api_call(path):
         response = session.get(url, params={"per_page": per_page, "page": page})
         response.raise_for_status()
         data = response.json()
-        items.extend(data["data"])
+
+        if condition is not None:
+            for item in data["data"]:
+                if condition(item):
+                    items.append(item)
+                else:
+                    return items
+        else:
+            items.extend(data["data"])
+
         if per_page * page > data["count"]:
             break
         page += 1
@@ -125,9 +137,12 @@ def task_curve__update_debt_ceiling():
                 logger.error("Failed to retrieve user positions: User: %s, Controller: %s, Error: %s",
                              user_address, controller, e, exc_info=True)
 
+        user_data.sort(key=lambda x: x["debt"])
+        top5_idx = int(len(user_data) * (1 - 0.05))
+        top5_debt = [x["debt"] for x in user_data[top5_idx:]]
         market["users"] = user_data
 
-        DebtCeiling(timestamp=timestamp, chain=chain, controller=controller, data=market).save()
+        DebtCeiling(timestamp=timestamp, chain=chain, controller=controller, data=market, top5_debt=top5_debt).save()
 
 
 @shared_task
@@ -192,3 +207,173 @@ def task_curve__update_curve_usd_metrics():
     price = crv_usd_agg_contract.functions.price().call(block_identifier=block_number)
 
     CurveMetrics(chain=chain, block_number=block_number, total_supply=total_supply, price=price).save()
+
+
+def get_llamma_url(chain, url_part, model):
+    chain_name = chain.chain_name.lower()
+
+    web3 = Web3(HTTPProvider(chain.rpc))
+    block_number = web3.eth.get_block("latest")["number"]
+
+    results = []
+
+    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
+    for market in markets:
+        controller = market["address"]
+        controller_contract = web3.eth.contract(address=controller, abi=CONTROLLER_ABI)
+        amm = controller_contract.functions.amm().call(block_identifier=block_number)
+
+        try:
+            latest_date = model.objects.filter(controller=controller).latest("day").day
+            condition = lambda x: datetime.fromtimestamp(x["timestamp"]).date() >= latest_date
+        except CurveLlammaTrades.DoesNotExist:
+            condition = None
+
+        items = curve_batch_api_call(f"/v1/crvusd/{url_part}/{chain_name}/{amm}", condition=condition)
+        grouped_items = defaultdict(list)
+        for item in items:
+            day = datetime.fromtimestamp(item["timestamp"]).date()
+            grouped_items[day].append(item)
+
+        results.append({
+            "controller": controller,
+            "amm": amm,
+            "grouped_items": grouped_items,
+        })
+
+    return results
+
+
+@shared_task
+def task_curve__update_curve_llamma_trades():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+
+    objects = []
+    for result in get_llamma_url(chain, "llamma_trades", CurveLlammaTrades):
+        for day, group in result["grouped_items"].items():
+            sold, bought, fee_x, fee_y = 0, 0, 0, 0
+            for trade in group:
+                if trade["sold_id"] == 0:
+                    sold += trade["amount_sold"]
+                elif trade["sold_id"] == 1:
+                    bought += trade["amount_bought"]
+                else:
+                    logger.error("Invalid trade: %s", trade)
+                fee_x += trade["fee_x"]
+                fee_y += trade["fee_y"]
+
+            objects.append(CurveLlammaTrades(
+                chain=chain, controller=result["controller"], day=day,
+                sold=sold, bought=bought, fee_x=fee_x, fee_y=fee_y
+            ))
+
+    CurveLlammaTrades.objects.bulk_create(
+        objects,
+        update_conflicts=True,
+        unique_fields=["chain", "controller", "day"],
+        update_fields=["sold", "bought", "fee_x", "fee_y"]
+    )
+
+
+@shared_task
+def task_curve__update_curve_llamma_events():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+
+    objects = []
+    for result in get_llamma_url(chain, "llamma_events", CurveLlammaTrades):
+        for day, group in result["grouped_items"].items():
+            deposit, withdrawal = 0, 0
+            for trade in group:
+                if trade["withdrawal"] is not None:
+                    withdrawal += trade["withdrawal"]["amount_collateral"]
+                if trade["deposit"] is not None:
+                    deposit += trade["deposit"]["amount"]
+
+            objects.append(CurveLlammaEvents(
+                chain=chain, controller=result["controller"], day=day, deposit=deposit, withdrawal=withdrawal
+            ))
+
+    CurveLlammaEvents.objects.bulk_create(
+        objects,
+        update_conflicts=True,
+        unique_fields=["chain", "controller", "day"],
+        update_fields=["deposit", "withdrawal"]
+    )
+
+
+@shared_task
+def task_curve__update_curve_markets():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name.lower()
+
+    total_loans, agg_cr = 0, 0
+    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
+    markets_to_keep = []
+    for market in markets:
+        controller = market["address"]
+        if controller.lower() == "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76".lower():
+            continue
+        markets_to_keep.append(market)
+
+        try:
+            data = curve_api_call(f"/v1/crvusd/liquidations/{chain_name}/{controller}/cr/distribution")
+            CurveCr(chain=chain, controller=controller, mean=data["mean"], median=data["median"]).save()
+
+            total_loans += market["n_loans"]
+            agg_cr += market["n_loans"] * data["mean"]
+        except Exception:
+            logger.error("Unable to retrieve cr:", exc_info=True)
+
+    system_cr = agg_cr / total_loans
+    CurveMarkets(chain=chain, markets=markets_to_keep, system_cr=system_cr).save()
+
+
+def update_curve_usd_helper(model, url_template, timestamp_field):
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name.lower()
+
+    objects = []
+    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
+    for market in markets:
+        controller = market["address"]
+        snapshots = curve_api_call(url_template.substitute(chain_name=chain_name, controller=controller))
+        for snapshot in snapshots["data"]:
+            timestamp = datetime.fromisoformat(snapshot.pop(timestamp_field))
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
+
+            objects.append(model(
+                chain=chain,
+                controller=controller,
+                timestamp=timestamp,
+                data=snapshot,
+            ))
+
+    model.objects.bulk_create(objects, ignore_conflicts=True)
+
+
+@shared_task
+def task_curve__update_curve_usd_snapshots():
+    update_curve_usd_helper(
+        CurveMarketSnapshot,
+        Template("/v1/crvusd/markets/${chain_name}/${controller}/snapshots"),
+        "dt"
+    )
+
+
+@shared_task
+def task_curve__update_curve_usd_soft_liquidations():
+    update_curve_usd_helper(
+        CurveMarketSoftLiquidations,
+        Template("/v1/crvusd/liquidations/${chain_name}/${controller}/soft_liquidation_ratio"),
+        "timestamp"
+    )
+
+
+@shared_task
+def task_curve__update_curve_usd_losses():
+    update_curve_usd_helper(
+        CurveMarketLosses,
+        Template("/v1/crvusd/liquidations/${chain_name}/${controller}/losses/history"),
+        "timestamp"
+    )
