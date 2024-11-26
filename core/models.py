@@ -43,6 +43,11 @@ class ERC20(BaseModel):
     decimals = models.IntegerField(default=0)
     contract_address = models.CharField(null=False, max_length=50)
     pricing_metadata = models.JSONField(null=False, blank=True, default=dict())
+    is_stablecoin_asset = models.BooleanField(default=False)
+    is_denomination_asset = models.BooleanField(default=False)
+    is_staked_asset = models.BooleanField(default=False)
+    is_lp_asset = models.BooleanField(default=False)
+    is_gov_asset = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}-{self.chain}"
