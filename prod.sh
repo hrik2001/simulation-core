@@ -23,7 +23,13 @@ start_scheduler() {
 
 start_redis() {
     echo "Starting Redis..."
-    redis-server
+    #redis-server
+    redis-server --dir /code/media \
+                 --dbfilename dump.rdb \
+                 --save 60 1 \
+                 --appendonly yes \
+                 --appendfsync everysec
+
 }
 
 # Function to stop processes gracefully
