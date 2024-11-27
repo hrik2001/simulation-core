@@ -3,7 +3,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django import forms
 from .services import simulate_slashing, simulate_inactivity
+from .tasks import cache_ecps_parameters_job
 from django.core.cache import cache
+from django.conf import settings
 import json
 from enum import Enum
 
@@ -101,6 +103,8 @@ def get_parameters(request) -> JsonResponse:
 
     response = cache.get("ecps_parameters", None)
     if not response:
-        return JsonResponse({"error": "Cache not ready yet"}, status=503)
+        cache_ecps_parameters_job.delay(settings.RATED_NETWORK_API_KEY, settings.BLOCKPI_NETWORK_API_KEY) # adds it to the job queue
+        
+        return JsonResponse({'error': 'Cache not ready yet'}, status=503)
 
     return JsonResponse(response, safe=False)

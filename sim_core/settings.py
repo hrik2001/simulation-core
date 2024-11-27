@@ -29,6 +29,8 @@ SECRET_KEY = "django-insecure-tf1!one#d4d^o*g#4a0307009xcw9nm7656u72$z^@1uye2%39
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", None)
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", None)
 TELEGRAM_TOPIC_ID = os.getenv("TELEGRAM_TOPIC_ID", None)
+RATED_NETWORK_API_KEY = os.getenv("RATED_NETWORK_API_KEY", None)
+BLOCKPI_NETWORK_API_KEY = os.getenv("BLOCKPI_NETWORK_API_KEY", None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("ENVIRONMENT", None) != "production"
