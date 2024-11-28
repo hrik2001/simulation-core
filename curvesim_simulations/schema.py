@@ -6,6 +6,11 @@ from typing import Dict, Any
 from .types import PoolType, SimulationRunType, TimeseriesDataType
 from .models import Pool, SimulationRun, TimeseriesData
 
+from graphene import Schema
+import json
+import hashlib
+from django.core.cache import cache
+
 
 class Query(graphene.ObjectType):
     all_pools = graphene.List(PoolType)
@@ -93,4 +98,29 @@ class Query(graphene.ObjectType):
         }
 
 
-schema = graphene.Schema(query=Query)
+class CachedSchema(Schema):
+    def __init__(self, ttl=3600, **kwargs):
+        super().__init__(**kwargs)
+        self.ttl = ttl
+
+    def execute(self, *args, **kwargs):
+        query = kwargs.get("query", args[0] if args else "")
+        variables = kwargs.get("variables", {})
+
+        if kwargs.get("operation_name", "").lower() == "mutation":
+            return super().execute(*args, **kwargs)
+
+        cache_key = f"graphql:{hashlib.md5(f'{query}:{json.dumps(variables, sort_keys=True)}'.encode()).hexdigest()}"
+        cached = cache.get(cache_key)
+
+        if cached:
+            return cached
+
+        result = super().execute(*args, **kwargs)
+        if not result.errors:
+            cache.set(cache_key, result, self.ttl)
+
+        return result
+
+
+schema = CachedSchema(query=Query, ttl=86400)
