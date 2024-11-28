@@ -114,10 +114,8 @@ class CachedSchema(Schema):
         cached = cache.get(cache_key)
 
         if cached:
-            print(f"Cache HIT for key: {cache_key}")
             return cached
 
-        print(f"Cache MISS for key: {cache_key}")
         result = super().execute(*args, **kwargs)
         if not result.errors:
             cache.set(cache_key, result, self.ttl)
