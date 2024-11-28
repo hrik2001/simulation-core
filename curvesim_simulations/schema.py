@@ -111,13 +111,14 @@ class CachedSchema(Schema):
             return super().execute(*args, **kwargs)
 
         cache_key = f"graphql:{hashlib.md5(f'{query}:{json.dumps(variables, sort_keys=True)}'.encode()).hexdigest()}"
+
         cached = cache.get(cache_key)
 
         if cached:
             return cached
 
         result = super().execute(*args, **kwargs)
-        if not result.errors:
+        if result:
             cache.set(cache_key, result, self.ttl)
 
         return result
