@@ -1,6 +1,4 @@
 import graphene
-
-import graphene
 from graphene_django import DjangoObjectType
 from django.db.models import Prefetch
 from django.utils import timezone

@@ -110,6 +110,7 @@ CBETH_BASE = "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22"
 CBBTC_BASE = "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf"
 WSTETH_BASE = "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452"
 AERO_BASE = "0x940181a94A35A4569E4529A3CDfB74e38FD98631"
+superOETH_BASE = "0xDBFeFD2e8460a6Ee4955A68582F85708BAEA60A3"
 
 # crvusd
 WETH_ETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
@@ -635,6 +636,16 @@ AERO_DTO = TokenDTO(
     address=AERO_BASE,
     name="AERO",
     symbol="AERO",
+    decimals=18,
+    network=BASE_DTO,
+    min_trade_size=0.1,
+    max_trade_size=30000,
+)
+
+superOETH_DTO = TokenDTO(
+    address=superOETH_BASE,
+    name="superOETHb",
+    symbol="superOETHb",
     decimals=18,
     network=BASE_DTO,
     min_trade_size=0.1,
