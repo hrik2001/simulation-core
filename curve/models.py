@@ -116,3 +116,22 @@ class CurveMarketLosses(BaseModel):
         constraints = [
             UniqueConstraint(fields=['chain', 'controller', 'timestamp'], name='losses_asset_chain_ts_idx'),
         ]
+
+
+class CurveScores(BaseModel):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    controller = TextField()
+
+    relative_cr_score = TextField()
+    absolute_cr_score = TextField()
+    aggregate_cr_score = TextField()
+    bad_debt_score = TextField()
+    prob_drop1_score = TextField()
+    prob_drop2_score = TextField()
+    aggregate_prob_drop_score = TextField()
+    collateral_under_sl_score = TextField()
+    relative_collateral_under_sl_score = TextField()
+    aggregate_collateral_under_sl_score = TextField()
+    vol_ratio_score = TextField()
+    beta_score = TextField()
+    aggregate_vol_ratio_score = TextField()

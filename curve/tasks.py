@@ -3,6 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from string import Template
 
+import pandas as pd
 import requests
 from celery import shared_task
 from requests.adapters import HTTPAdapter
@@ -11,7 +12,9 @@ from web3 import HTTPProvider, Web3
 
 from core.models import Chain
 from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses
+    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores
+from curve.scoring import score_with_limits, score_bad_debt, analyze_price_drops, calculate_volatility_ratio, \
+    calculate_recent_gk_beta
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +100,9 @@ def curve_batch_api_call(path, condition=None):
     return items
 
 
-def curve_api_call(path):
+def curve_api_call(path, params=None):
     url = f"{BASE_URL}{path}"
-    response = session.get(url)
+    response = session.get(url, params=params)
     response.raise_for_status()
     return response.json()
 
@@ -385,3 +388,153 @@ def task_curve__update_curve_usd_losses():
         Template("/v1/crvusd/liquidations/${chain_name}/${controller}/losses/history"),
         "timestamp"
     )
+
+
+@shared_task
+def task_curve_generate_ratios():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    chain_name = chain.chain_name.lower()
+
+    all_data = []
+    markets = curve_batch_api_call(f"/v1/crvusd/markets/{chain_name}")
+    for market in markets:
+        current = {}
+
+        controller = market["address"]
+        snapshots = curve_api_call(f"/v1/crvusd/markets/{chain_name}/{controller}/snapshots", params={
+            "fetch_on_chain": False,
+            "agg": "day"
+        })
+
+        current["controller"] = controller
+
+        snapshots_df = pd.DataFrame(snapshots["data"])
+        if not snapshots_df.empty:
+            snapshots_df["dt"] = pd.to_datetime(snapshots_df["dt"])
+            snapshots_df.set_index("dt", inplace=True)
+    
+            scientific_columns = ["loan_discount", "liquidation_discount"]
+            for col in scientific_columns:
+                if col in snapshots_df.columns:
+                    snapshots_df[col] = snapshots_df[col].astype(float)
+    
+            snapshots_df.sort_index(inplace=True)
+    
+        snapshots_df["cr_ratio"] = snapshots_df["total_collateral_usd"] / snapshots_df["total_debt"]
+        snapshots_df["cr_ratio_30d"] = snapshots_df["cr_ratio"].rolling(30).mean()
+        snapshots_df["cr_ratio_7d"] = snapshots_df["cr_ratio"].rolling(7).mean()
+        snapshots_df["cr_7d/30d"] = snapshots_df["cr_ratio_7d"] / snapshots_df["cr_ratio_30d"]
+
+        current["snapshots"] = snapshots_df
+
+        last_row = snapshots_df.iloc[-1]
+        liquidation_discount = last_row["liquidation_discount"] / 10 ** 18
+        A = float(ControllerMetadata.objects.filter(chain=chain, controller=controller).latest("created_at").A)
+
+        min_ltv = 1 - liquidation_discount - (2 / A)
+        max_ltv = 1 - liquidation_discount - (25 / A)
+
+        current["min_ltv"] = min_ltv
+        current["max_ltv"] = max_ltv
+
+        health = curve_api_call(f"/v1/crvusd/liquidations/{chain_name}/{controller}/overview", params={
+            "fetch_on_chain": False,
+        })
+        current["health"] = health
+
+        relative_cr_score = score_with_limits(last_row["cr_7d/30d"], 1.1, 0.9, True)
+        absolute_cr_score = score_with_limits(1 / last_row["cr_ratio"], 0.75 * max_ltv, 0.75 * min_ltv, False)
+        aggregate_cr_score = (0.4 * relative_cr_score + 0.6 * absolute_cr_score)
+
+        bad_debt_score = score_bad_debt(health["bad_debt"], market["total_debt"])
+
+        current["scores"] = {
+            "relative_cr_score": relative_cr_score,
+            "absolute_cr_score": absolute_cr_score,
+            "aggregate_cr_score": aggregate_cr_score,
+            "bad_debt_score": bad_debt_score,
+        }
+
+        start = int((datetime.now() - timedelta(days=100)).timestamp())
+        coin = f"ethereum:{market['collateral_token']['address']}"
+        response = requests.get(f"https://coins.llama.fi/chart/{coin}?start={start}&span=400&period=6h").json()
+
+        prices_df = pd.DataFrame(response["coins"][coin]["prices"])
+        prices_df["timestamp"] = pd.to_datetime(prices_df["timestamp"], unit="s")
+        prices_df.set_index("timestamp", inplace=True)
+        prices_df.sort_index(inplace=True)
+        current["prices"] = prices_df
+
+        daily_ohlc = pd.DataFrame({
+            "open": prices_df["price"].resample("D").first(),
+            "high": prices_df["price"].resample("D").max(),
+            "low": prices_df["price"].resample("D").min(),
+            "close": prices_df["price"].resample("D").last()
+        })
+        current["daily_ohlc"] = daily_ohlc
+
+        probabilities = analyze_price_drops(daily_ohlc, [0.075, 0.15])
+        prob_drop1 = probabilities["drop1"]["parametric_probability"]
+        prob_drop2 = probabilities["drop2"]["parametric_probability"]
+        prob_drop1_score = score_with_limits(prob_drop1, 0.03, 0, False)
+        prob_drop2_score = score_with_limits(prob_drop2, 0.0075, 0, False)
+        aggregate_prob_drop_score = (0.5 * prob_drop1_score + 0.5 * prob_drop2_score)
+        current["scores"]["prob_drop1_score"] = prob_drop1_score
+        current["scores"]["prob_drop2_score"] = prob_drop2_score
+        current["scores"]["aggregate_prob_drop_score"] = aggregate_prob_drop_score
+
+        end = datetime.now()
+        start = end - timedelta(days=180)
+        data = curve_api_call(f"/v1/crvusd/liquidations/ethereum/{controller}/soft_liquidation_ratio", params={
+            "start": int(start.timestamp()),
+            "end": int(end.timestamp()),
+        })
+
+        sl_df = pd.DataFrame(data["data"])
+        sl_df = sl_df.sort_values("timestamp")
+        sl_df["timestamp"] = pd.to_datetime(sl_df["timestamp"], format="%Y-%m-%dT%H:%M:%S")
+        sl_df["debt_under_sl_ratio_7d"] = sl_df["debt_under_sl_ratio"].rolling(7).mean()
+        sl_df["debt_under_sl_ratio_30d"] = sl_df["debt_under_sl_ratio"].rolling(30).mean()
+        sl_df["collateral_under_sl_ratio_7d"] = sl_df["collateral_under_sl_ratio"].rolling(7).mean()
+        sl_df["collateral_under_sl_ratio_30d"] = sl_df["collateral_under_sl_ratio"].rolling(30).mean()
+        sl_df.set_index("timestamp", inplace=True)
+
+        current["sl"] = sl_df
+
+        latest_row = sl_df.iloc[-1].to_dict()
+        current_collateral_under_sl_ratio = latest_row["collateral_under_sl_ratio"]
+        # Handle division by zero case
+        if latest_row["collateral_under_sl_ratio_30d"] == 0:
+            relative_collateral_under_sl_ratio = 1.0  # Default value when denominator is zero
+        else:
+            relative_collateral_under_sl_ratio = (latest_row["collateral_under_sl_ratio_7d"] /
+                                                  latest_row["collateral_under_sl_ratio_30d"])
+
+        collateral_under_sl_score = score_with_limits(current_collateral_under_sl_ratio, 2, 0, False)
+        relative_collateral_under_sl_score = score_with_limits(relative_collateral_under_sl_ratio, 2.5, 0.5, False, 1)
+        aggregate_collateral_under_sl_score = (0.4 * collateral_under_sl_score + 0.6 * relative_collateral_under_sl_score)
+
+        current["scores"]["collateral_under_sl_score"] = collateral_under_sl_score
+        current["scores"]["relative_collateral_under_sl_score"] = relative_collateral_under_sl_score
+        current["scores"]["aggregate_collateral_under_sl_score"] = aggregate_collateral_under_sl_score
+
+        all_data.append(current)
+
+    btc_ohlc = None
+    for current in all_data:
+        if current["controller"] == "0x4e59541306910aD6dC1daC0AC9dFB29bD9F15c67":
+            btc_ohlc = current["daily_ohlc"]
+
+    for current in all_data:
+        vol_45d, vol_180d, vol_ratio = calculate_volatility_ratio(current["daily_ohlc"])
+        vol_ratio_score = score_with_limits(vol_ratio, 1.5, 0.75, False)
+        current["scores"]["vol_ratio_score"] = vol_ratio_score
+
+        beta = calculate_recent_gk_beta(current["daily_ohlc"], btc_ohlc)
+        beta_score = score_with_limits(beta, 2.5, 0.5, False, 1)
+        current["scores"]["beta_score"] = beta_score
+
+        aggregate_vol_ratio_score = (0.4 * vol_ratio_score + 0.6 * beta_score)
+        current["scores"]["aggregate_vol_ratio_score"] = aggregate_vol_ratio_score
+
+        CurveScores(controller=current["controller"], chain=chain, **current["scores"]).save()
