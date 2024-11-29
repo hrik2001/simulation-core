@@ -27,7 +27,8 @@ class Query(graphene.ObjectType):
     def resolve_all_simulations(self, info):
         return SimulationRun.objects.all().order_by("-run_date").select_related("parameters")
 
-    def _build_params_filter(self, params_dict):
+    @staticmethod
+    def _build_params_filter(params_dict):
         return {
             f"{key}__in": value
             for key, value in params_dict.items()
@@ -40,7 +41,7 @@ class Query(graphene.ObjectType):
             return None
 
         # Get the parameters that match the pool's params_dict
-        filter_kwargs = self._build_params_filter(pool.params_dict)
+        filter_kwargs = Query._build_params_filter(pool.params_dict)
         params = SimulationParameters.objects.filter(**filter_kwargs).first()
 
         if not params:
@@ -71,7 +72,7 @@ class Query(graphene.ObjectType):
             return []
 
         # Get the parameters that match the pool's params_dict
-        filter_kwargs = self._build_params_filter(pool.params_dict)
+        filter_kwargs = Query._build_params_filter(pool.params_dict)
         params = SimulationParameters.objects.filter(**filter_kwargs)
 
         return (
@@ -87,7 +88,7 @@ class Query(graphene.ObjectType):
 
         dates_by_pool = {}
         for pool in pools:
-            filter_kwargs = self._build_params_filter(pool.params_dict)
+            filter_kwargs = Query._build_params_filter(pool.params_dict)
             params = SimulationParameters.objects.filter(**filter_kwargs)
             dates = list(
                 SimulationRun.objects.filter(parameters__in=params)
