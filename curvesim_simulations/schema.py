@@ -29,58 +29,69 @@ class Query(graphene.ObjectType):
 
     @staticmethod
     def _build_params_filter(params_dict):
-        return {
-            f"{key}__in": value
-            for key, value in params_dict.items()
-            if value is not None and key in ["A", "D", "fee", "fee_mul", "admin_fee"]
-        }
+        filter_kwargs = {}
+
+        for key, value in params_dict.items():
+            if value is not None and key in ["A", "D", "fee", "fee_mul", "admin_fee"]:
+                if key == "fee" and isinstance(value, list):
+                    fee_values = [float(v) / 1e10 for v in value]
+                    filter_kwargs[f"{key}__in"] = fee_values
+                else:
+                    filter_kwargs[f"{key}__in"] = value
+
+        return filter_kwargs
 
     def resolve_simulation_by_pool_and_date(self, info, pool_name, date=None):
         pool = Pool.objects.filter(name=pool_name).first()
         if not pool:
             return None
 
-        # Get the parameters that match the pool's params_dict
         filter_kwargs = Query._build_params_filter(pool.params_dict)
-        params = SimulationParameters.objects.filter(**filter_kwargs).first()
 
-        if not params:
-            return None
-
-        # Build the query for SimulationRun
-        query = SimulationRun.objects.filter(parameters=params)
+        params = SimulationParameters.objects.filter(**filter_kwargs)
+        print(f"3. Parametri trovati: {list(params.values())}")
 
         if date:
             try:
-                date_obj = timezone.datetime.strptime(date[:10], "%Y-%m-%d").date()
-                query = query.filter(run_date__date=date_obj)
-            except ValueError:
+                date_obj = timezone.datetime.strptime(date[:19], "%Y-%m-%dT%H:%M:%S")
+                query = SimulationRun.objects.filter(parameters__in=params, run_date__date=date_obj.date())
+
+                result = query.prefetch_related(
+                    "parameters",
+                    "summary_metrics",
+                    Prefetch("timeseries_data", queryset=TimeseriesData.objects.order_by("timestamp")),
+                    "price_error_distribution",
+                ).first()
+                return result
+            except ValueError as e:
                 return None
         else:
             query = query.order_by("-run_date")
-
-        return query.prefetch_related(
-            "parameters",
-            "summary_metrics",
-            Prefetch("timeseries_data", queryset=TimeseriesData.objects.order_by("timestamp")),
-            "price_error_distribution",
-        ).first()
+            return query.prefetch_related(
+                "parameters",
+                "summary_metrics",
+                Prefetch("timeseries_data", queryset=TimeseriesData.objects.order_by("timestamp")),
+                "price_error_distribution",
+            ).first()
 
     def resolve_pool_dates(self, info, pool_name):
         pool = Pool.objects.filter(name=pool_name).first()
         if not pool:
             return []
 
-        # Get the parameters that match the pool's params_dict
         filter_kwargs = Query._build_params_filter(pool.params_dict)
+
         params = SimulationParameters.objects.filter(**filter_kwargs)
 
-        return (
+        dates = (
             SimulationRun.objects.filter(parameters__in=params)
             .values_list("run_date", flat=True)
             .order_by("-run_date")
             .distinct()
         )
+        dates_list = list(dates)
+
+        return dates_list
 
     def resolve_simulations_summary(self, info) -> Dict[str, Any]:
         pools = Pool.objects.filter(enabled=True)
@@ -96,13 +107,13 @@ class Query(graphene.ObjectType):
                 .order_by("-run_date")
                 .distinct()
             )
-            dates_by_pool[pool.name] = dates
+            dates_by_pool[pool.name] = [d.isoformat() for d in dates]
 
         return {
             "simulations": [
                 {
                     "id": sim.pool_name,
-                    "run_date": sim.run_date,
+                    "run_date": sim.run_date.isoformat(),
                     "A": sim.parameters.A,
                     "fee": sim.parameters.fee,
                     "D": sim.parameters.D,

@@ -76,7 +76,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "core.middleware.ExceptionMiddleware"
+    "core.middleware.ExceptionMiddleware",
 ]
 
 # CORS_ALLOWED_ORIGINS = [
@@ -156,7 +156,7 @@ DATABASES = {
         "HOST": POSTGRES_HOST,
         "PORT": POSTGRES_PORT,
     },
-    # "test": {
+    # "default": {
     #     "ENGINE": "django.db.backends.postgresql",
     #     "NAME": "curve_sim_test",
     #     "USER": "francescomangia",
