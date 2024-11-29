@@ -148,22 +148,22 @@ POSTGRES_USER = os.environ.get("POSTGRES_USER")  # database username
 POSTGRES_HOST = os.environ.get("POSTGRES_HOST")  # database host
 POSTGRES_PORT = os.environ.get("POSTGRES_PORT")  # database port
 DATABASES = {
-    # "default": {
-    #     "ENGINE": "django.db.backends.postgresql",
-    #     "NAME": POSTGRES_DB,
-    #     "USER": POSTGRES_USER,
-    #     "PASSWORD": POSTGRES_PASSWORD,
-    #     "HOST": POSTGRES_HOST,
-    #     "PORT": POSTGRES_PORT,
-    # },
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "curve_sim_test",
-        "USER": "francescomangia",
-        "PASSWORD": "",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "NAME": POSTGRES_DB,
+        "USER": POSTGRES_USER,
+        "PASSWORD": POSTGRES_PASSWORD,
+        "HOST": POSTGRES_HOST,
+        "PORT": POSTGRES_PORT,
     },
+    # "default": {
+    #     "ENGINE": "django.db.backends.postgresql",
+    #     "NAME": "curve_sim_test",
+    #     "USER": "francescomangia",
+    #     "PASSWORD": "",
+    #     "HOST": "localhost",
+    #     "PORT": "5432",
+    # },
 }
 
 
