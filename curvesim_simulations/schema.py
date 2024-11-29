@@ -4,7 +4,7 @@ from django.db.models import Prefetch
 from django.utils import timezone
 from typing import Dict, Any
 from .types import PoolType, SimulationRunType, TimeseriesDataType
-from .models import Pool, SimulationRun, TimeseriesData
+from .models import Pool, SimulationRun, TimeseriesData, SimulationParameters
 
 from graphene import Schema
 import json
@@ -32,11 +32,24 @@ class Query(graphene.ObjectType):
         if not pool:
             return None
 
-        query = SimulationRun.objects.filter(parameters__params_dict=pool.params_dict)
+        # Get the parameters that match the pool's params_dict
+        params = SimulationParameters.objects.filter(
+            A=pool.params_dict.get("A"),
+            D=pool.params_dict.get("D"),
+            fee=pool.params_dict.get("fee"),
+            fee_mul=pool.params_dict.get("fee_mul"),
+            admin_fee=pool.params_dict.get("admin_fee"),
+        ).first()
+
+        if not params:
+            return None
+
+        # Build the query for SimulationRun
+        query = SimulationRun.objects.filter(parameters=params)
 
         if date:
             try:
-                date_obj = timezone.datetime.strptime(date, "%Y-%m-%d").date()
+                date_obj = timezone.datetime.strptime(date[:10], "%Y-%m-%d").date()
                 query = query.filter(run_date__date=date_obj)
             except ValueError:
                 return None
@@ -55,8 +68,17 @@ class Query(graphene.ObjectType):
         if not pool:
             return []
 
+        # Get the parameters that match the pool's params_dict
+        params = SimulationParameters.objects.filter(
+            A=pool.params_dict.get("A"),
+            D=pool.params_dict.get("D"),
+            fee=pool.params_dict.get("fee"),
+            fee_mul=pool.params_dict.get("fee_mul"),
+            admin_fee=pool.params_dict.get("admin_fee"),
+        )
+
         return (
-            SimulationRun.objects.filter(parameters__params_dict=pool.params_dict)
+            SimulationRun.objects.filter(parameters__in=params)
             .values_list("run_date", flat=True)
             .order_by("-run_date")
             .distinct()
@@ -65,6 +87,23 @@ class Query(graphene.ObjectType):
     def resolve_simulations_summary(self, info) -> Dict[str, Any]:
         pools = Pool.objects.filter(enabled=True)
         simulations = SimulationRun.objects.all().order_by("-run_date").select_related("parameters")
+
+        dates_by_pool = {}
+        for pool in pools:
+            params = SimulationParameters.objects.filter(
+                A=pool.params_dict.get("A"),
+                D=pool.params_dict.get("D"),
+                fee=pool.params_dict.get("fee"),
+                fee_mul=pool.params_dict.get("fee_mul"),
+                admin_fee=pool.params_dict.get("admin_fee"),
+            )
+            dates = list(
+                SimulationRun.objects.filter(parameters__in=params)
+                .values_list("run_date", flat=True)
+                .order_by("-run_date")
+                .distinct()
+            )
+            dates_by_pool[pool.name] = dates
 
         return {
             "simulations": [
@@ -86,15 +125,7 @@ class Query(graphene.ObjectType):
                 }
                 for pool in pools
             ],
-            "dates_by_pool": {
-                pool.name: list(
-                    SimulationRun.objects.filter(parameters__params_dict=pool.params_dict)
-                    .values_list("run_date", flat=True)
-                    .order_by("-run_date")
-                    .distinct()
-                )
-                for pool in pools
-            },
+            "dates_by_pool": dates_by_pool,
         }
 
 
