@@ -27,19 +27,21 @@ class Query(graphene.ObjectType):
     def resolve_all_simulations(self, info):
         return SimulationRun.objects.all().order_by("-run_date").select_related("parameters")
 
+    def _build_params_filter(self, params_dict):
+        return {
+            f"{key}__in": value
+            for key, value in params_dict.items()
+            if value is not None and key in ["A", "D", "fee", "fee_mul", "admin_fee"]
+        }
+
     def resolve_simulation_by_pool_and_date(self, info, pool_name, date=None):
         pool = Pool.objects.filter(name=pool_name).first()
         if not pool:
             return None
 
         # Get the parameters that match the pool's params_dict
-        params = SimulationParameters.objects.filter(
-            A=pool.params_dict.get("A"),
-            D=pool.params_dict.get("D"),
-            fee=pool.params_dict.get("fee"),
-            fee_mul=pool.params_dict.get("fee_mul"),
-            admin_fee=pool.params_dict.get("admin_fee"),
-        ).first()
+        filter_kwargs = self._build_params_filter(pool.params_dict)
+        params = SimulationParameters.objects.filter(**filter_kwargs).first()
 
         if not params:
             return None
@@ -69,13 +71,8 @@ class Query(graphene.ObjectType):
             return []
 
         # Get the parameters that match the pool's params_dict
-        params = SimulationParameters.objects.filter(
-            A=pool.params_dict.get("A"),
-            D=pool.params_dict.get("D"),
-            fee=pool.params_dict.get("fee"),
-            fee_mul=pool.params_dict.get("fee_mul"),
-            admin_fee=pool.params_dict.get("admin_fee"),
-        )
+        filter_kwargs = self._build_params_filter(pool.params_dict)
+        params = SimulationParameters.objects.filter(**filter_kwargs)
 
         return (
             SimulationRun.objects.filter(parameters__in=params)
@@ -90,13 +87,8 @@ class Query(graphene.ObjectType):
 
         dates_by_pool = {}
         for pool in pools:
-            params = SimulationParameters.objects.filter(
-                A=pool.params_dict.get("A"),
-                D=pool.params_dict.get("D"),
-                fee=pool.params_dict.get("fee"),
-                fee_mul=pool.params_dict.get("fee_mul"),
-                admin_fee=pool.params_dict.get("admin_fee"),
-            )
+            filter_kwargs = self._build_params_filter(pool.params_dict)
+            params = SimulationParameters.objects.filter(**filter_kwargs)
             dates = list(
                 SimulationRun.objects.filter(parameters__in=params)
                 .values_list("run_date", flat=True)
