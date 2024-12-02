@@ -11,6 +11,10 @@ import json
 import hashlib
 from django.core.cache import cache
 
+ISO_FORMAT_LENGTH = 19
+CACHE_TTL = 86400  # 24hours
+CACHE_PREFIX = "curve_sim"
+
 
 class Query(graphene.ObjectType):
     all_pools = graphene.List(PoolType)
@@ -22,10 +26,24 @@ class Query(graphene.ObjectType):
     simulations_summary = graphene.JSONString()
 
     def resolve_all_pools(self, info):
-        return Pool.objects.filter(enabled=True)
+        cache_key = f"{CACHE_PREFIX}all_pools"
+        result = cache.get(cache_key)
+
+        if result is None:
+            result = Pool.objects.filter(enabled=True)
+            cache.set(cache_key, result, CACHE_TTL)
+
+        return result
 
     def resolve_all_simulations(self, info):
-        return SimulationRun.objects.all().order_by("-run_date").select_related("parameters")
+        cache_key = f"{CACHE_PREFIX}all_simulations"
+        result = cache.get(cache_key)
+
+        if result is None:
+            result = list(SimulationRun.objects.all().order_by("-run_date").select_related("parameters"))
+            cache.set(cache_key, result, CACHE_TTL)
+
+        return result
 
     @staticmethod
     def _build_params_filter(params_dict):
@@ -42,45 +60,52 @@ class Query(graphene.ObjectType):
         return filter_kwargs
 
     def resolve_simulation_by_pool_and_date(self, info, pool_name, date=None):
+        cache_key = f"{CACHE_PREFIX}sim_{pool_name}_{date}"
+        result = cache.get(cache_key)
+
+        if result is not None:
+            return result
+
         pool = Pool.objects.filter(name=pool_name).first()
         if not pool:
             return None
 
         filter_kwargs = Query._build_params_filter(pool.params_dict)
-
         params = SimulationParameters.objects.filter(**filter_kwargs)
-        print(f"3. Parametri trovati: {list(params.values())}")
 
         if date:
             try:
                 date_obj = timezone.datetime.strptime(date[:19], "%Y-%m-%dT%H:%M:%S")
                 query = SimulationRun.objects.filter(parameters__in=params, run_date__date=date_obj.date())
-
-                result = query.prefetch_related(
-                    "parameters",
-                    "summary_metrics",
-                    Prefetch("timeseries_data", queryset=TimeseriesData.objects.order_by("timestamp")),
-                    "price_error_distribution",
-                ).first()
-                return result
-            except ValueError as e:
+            except ValueError:
                 return None
         else:
-            query = query.order_by("-run_date")
-            return query.prefetch_related(
-                "parameters",
-                "summary_metrics",
-                Prefetch("timeseries_data", queryset=TimeseriesData.objects.order_by("timestamp")),
-                "price_error_distribution",
-            ).first()
+            query = SimulationRun.objects.filter(parameters__in=params).order_by("-run_date")
+
+        result = query.prefetch_related(
+            "parameters",
+            "summary_metrics",
+            Prefetch("timeseries_data", queryset=TimeseriesData.objects.order_by("timestamp")),
+            "price_error_distribution",
+        ).first()
+
+        if result:
+            cache.set(cache_key, result, CACHE_TTL)
+
+        return result
 
     def resolve_pool_dates(self, info, pool_name):
+        cache_key = f"{CACHE_PREFIX}pool_dates_{pool_name}"
+        dates_list = cache.get(cache_key)
+
+        if dates_list is not None:
+            return dates_list
+
         pool = Pool.objects.filter(name=pool_name).first()
         if not pool:
             return []
 
         filter_kwargs = Query._build_params_filter(pool.params_dict)
-
         params = SimulationParameters.objects.filter(**filter_kwargs)
 
         dates = (
@@ -90,6 +115,7 @@ class Query(graphene.ObjectType):
             .distinct()
         )
         dates_list = list(dates)
+        cache.set(cache_key, dates_list, CACHE_TTL)
 
         return dates_list
 
@@ -159,4 +185,4 @@ class CachedSchema(Schema):
         return result
 
 
-schema = CachedSchema(query=Query, ttl=86400)
+schema = CachedSchema(query=Query, ttl=CACHE_TTL)
