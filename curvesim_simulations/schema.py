@@ -30,7 +30,7 @@ class Query(graphene.ObjectType):
         result = cache.get(cache_key)
 
         if result is None:
-            result = Pool.objects.filter(enabled=True)
+            result = list(Pool.objects.filter(enabled=True))
             cache.set(cache_key, result, CACHE_TTL)
 
         return result
