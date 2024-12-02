@@ -5,11 +5,16 @@ import logging
 
 import curvesim
 from curvesim.metrics.results.sim_results import SimResults
-from .models import SimulationParameters, SimulationRun, TimeseriesData, SummaryMetrics, PriceErrorDistribution
+from .models import SimulationParameters, SimulationRun, TimeseriesData, SummaryMetrics, PriceErrorDistribution, Pool
 from django.utils.timezone import make_aware
-from datetime import datetime
 from pandas import DataFrame
 from django.utils import timezone
+from django.core.cache import cache
+from typing import List
+import logging
+
+CACHE_TTL = 86400  # 24hours
+CACHE_PREFIX = "curvesim"
 
 
 @shared_task(name="run_simulation_task")
@@ -101,3 +106,86 @@ def _save_summary_metrics(sim_run: SimulationRun, summary_row: DataFrame) -> Non
         pool_fees_sum=summary_row["pool_fees sum"],
         price_error_median=summary_row["price_error median"],
     )
+
+
+@shared_task(name="warmup_graphql_cache")
+def warmup_graphql_cache():
+    """
+    Task to pre-warm the GraphQL query cache for commonly accessed data.
+    Helps reduce latency for initial user requests.
+    """
+    logging.info("Starting GraphQL cache warmup")
+    warmed_keys: List[str] = []
+
+    try:
+        # Cache all_pools
+        pools = Pool.objects.filter(enabled=True)
+        cache_key = f"{CACHE_PREFIX}all_pools"
+        cache.set(cache_key, pools, CACHE_TTL)
+        warmed_keys.append(cache_key)
+
+        # Cache all_simulations
+        simulations = list(SimulationRun.objects.all().order_by("-run_date").select_related("parameters"))
+        cache_key = f"{CACHE_PREFIX}all_simulations"
+        cache.set(cache_key, simulations, CACHE_TTL)
+        warmed_keys.append(cache_key)
+
+        # Cache pool_dates and latest simulation for each pool
+        for pool in pools:
+            # Pool dates
+            filter_kwargs = _build_params_filter(pool.params_dict)
+            params = SimulationParameters.objects.filter(**filter_kwargs)
+            dates = list(
+                SimulationRun.objects.filter(parameters__in=params)
+                .values_list("run_date", flat=True)
+                .order_by("-run_date")
+                .distinct()
+            )
+
+            cache_key = f"{CACHE_PREFIX}pool_dates_{pool.name}"
+            cache.set(cache_key, dates, CACHE_TTL)
+            warmed_keys.append(cache_key)
+
+            # Latest simulation
+            latest_sim = (
+                SimulationRun.objects.filter(parameters__in=params)
+                .order_by("-run_date")
+                .prefetch_related(
+                    "parameters",
+                    "summary_metrics",
+                    "timeseries_data",
+                    "price_error_distribution",
+                )
+                .first()
+            )
+            if latest_sim:
+                cache_key = f"{CACHE_PREFIX}sim_{pool.name}_None"
+                cache.set(cache_key, latest_sim, CACHE_TTL)
+                warmed_keys.append(cache_key)
+
+        logging.info(f"Cache warmup completed. Warmed up {len(warmed_keys)} keys")
+        return f"Successfully warmed up {len(warmed_keys)} cache keys"
+
+    except Exception as e:
+        logging.error(f"Error during cache warmup: {str(e)}")
+        for key in warmed_keys:
+            cache.delete(key)
+        raise
+
+
+def _build_params_filter(params_dict):
+    """
+    Helper function to build filter kwargs from params dict.
+    Same implementation as in Query class to maintain consistency.
+    """
+    filter_kwargs = {}
+
+    for key, value in params_dict.items():
+        if value is not None and key in ["A", "D", "fee", "fee_mul", "admin_fee"]:
+            if key == "fee" and isinstance(value, list):
+                fee_values = [float(v) / 1e10 for v in value]
+                filter_kwargs[f"{key}__in"] = fee_values
+            else:
+                filter_kwargs[f"{key}__in"] = value
+
+    return filter_kwargs
