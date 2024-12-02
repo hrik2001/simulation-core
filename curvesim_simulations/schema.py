@@ -13,7 +13,7 @@ from django.core.cache import cache
 
 ISO_FORMAT_LENGTH = 19
 CACHE_TTL = 86400  # 24hours
-CACHE_PREFIX = "curve_sim"
+CACHE_PREFIX = "curvesim"
 
 
 class Query(graphene.ObjectType):
