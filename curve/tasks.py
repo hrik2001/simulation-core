@@ -331,7 +331,7 @@ def task_curve__update_curve_markets():
             CurveCr(chain=chain, controller=controller, mean=data["mean"], median=data["median"]).save()
 
             total_loans += market["n_loans"]
-            agg_cr += market["n_loans"] * data["mean"]
+            agg_cr += market["n_loans"] * data["median"]
         except Exception:
             logger.error("Unable to retrieve cr:", exc_info=True)
 
