@@ -1,3 +1,5 @@
+import csv
+import os.path
 from datetime import datetime
 
 import graphene
@@ -5,12 +7,22 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F
 from django.db.models.functions import JSONObject
 from graphene import Int, String
+from pyarrow import timestamp
 
 from core.models import Chain
 from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
     CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores
 from curve.types import DebtCeilingType, ControllerMetadataType, CurveMetricsType, AggregatedSnapshotsType, \
-    SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType, CurveMarketsType, CurveScoresType
+    SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType, CurveMarketsType, CurveScoresType, \
+    CurveDebtCeilingScoresType
+
+controller_asset_map = {
+    "sfrxETH": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+    "wstETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+    "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+    "WETH": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    "tBTC": "0x18084fbA666a33d37592fA2633fD49a74DD93a88"
+}
 
 
 def _curve_market_helper(model, start_time=None, end_time=None, limit=None, sort_by=None,
@@ -84,6 +96,8 @@ class Query(graphene.ObjectType):
                        chain=String(), controller=String())
     scores = graphene.List(CurveScoresType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                            chain=String(), controller=String())
+    debt_ceiling_score = graphene.List(CurveDebtCeilingScoresType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
+                                       chain=String(), controller=String())
 
     def resolve_markets(self, info, start_time=None, end_time=None, limit=None, sort_by=None, chain=None):
         queryset = CurveMarkets.objects.all()
@@ -272,5 +286,43 @@ class Query(graphene.ObjectType):
         if limit:
             queryset = queryset[:limit]
         return queryset
+
+    def resolve_debt_ceiling_score(self, info, start_time=None, end_time=None, limit=None, sort_by=None,
+                                   chain=None, controller=None):
+        with open(os.path.join(os.path.dirname(__file__), "debt_ceiling_score.csv"), "r") as f:
+            reader = csv.DictReader(f)
+            rows = []
+            for row in reader:
+                rows.append({**row, "keep": True})
+
+        if start_time:
+            for row in rows:
+                if row["timestamp"] < start_time:
+                    row["keep"] = False
+
+        if end_time:
+            for row in rows:
+                if row["timestamp"] > end_time:
+                    row["keep"] = False
+
+        results = []
+        for row in rows:
+            if not row["keep"]:
+               continue
+            for key, value in row.items():
+                if key == "timestamp" or key == "keep":
+                    continue
+                if controller and key != controller:
+                    continue
+                results.append({
+                    "chain": "ethereum",
+                    "createdAt": int(row["timestamp"]),
+                    "controller": controller_asset_map[key],
+                    "score": str(value),
+                })
+
+        x = [CurveDebtCeilingScoresType(**r) for r in results[:limit]]
+        print(x)
+        return x
 
 schema = graphene.Schema(query=Query)

@@ -1,5 +1,5 @@
 from django.db.models import JSONField, TextField, ForeignKey, CASCADE, DateTimeField, Index, IntegerField, \
-    UniqueConstraint, DateField
+    UniqueConstraint, DateField, Model
 
 from core.models import BaseModel, Chain
 
@@ -135,3 +135,10 @@ class CurveScores(BaseModel):
     vol_ratio_score = TextField()
     beta_score = TextField()
     aggregate_vol_ratio_score = TextField()
+
+
+class CurveDebtCeilingScore(Model):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    controller = TextField()
+    created_at = DateTimeField()
+    debt_ceiling_score = TextField()
