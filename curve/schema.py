@@ -35,7 +35,7 @@ def _curve_market_helper(model, start_time=None, end_time=None, limit=None, sort
     queryset = queryset.filter(chain=chain_obj)
 
     if controller:
-        queryset = queryset.filter(controller=controller)
+        queryset = queryset.filter(controller__iexact=controller)
 
     if start_time:
         queryset = queryset.filter(timestamp__gte=datetime.fromtimestamp(start_time))
@@ -129,7 +129,7 @@ class Query(graphene.ObjectType):
         queryset = queryset.filter(chain=chain_obj)
 
         if controller:
-            queryset = queryset.filter(controller=controller)
+            queryset = queryset.filter(controller__iexact=controller)
         if start_time:
             queryset = queryset.filter(timestamp__gte=datetime.fromtimestamp(start_time))
         if end_time:
@@ -152,7 +152,7 @@ class Query(graphene.ObjectType):
         queryset = queryset.filter(chain=chain_obj)
 
         if controller:
-            queryset = queryset.filter(controller=controller)
+            queryset = queryset.filter(controller__iexact=controller)
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
         if end_time:
@@ -202,7 +202,7 @@ class Query(graphene.ObjectType):
         queryset = queryset.filter(chain=chain_obj)
 
         if controller:
-            queryset = queryset.filter(controller=controller)
+            queryset = queryset.filter(controller__iexact=controller)
 
         if start_time:
             queryset = queryset.filter(day__gte=datetime.fromtimestamp(start_time).date())
@@ -226,7 +226,7 @@ class Query(graphene.ObjectType):
         queryset = queryset.filter(chain=chain_obj)
 
         if controller:
-            queryset = queryset.filter(controller=controller)
+            queryset = queryset.filter(controller__iexact=controller)
 
         if start_time:
             queryset = queryset.filter(day__gte=datetime.fromtimestamp(start_time).date())
@@ -250,7 +250,7 @@ class Query(graphene.ObjectType):
         queryset = queryset.filter(chain=chain_obj)
 
         if controller:
-            queryset = queryset.filter(controller=controller)
+            queryset = queryset.filter(controller__iexact=controller)
 
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
@@ -273,7 +273,7 @@ class Query(graphene.ObjectType):
         queryset = queryset.filter(chain=chain_obj)
 
         if controller:
-            queryset = queryset.filter(controller=controller)
+            queryset = queryset.filter(controller__iexact=controller)
 
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
@@ -322,7 +322,6 @@ class Query(graphene.ObjectType):
                 })
 
         x = [CurveDebtCeilingScoresType(**r) for r in results[:limit]]
-        print(x)
         return x
 
 schema = graphene.Schema(query=Query)
