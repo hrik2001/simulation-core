@@ -19,7 +19,7 @@ CACHE_PREFIX = "curvesim"
 class Query(graphene.ObjectType):
     all_pools = graphene.List(PoolType)
     all_simulations = graphene.List(SimulationRunType)
-    simulation_by_pool_and_date = graphene.Field(
+    simulation_by_pool_and_date = graphene.List(
         SimulationRunType, pool_name=graphene.String(required=True), date=graphene.String()
     )
     pool_dates = graphene.List(graphene.DateTime, pool_name=graphene.String(required=True))
@@ -60,39 +60,22 @@ class Query(graphene.ObjectType):
         return filter_kwargs
 
     def resolve_simulation_by_pool_and_date(self, info, pool_name, date=None):
-        cache_key = f"{CACHE_PREFIX}sim_{pool_name}_{date}"
-        result = cache.get(cache_key)
-
-        if result is not None:
-            return result
 
         pool = Pool.objects.filter(name=pool_name).first()
         if not pool:
-            return None
+            return []
 
-        filter_kwargs = Query._build_params_filter(pool.params_dict)
-        params = SimulationParameters.objects.filter(**filter_kwargs)
-
-        if date:
-            try:
-                date_obj = timezone.datetime.strptime(date[:19], "%Y-%m-%dT%H:%M:%S")
-                query = SimulationRun.objects.filter(parameters__in=params, run_date__date=date_obj.date())
-            except ValueError:
-                return None
-        else:
-            query = SimulationRun.objects.filter(parameters__in=params).order_by("-run_date")
+        date_obj = timezone.datetime.strptime(date[:19], "%Y-%m-%dT%H:%M:%S")
+        query = SimulationRun.objects.filter(run_date__date=date_obj.date(), pool_name=pool_name)
 
         result = query.prefetch_related(
             "parameters",
             "summary_metrics",
             Prefetch("timeseries_data", queryset=TimeseriesData.objects.order_by("timestamp")),
             "price_error_distribution",
-        ).first()
+        )
 
-        if result:
-            cache.set(cache_key, result, CACHE_TTL)
-
-        return result
+        return list(result)
 
     def resolve_pool_dates(self, info, pool_name):
         cache_key = f"{CACHE_PREFIX}pool_dates_{pool_name}"
