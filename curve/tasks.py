@@ -1,4 +1,6 @@
+import csv
 import logging
+import os
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from string import Template
@@ -11,7 +13,7 @@ from urllib3 import Retry
 from web3 import HTTPProvider, Web3
 
 from core.models import Chain
-from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
+from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
     CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores
 from curve.scoring import score_with_limits, score_bad_debt, analyze_price_drops, calculate_volatility_ratio, \
     calculate_recent_gk_beta
@@ -72,6 +74,15 @@ AMM_ABI = [
 
 CRV_USD_ADDRESS = Web3.to_checksum_address("0xf939e0a03fb07f59a73314e73794be0e57ac1b4e")
 CRV_USD_AGG_ADDRESS = Web3.to_checksum_address("0x18672b1b0c623a30089A280Ed9256379fb0E4E62")
+
+controller_asset_map = {
+    "sfrxETH": "0xEC0820EfafC41D8943EE8dE495fC9Ba8495B15cf",
+    "wstETH": "0x100dAa78fC509Db39Ef7D04DE0c1ABD299f4C6CE",
+    "WBTC": "0x4e59541306910aD6dC1daC0AC9dFB29bD9F15c67",
+    "WETH": "0xA920De414eA4Ab66b97dA1bFE9e6EcA7d4219635",
+    "tBTC": "0x1C91da0223c763d2e0173243eAdaA0A2ea47E704"
+}
+
 
 def curve_batch_api_call(path, condition=None):
     url = f"{BASE_URL}{path}"
@@ -148,12 +159,12 @@ def task_curve__update_debt_ceiling():
         top5_debt = sum([x["debt"] for x in user_data[top5_idx:]])
         market["users"] = user_data
 
-        DebtCeiling(timestamp=timestamp, chain=chain, controller=controller, data=market, top5_debt=top5_debt).save()
+        Top5Debt(timestamp=timestamp, chain=chain, controller=controller, data=market, top5_debt=top5_debt).save()
 
     all_user_data.sort(key=lambda x: x["debt"])
     top5_idx = int(len(all_user_data) * (1 - 0.05))
     top5_debt = sum([x["debt"] for x in all_user_data[top5_idx:]])
-    DebtCeiling(timestamp=timestamp, chain=chain, controller="overall", data={}, top5_debt=top5_debt).save()
+    Top5Debt(timestamp=timestamp, chain=chain, controller="overall", data={}, top5_debt=top5_debt).save()
 
 
 @shared_task
@@ -406,6 +417,9 @@ def task_curve_generate_ratios():
             "agg": "day"
         })
 
+        if controller.lower() == "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76".lower():
+            continue
+
         current["controller"] = controller
 
         snapshots_df = pd.DataFrame(snapshots["data"])
@@ -424,6 +438,13 @@ def task_curve_generate_ratios():
         snapshots_df["cr_ratio_30d"] = snapshots_df["cr_ratio"].rolling(30).mean()
         snapshots_df["cr_ratio_7d"] = snapshots_df["cr_ratio"].rolling(7).mean()
         snapshots_df["cr_7d/30d"] = snapshots_df["cr_ratio_7d"] / snapshots_df["cr_ratio_30d"]
+
+        snapshots_df["hhi"] = snapshots_df["sum_debt_squared"]
+        snapshots_df["hhi_ideal"] = (snapshots_df["total_debt"] ** 2) / snapshots_df["n_loans"]
+        snapshots_df["hhi_ratio"] = snapshots_df["hhi"] / snapshots_df["hhi_ideal"]
+        snapshots_df["hhi_30d"] = snapshots_df["hhi"].rolling(30).mean()
+        snapshots_df["hhi_7d"] = snapshots_df["hhi"].rolling(7).mean()
+        snapshots_df["hhi_7d/30d"] = snapshots_df["hhi_7d"] / snapshots_df["hhi_30d"]
 
         current["snapshots"] = snapshots_df
 
@@ -448,11 +469,16 @@ def task_curve_generate_ratios():
 
         bad_debt_score = score_bad_debt(health["bad_debt"], market["total_debt"])
 
+        relative_borrower_distribution_score = score_with_limits(last_row["hhi_7d/30d"], 1.1, 0.9, True)
+        benchmark_borrower_distribution_score = score_with_limits(last_row["hhi_ratio"], 10, 30, True)
+
         current["scores"] = {
             "relative_cr_score": relative_cr_score,
             "absolute_cr_score": absolute_cr_score,
             "aggregate_cr_score": aggregate_cr_score,
             "bad_debt_score": bad_debt_score,
+            "relative_borrower_distribution_score": relative_borrower_distribution_score,
+            "benchmark_borrower_distribution_score": benchmark_borrower_distribution_score,
         }
 
         start = int((datetime.now() - timedelta(days=100)).timestamp())
@@ -525,6 +551,18 @@ def task_curve_generate_ratios():
         if current["controller"] == "0x4e59541306910aD6dC1daC0AC9dFB29bD9F15c67":
             btc_ohlc = current["daily_ohlc"]
 
+    with open(os.path.join(os.path.dirname(__file__), "debt_ceiling_score.csv"), "r") as f:
+        reader = csv.DictReader(f)
+        rows: list[dict] = []
+        for row in reader:
+            rows.append(row)
+        latest_debt_ceiling = max(rows, key=lambda x: int(x["timestamp"]))
+        debt_ceiling_scores = {
+            controller_asset_map[asset]: int(score)
+            for asset, score in latest_debt_ceiling.items()
+            if asset != "timestamp"
+        }
+
     for current in all_data:
         vol_45d, vol_180d, vol_ratio = calculate_volatility_ratio(current["daily_ohlc"])
         vol_ratio_score = score_with_limits(vol_ratio, 1.5, 0.75, False)
@@ -536,5 +574,7 @@ def task_curve_generate_ratios():
 
         aggregate_vol_ratio_score = (0.4 * vol_ratio_score + 0.6 * beta_score)
         current["scores"]["aggregate_vol_ratio_score"] = aggregate_vol_ratio_score
+
+        current["scores"]["debt_ceiling_score"] = debt_ceiling_scores[current["controller"]]
 
         CurveScores(controller=current["controller"], chain=chain, **current["scores"]).save()

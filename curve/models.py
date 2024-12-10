@@ -4,7 +4,7 @@ from django.db.models import JSONField, TextField, ForeignKey, CASCADE, DateTime
 from core.models import BaseModel, Chain
 
 
-class DebtCeiling(BaseModel):
+class Top5Debt(BaseModel):
     chain = ForeignKey(Chain, on_delete=CASCADE)
     controller = TextField()
     timestamp = DateTimeField()
@@ -13,7 +13,7 @@ class DebtCeiling(BaseModel):
 
     class Meta(BaseModel.Meta):
         indexes = [
-            Index(fields=['chain', 'controller', 'timestamp'], name='debt_ceiling_cmt_idx'),
+            Index(fields=['chain', 'controller', 'timestamp'], name='top5debt_cmt_idx'),
         ]
 
 
@@ -135,6 +135,9 @@ class CurveScores(BaseModel):
     vol_ratio_score = TextField()
     beta_score = TextField()
     aggregate_vol_ratio_score = TextField()
+    relative_borrower_distribution_score = TextField(default="0")
+    benchmark_borrower_distribution_score = TextField(default="0")
+    debt_ceiling_score = TextField(default="0")
 
 
 class CurveDebtCeilingScore(Model):

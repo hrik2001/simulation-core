@@ -7,22 +7,14 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F
 from django.db.models.functions import JSONObject
 from graphene import Int, String
-from pyarrow import timestamp
 
 from core.models import Chain
-from curve.models import DebtCeiling, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
+from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
     CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores
-from curve.types import DebtCeilingType, ControllerMetadataType, CurveMetricsType, AggregatedSnapshotsType, \
+from curve.tasks import controller_asset_map
+from curve.types import Top5DebtType, ControllerMetadataType, CurveMetricsType, AggregatedSnapshotsType, \
     SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType, CurveMarketsType, CurveScoresType, \
     CurveDebtCeilingScoresType
-
-controller_asset_map = {
-    "sfrxETH": "0xac3E018457B222d93114458476f3E3416Abbe38F",
-    "wstETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
-    "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
-    "WETH": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-    "tBTC": "0x18084fbA666a33d37592fA2633fD49a74DD93a88"
-}
 
 
 def _curve_market_helper(model, start_time=None, end_time=None, limit=None, sort_by=None,
@@ -77,7 +69,7 @@ def _curve_market_helper(model, start_time=None, end_time=None, limit=None, sort
 
 class Query(graphene.ObjectType):
     markets = graphene.List(CurveMarketsType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String())
-    debt_ceiling = graphene.List(DebtCeilingType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
+    top_5_debt = graphene.List(Top5DebtType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                                  chain=String(), controller=String())
     controller_metadata = graphene.List(ControllerMetadataType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                                         chain=String(), controller=String())
@@ -120,8 +112,8 @@ class Query(graphene.ObjectType):
 
         return queryset
 
-    def resolve_debt_ceiling(self, info, start_time=None, end_time=None, limit=None, sort_by=None, chain=None, controller=None):
-        queryset = DebtCeiling.objects.all()
+    def resolve_top_5_debt(self, info, start_time=None, end_time=None, limit=None, sort_by=None, chain=None, controller=None):
+        queryset = Top5Debt.objects.all()
 
         if chain is None:
             chain = "ethereum"
@@ -320,6 +312,14 @@ class Query(graphene.ObjectType):
                     "controller": controller_asset_map[key],
                     "score": str(value),
                 })
+
+        if sort_by:
+            if sort_by.startswith("-"):
+                sort_by = sort_by[1:]
+                reverse = True
+            else:
+                reverse = False
+            results = sorted(results, key=lambda x: x[sort_by], reverse=reverse)
 
         x = [CurveDebtCeilingScoresType(**r) for r in results[:limit]]
         return x

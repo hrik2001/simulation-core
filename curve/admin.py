@@ -1,9 +1,9 @@
 from django.contrib import admin
 
-from curve.models import DebtCeiling, CurveMarketSnapshot, CurveMetrics, ControllerMetadata, \
+from curve.models import Top5Debt, CurveMarketSnapshot, CurveMetrics, ControllerMetadata, \
     CurveMarketSoftLiquidations, CurveMarketLosses, CurveMarkets, CurveLlammaEvents, CurveCr, CurveLlammaTrades
 
-admin.site.register(DebtCeiling)
+admin.site.register(Top5Debt)
 admin.site.register(ControllerMetadata)
 admin.site.register(CurveMetrics)
 admin.site.register(CurveMarketSnapshot)
