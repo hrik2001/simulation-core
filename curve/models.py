@@ -137,6 +137,7 @@ class CurveScores(BaseModel):
     aggregate_vol_ratio_score = TextField()
     relative_borrower_distribution_score = TextField(default="0")
     benchmark_borrower_distribution_score = TextField(default="0")
+    aggregate_borrower_distribution_score = TextField(default="0")
     debt_ceiling_score = TextField(default="0")
 
 

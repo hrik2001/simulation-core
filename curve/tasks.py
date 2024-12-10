@@ -16,7 +16,7 @@ from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
     CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores
 from curve.scoring import score_with_limits, score_bad_debt, analyze_price_drops, calculate_volatility_ratio, \
-    calculate_recent_gk_beta
+    calculate_recent_gk_beta, score_debt_ceiling
 
 logger = logging.getLogger(__name__)
 
@@ -458,6 +458,9 @@ def task_curve_generate_ratios():
         current["min_ltv"] = min_ltv
         current["max_ltv"] = max_ltv
 
+        current["borrowable"] = market["borrowable"]
+        current["total_debt"] = market["total_debt"]
+
         health = curve_api_call(f"/v1/crvusd/liquidations/{chain_name}/{controller}/overview", params={
             "fetch_on_chain": False,
         })
@@ -471,6 +474,7 @@ def task_curve_generate_ratios():
 
         relative_borrower_distribution_score = score_with_limits(last_row["hhi_7d/30d"], 1.1, 0.9, True)
         benchmark_borrower_distribution_score = score_with_limits(last_row["hhi_ratio"], 10, 30, True)
+        aggregate_borrower_distribution_score = 0.5 * relative_borrower_distribution_score + 0.5 * benchmark_borrower_distribution_score
 
         current["scores"] = {
             "relative_cr_score": relative_cr_score,
@@ -479,6 +483,7 @@ def task_curve_generate_ratios():
             "bad_debt_score": bad_debt_score,
             "relative_borrower_distribution_score": relative_borrower_distribution_score,
             "benchmark_borrower_distribution_score": benchmark_borrower_distribution_score,
+            "aggregate_borrower_distribution_score": aggregate_borrower_distribution_score
         }
 
         start = int((datetime.now() - timedelta(days=100)).timestamp())
@@ -575,6 +580,12 @@ def task_curve_generate_ratios():
         aggregate_vol_ratio_score = (0.4 * vol_ratio_score + 0.6 * beta_score)
         current["scores"]["aggregate_vol_ratio_score"] = aggregate_vol_ratio_score
 
-        current["scores"]["debt_ceiling_score"] = debt_ceiling_scores[current["controller"]]
+        recommended_debt_ceiling = debt_ceiling_scores[current["controller"]]
+        current_debt_ceiling = current["borrowable"] + current["total_debt"]
+        current["scores"]["debt_ceiling_score"] = score_debt_ceiling(
+            recommended_debt_ceiling,
+            current_debt_ceiling,
+            current["total_debt"]
+        )
 
         CurveScores(controller=current["controller"], chain=chain, **current["scores"]).save()
