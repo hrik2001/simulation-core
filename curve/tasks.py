@@ -589,3 +589,9 @@ def task_curve_generate_ratios():
         )
 
         CurveScores(controller=current["controller"], chain=chain, **current["scores"]).save()
+
+
+@shared_task
+def task_curve_finance():
+    from curve.simuliq.scripts.main import main
+    main()

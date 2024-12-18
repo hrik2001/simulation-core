@@ -146,3 +146,12 @@ class CurveDebtCeilingScore(Model):
     controller = TextField()
     created_at = DateTimeField()
     debt_ceiling_score = TextField()
+
+
+class Simuliq(BaseModel):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    buy_token = TextField()
+    sell_token = TextField()
+    exchange_price = TextField()
+    k = TextField()
+    c = TextField()
