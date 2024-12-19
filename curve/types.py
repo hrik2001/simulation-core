@@ -63,6 +63,6 @@ class CurveDebtCeilingScoresType(ObjectType):
     score = String()
 
 
-class SimuliqType(ObjectType):
+class SimuliqType(DjangoObjectType):
     class Meta:
         model = Simuliq
