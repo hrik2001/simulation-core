@@ -10,7 +10,7 @@ from graphene import Int, String
 
 from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores
+    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, Simuliq
 from curve.tasks import controller_asset_map
 from curve.types import Top5DebtType, ControllerMetadataType, CurveMetricsType, AggregatedSnapshotsType, \
     SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType, CurveMarketsType, CurveScoresType, \
@@ -328,7 +328,7 @@ class Query(graphene.ObjectType):
 
     def resolve_simuliq(self, info, start_time=None, end_time=None, limit=None, sort_by=None, chain=None,
                         sell_token=None, buy_token=None):
-        queryset = CurveScores.objects.all()
+        queryset = Simuliq.objects.all()
         if chain is None:
             chain = "ethereum"
         chain_obj = Chain.objects.get(chain_name__iexact=chain)
