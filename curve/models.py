@@ -139,6 +139,7 @@ class CurveScores(BaseModel):
     benchmark_borrower_distribution_score = TextField(default="0")
     aggregate_borrower_distribution_score = TextField(default="0")
     debt_ceiling_score = TextField(default="0")
+    sl_responsiveness_score = TextField(default="0")
 
 
 class CurveDebtCeilingScore(Model):

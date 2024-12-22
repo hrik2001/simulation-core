@@ -1,16 +1,20 @@
 import csv
 import logging
 import os
+import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from string import Template
 
+import numpy as np
 import pandas as pd
 import requests
 from celery import shared_task
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 from web3 import HTTPProvider, Web3
+from scipy import stats
+from scipy.stats import gaussian_kde
 
 from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
@@ -426,14 +430,14 @@ def task_curve_generate_ratios():
         if not snapshots_df.empty:
             snapshots_df["dt"] = pd.to_datetime(snapshots_df["dt"])
             snapshots_df.set_index("dt", inplace=True)
-    
+
             scientific_columns = ["loan_discount", "liquidation_discount"]
             for col in scientific_columns:
                 if col in snapshots_df.columns:
                     snapshots_df[col] = snapshots_df[col].astype(float)
-    
+
             snapshots_df.sort_index(inplace=True)
-    
+
         snapshots_df["cr_ratio"] = snapshots_df["total_collateral_usd"] / snapshots_df["total_debt"]
         snapshots_df["cr_ratio_30d"] = snapshots_df["cr_ratio"].rolling(30).mean()
         snapshots_df["cr_ratio_7d"] = snapshots_df["cr_ratio"].rolling(7).mean()
@@ -543,12 +547,22 @@ def task_curve_generate_ratios():
 
         collateral_under_sl_score = score_with_limits(current_collateral_under_sl_ratio, 2, 0, False)
         relative_collateral_under_sl_score = score_with_limits(relative_collateral_under_sl_ratio, 2.5, 0.5, False, 1)
-        aggregate_collateral_under_sl_score = (0.4 * collateral_under_sl_score + 0.6 * relative_collateral_under_sl_score)
+        aggregate_collateral_under_sl_score = (
+                    0.4 * collateral_under_sl_score + 0.6 * relative_collateral_under_sl_score)
 
         current["scores"]["collateral_under_sl_score"] = collateral_under_sl_score
         current["scores"]["relative_collateral_under_sl_score"] = relative_collateral_under_sl_score
         current["scores"]["aggregate_collateral_under_sl_score"] = aggregate_collateral_under_sl_score
 
+        try:
+            sl_score = calculate_sl_score(controller)
+        except Exception:
+            print(traceback.format_exc())
+            sl_score = 0.0
+
+        current["scores"]["sl_responsiveness_score"] = sl_score
+
+        print(current)
         all_data.append(current)
 
     btc_ohlc = None
@@ -595,3 +609,152 @@ def task_curve_generate_ratios():
 def task_curve_finance():
     from curve.simuliq.scripts.main import main
     main()
+
+
+def analyze_distributions_combined(reference_df, test_df, column='deviation_product', bins=100):
+    """
+    Analyzes distributions combining both spread analysis and peak location analysis.
+
+    Parameters:
+    reference_df: DataFrame with reference distribution
+    test_df: DataFrame with test distribution
+    column: column name to analyze
+    bins: number of bins for histogram
+
+    Returns:
+    dict: Combined analysis results and scores
+    """
+    # Get data and handle extreme values
+    ref_data = reference_df[column].values
+    test_data = test_df[column].values
+
+    # Handle infinities and NaNs
+    def clean_extreme_values(data):
+        # Get max value that's not inf
+        max_val = np.nanmax(data[~np.isinf(data)])
+        min_val = np.nanmin(data[~np.isinf(data)])
+
+        # Replace positive infinities with max value
+        data = np.where(data == np.inf, max_val, data)
+        # Replace negative infinities with min value
+        data = np.where(data == -np.inf, min_val, data)
+        # Replace NaNs with 0
+        data = np.nan_to_num(data, nan=0.0)
+
+        return data
+
+    ref_data = clean_extreme_values(ref_data)
+    test_data = clean_extreme_values(test_data)
+
+    # Calculate reference statistics
+    ref_std = np.std(ref_data)
+
+    # Spread Analysis
+    spread_metrics = {
+        'reference': {
+            'std': np.std(ref_data),
+            'iqr': stats.iqr(ref_data),
+            'range': np.ptp(ref_data)
+        },
+        'test': {
+            'std': np.std(test_data),
+            'iqr': stats.iqr(test_data),
+            'range': np.ptp(test_data)
+        }
+    }
+
+    def spread_ratio_score(test_val, ref_val):
+        ratio = test_val / ref_val if ref_val != 0 else float('inf')
+
+        if ratio <= 1:  # Test spread is tighter than reference
+            # Score from 50 to 100 as ratio goes from 1 to 0
+            return 50 + (50 * (1 - ratio))
+        else:  # Test spread is wider than reference
+            # Score from 50 to 0 as ratio goes from 1 to 25
+            return max(0, 50 * (25 - ratio) / 24)
+
+    spread_score = np.mean([
+        spread_ratio_score(spread_metrics['test']['std'], spread_metrics['reference']['std']),
+        spread_ratio_score(spread_metrics['test']['iqr'], spread_metrics['reference']['iqr']),
+        spread_ratio_score(spread_metrics['test']['range'], spread_metrics['reference']['range'])
+    ])
+
+    # Peak Analysis
+    def find_distribution_peak(data):
+        kde = gaussian_kde(data)
+        x_range = np.linspace(np.min(data), np.max(data), 1000)
+        density = kde(x_range)
+        peak_idx = np.argmax(density)
+        return x_range[peak_idx]
+
+    ref_peak = find_distribution_peak(ref_data)
+    test_peak = find_distribution_peak(test_data)
+
+    # Calculate peak difference in terms of reference standard deviations
+    peak_diff_in_stds = abs(test_peak - ref_peak) / ref_std
+    peak_score = 100 * np.exp(-peak_diff_in_stds * 5)
+
+    # Calculate overall score
+    overall_score = (spread_score + peak_score) / 2
+
+    output_dict = {
+        'spread_analysis': {
+            'score': spread_score,
+            'metrics': spread_metrics
+        },
+        'peak_analysis': {
+            'score': peak_score,
+            'metrics': {
+                'reference_peak': ref_peak,
+                'test_peak': test_peak,
+                'difference_in_std_units': peak_diff_in_stds,
+                'reference_std': ref_std,
+                'absolute_difference': abs(test_peak - ref_peak)
+            }
+        },
+        'overall_score': overall_score
+    }
+
+    return output_dict
+
+
+def calculate_sl_score(controller):
+    url = f"https://api.curvemonitor.com/mintMarketRiskInfo/{controller}"
+    response = requests.get(url)
+    response.raise_for_status()
+
+    data = []
+    for x in response.json():
+        data.append({
+            "blockNumber": x["blockNumber"],
+            "amountBorrowableToken": float(x["amountBorrowableToken"]),
+            "amountCollatToken": float(x["amountCollatToken"]),
+            "oraclePrice": float(x["oraclePrice"]),
+            "get_p": float(x["get_p"]),
+            "amountCollatTokenInUsd": float(x["amountCollatTokenInUsd"]),
+            "amountFullInBandInUsd": float(x["amountFullInBandInUsd"]),
+        })
+    df = pd.DataFrame(data)
+
+    df["diff"] = (df["get_p"] - df["oraclePrice"])
+    df["crvUSD"] = df["amountBorrowableToken"]
+    df["collateral"] = df["amountCollatTokenInUsd"]
+    df["deviation_product"] = np.where(
+        df["diff"] > 0,
+        df["crvUSD"] * df["diff"],
+        np.where(
+            df["diff"] < 0,
+            df["collateral"] * df["diff"],
+            0
+        )
+    )
+
+    count = len(df[df["deviation_product"] == 0])
+    fraction = count / len(df)
+
+    if fraction >= 0.85:
+        return 50.0
+
+    test = df.head(len(df) // 3).copy(deep=True)
+    output = analyze_distributions_combined(df, test)
+    return output["overall_score"]
