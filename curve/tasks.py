@@ -561,8 +561,6 @@ def task_curve_generate_ratios():
             sl_score = 0.0
 
         current["scores"]["sl_responsiveness_score"] = sl_score
-
-        print(current)
         all_data.append(current)
 
     btc_ohlc = None
@@ -748,13 +746,13 @@ def calculate_sl_score(controller):
             0
         )
     )
+    test = df.head(len(df) // 3).copy(deep=True)
 
-    count = len(df[df["deviation_product"] == 0])
-    fraction = count / len(df)
+    count = len(test[test["deviation_product"] == 0])
+    fraction = count / len(test)
 
     if fraction >= 0.85:
         return 50.0
 
-    test = df.head(len(df) // 3).copy(deep=True)
     output = analyze_distributions_combined(df, test)
     return output["overall_score"]
