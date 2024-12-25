@@ -634,7 +634,7 @@ def task_curve_generate_ratios():
         current["score_details"]["recommended_debt_ceiling"] = debt_ceiling_scores[current["controller"]]
 
         # Save detailed metrics
-        CurveScoresDetail(chain=chain, controller=current["controller"], **current["details"]).save()
+        CurveScoresDetail(chain=chain, controller=current["controller"], **current["score_details"]).save()
         CurveScores(controller=current["controller"], chain=chain, **current["scores"]).save()
 
 
