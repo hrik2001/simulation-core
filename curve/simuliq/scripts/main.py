@@ -1,13 +1,14 @@
 import os
 from itertools import product
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Optional
 
 import pandas as pd
+import requests
 from tqdm import tqdm
 
 from core.models import Chain
 from curve.models import Simuliq
-from curve.simuliq.instances.curve_mint_market_instance import market_objects_dict
+from curve.simuliq.models.curve_protocol import CurveMintMarketDTO
 from curve.simuliq.models.token import TokenDTO
 from curve.simuliq.models.trade_pair import PairDTO
 from curve.simuliq.scripts.process_stored_data_aave import create_asset_mapping, create_health_ratio_data, \
@@ -137,6 +138,58 @@ def create_and_store_pair(chain, aave_asset_object_dict, sell_token, buy_token, 
     return 0
 
 
+def fetch_curve_market_data(
+        network: str = "ethereum"
+) -> Optional[Dict]:
+    """
+    Fetch market data from Curve Finance API.
+
+    Args:
+        network (str): Network name (default: "ethereum")
+        page (int): Page number for pagination (default: 1)
+        per_page (int): Number of items per page (default: 10)
+        fetch_on_chain (bool): Whether to fetch on-chain data (default: False)
+
+    Returns:
+        Optional[Dict]: JSON response from the API or None if request fails
+    """
+
+    base_url = "https://prices.curve.fi/v1/crvusd/markets"
+
+    try:
+        # Construct URL with query parameters
+        url = f"{base_url}/{network}"
+        params = {}
+
+        # Make the request
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()  # Raise exception for non-200 status codes
+
+        market_data = response.json()['data']
+
+        market_objects_dict = {}
+
+        chain = Chain.objects.get(chain_name__iexact="ethereum")
+
+        for market in market_data:
+            if market['borrowable'] > 0:
+                asset = market['collateral_token']['symbol']
+                market_objects_dict[asset] = CurveMintMarketDTO(
+                    chain=chain,
+                    protocol="curve",
+                    address=market['address'],
+                    llamma=market['llamma'],
+                    collateral_token_symbol=market['collateral_token']['symbol'],
+                    collateral_token_address=market['collateral_token']['address'],
+                    borrow_token_symbol=market['stablecoin_token']['symbol'],
+                    borrow_token_address=market['stablecoin_token']['address']
+                )
+
+        return market_objects_dict
+    except requests.RequestException as e:
+        return None
+
+
 def main():
     AAVE_EMODE_LT = 0.95
     ASSET_UNDER_CONSIDERATION = "WETH"
@@ -174,7 +227,7 @@ def main():
         AAVE_EMODE_LT
     )
 
-    market = market_objects_dict[ASSET_UNDER_CONSIDERATION_CURVE]
+    market = fetch_curve_market_data()[ASSET_UNDER_CONSIDERATION_CURVE]
     df = market.get_user_position_data()
     output_liq_df, output_liq_df_raw = market.compute_price_for_max_hard_liq(df, 0.80)
     curve_collateral, curve_debt = get_curve_liquidation_data(output_liq_df, PRICE_ASSUMPTION, ASSET_UNDER_CONSIDERATION_CURVE)

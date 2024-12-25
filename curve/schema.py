@@ -10,11 +10,12 @@ from graphene import Int, String
 
 from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, Simuliq
+    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, Simuliq, \
+    AaveUserData
 from curve.tasks import controller_asset_map
 from curve.types import Top5DebtType, ControllerMetadataType, CurveMetricsType, AggregatedSnapshotsType, \
     SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType, CurveMarketsType, CurveScoresType, \
-    CurveDebtCeilingScoresType, SimuliqType
+    CurveDebtCeilingScoresType, SimuliqType, AaveUserDataType
 
 
 def _curve_market_helper(model, start_time=None, end_time=None, limit=None, sort_by=None,
@@ -92,6 +93,8 @@ class Query(graphene.ObjectType):
                                        chain=String(), controller=String())
     simuliq = graphene.List(SimuliqType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(), chain=String(),
                             sell_token=String(), buy_token=String())
+    aave_users = graphene.List(AaveUserDataType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
+                               chain=String())
 
     def resolve_markets(self, info, start_time=None, end_time=None, limit=None, sort_by=None, chain=None):
         queryset = CurveMarkets.objects.all()
@@ -338,6 +341,25 @@ class Query(graphene.ObjectType):
             queryset = queryset.filter(sell_token__iexact=sell_token)
         if buy_token:
             queryset = queryset.filter(buy_token__iexact=buy_token)
+        if start_time:
+            queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(created_at__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('created_at')
+        if limit:
+            queryset = queryset[:limit]
+        return queryset
+
+    def resolve_aave_users(self, info, start_time=None, end_time=None, limit=None, sort_by=None, chain=None):
+        queryset = AaveUserData.objects.all()
+        if chain is None:
+            chain = "ethereum"
+        chain_obj = Chain.objects.get(chain_name__iexact=chain)
+        queryset = queryset.filter(chain=chain_obj)
+
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
         if end_time:

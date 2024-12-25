@@ -18,9 +18,10 @@ from scipy.stats import gaussian_kde
 
 from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores
+    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, AaveUserData
 from curve.scoring import score_with_limits, score_bad_debt, analyze_price_drops, calculate_volatility_ratio, \
     calculate_recent_gk_beta, score_debt_ceiling
+from curve.simuliq.models.aave_protocol import AaveProtocolDTO
 
 logger = logging.getLogger(__name__)
 
@@ -756,3 +757,20 @@ def calculate_sl_score(controller):
 
     output = analyze_distributions_combined(df, test)
     return output["overall_score"]
+
+
+@shared_task
+def task_aave_user_data_indexing():
+    chain = Chain.objects.get(chain_name__iexact="ethereum")
+    protocol_dto = AaveProtocolDTO(
+        chain=chain,
+        protocol="aave",
+        batch_data_provider_address="0x5c438e0e82607a3a07e6726b10e200739635895b",
+        aave_pool_address="0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+        aave_data_provider_address="0x41393e5e337606dc3821075Af65AeE84D7688CBD",
+        holder_query_id=4101003
+    )
+    pd.set_option('display.max_columns', None)
+    df = protocol_dto.get_aave_supported_asset_data()
+    user_df = protocol_dto.get_user_position_data(df)
+    AaveUserData(chain=chain, data=user_df.to_json(orient='records')).save()

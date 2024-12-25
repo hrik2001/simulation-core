@@ -9,7 +9,7 @@ class ProtocolDTO:
     Data Transfer Object to store relevant protocol data.
     
     Attributes:
-        chain (ChainDTO): The chain information
+        chain (Chain): The chain information
         protocol (str): The protocol name
     """
 

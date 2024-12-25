@@ -156,3 +156,8 @@ class Simuliq(BaseModel):
     exchange_price = TextField()
     k = TextField()
     c = TextField()
+
+
+class AaveUserData(BaseModel):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    data = JSONField()

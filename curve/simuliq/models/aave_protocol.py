@@ -2,18 +2,17 @@ from dataclasses import dataclass
 
 from web3 import Web3, HTTPProvider
 import pandas as pd
-from requests import get, post
+from requests import get
 import time
 import os
-from dotenv import load_dotenv
 from typing import List, Dict, Optional, Union
-from functools import lru_cache
 import logging
 
 from dune_client.client import DuneClient
 from dune_client.query import QueryBase
 
-from curve.simuliq.models.chain import RateLimitExceededException
+from curve.simuliq.models.protocol import ProtocolDTO
+from curve.simuliq.models.token import RateLimitExceededException
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -202,21 +201,21 @@ class AaveProtocolDTO(ProtocolDTO):
             self.aave_data_provider_address = Web3.to_checksum_address(self.aave_data_provider_address)
         # if self.rpc_url:
         #     self.w3 = Web3(HTTPProvider(self.rpc_url))
-        logger.info(f"Initialized Aave Protocol DTO for network: {self.chain.chain}")
+        logger.info(f"Initialized Aave Protocol DTO for network: {self.chain.chain_name}")
 
     def __repr__(self):
         """Return a string representation of the Aave Protocol DTO instance."""
-        return f"Aave Protocol DTO(network={self.chain.chain})"
+        return f"Aave Protocol DTO(network={self.chain.chain_name})"
 
 
     def get_reserve_list(self, block_number: Optional[int] = None) -> List[Dict[str, Union[str, int]]]:
-        if not self.chain.rpc_url:
-            raise ValueError(f"RPC URL is not set for {self.chain.chain}")
+        if not self.chain.rpc:
+            raise ValueError(f"RPC URL is not set for {self.chain.chain_name}")
         if not self.aave_data_provider_address:
-            raise ValueError(f"Aave data provider address is not set for {self.chain.chain}")
+            raise ValueError(f"Aave data provider address is not set for {self.chain.chain_name}")
         
         try:
-            W3 = Web3(HTTPProvider(self.chain.rpc_url))
+            W3 = Web3(HTTPProvider(self.chain.rpc))
             contract = W3.eth.contract(address=Web3.to_checksum_address(self.aave_data_provider_address), abi=AAVE_DATA_PROVIDER_ABI)
             contract_function = getattr(contract.functions, "getAllReservesTokens")
             
@@ -230,13 +229,13 @@ class AaveProtocolDTO(ProtocolDTO):
             raise Exception(f'Error querying smart contract: {e}')
     
     def get_asset_data(self, asset: str, block_number: Optional[int] = None) -> Dict[str, Union[str, int]]:
-        if not self.chain.rpc_url:
-            raise ValueError(f"RPC URL is not set for {self.chain.chain}")
+        if not self.chain.rpc:
+            raise ValueError(f"RPC URL is not set for {self.chain.chain_name}")
         if not self.aave_pool_address:
-            raise ValueError(f"Aave pool address is not set for {self.chain.chain}")
+            raise ValueError(f"Aave pool address is not set for {self.chain.chain_name}")
         
         try:
-            W3 = Web3(HTTPProvider(self.chain.rpc_url))
+            W3 = Web3(HTTPProvider(self.chain.rpc))
             asset = Web3.to_checksum_address(asset)
             contract = W3.eth.contract(address=Web3.to_checksum_address(self.aave_pool_address), abi=ABI_AAVE_POOL)
             contract_function = getattr(contract.functions, "getReserveData")
@@ -252,13 +251,13 @@ class AaveProtocolDTO(ProtocolDTO):
         
     
     def get_emode_config(self, block_number: Optional[int] = None) -> Dict[str, Union[str, int]]:
-        if not self.chain.rpc_url:
-            raise ValueError(f"RPC URL is not set for {self.chain.chain}")
+        if not self.chain.rpc:
+            raise ValueError(f"RPC URL is not set for {self.chain.chain_name}")
         if not self.aave_pool_address:
-            raise ValueError(f"Aave pool address is not set for {self.chain.chain}")
+            raise ValueError(f"Aave pool address is not set for {self.chain.chain_name}")
         
         try:
-            W3 = Web3(HTTPProvider(self.chain.rpc_url))
+            W3 = Web3(HTTPProvider(self.chain.rpc))
             contract = W3.eth.contract(address=Web3.to_checksum_address(self.aave_pool_address), abi=ABI_AAVE_POOL)
             contract_function = getattr(contract.functions, "getEModeCategoryCollateralConfig")
             
@@ -273,15 +272,15 @@ class AaveProtocolDTO(ProtocolDTO):
         
     
     def get_user_balance(self, user_address_list, asset, block_number=None):
-        if not self.chain.rpc_url:
-            raise ValueError(f"RPC URL is not set for {self.chain.chain}")
+        if not self.chain.rpc:
+            raise ValueError(f"RPC URL is not set for {self.chain.chain_name}")
         if not self.batch_data_provider_address:
-            raise ValueError(f"Batch data provider address is not set for {self.chain.chain}")
+            raise ValueError(f"Batch data provider address is not set for {self.chain.chain_name}")
         
         user_address_list = [Web3.to_checksum_address(user) for user in user_address_list]
     
         try:
-            W3 = Web3(HTTPProvider(self.chain.rpc_url))
+            W3 = Web3(HTTPProvider(self.chain.rpc))
             contract = W3.eth.contract(address=Web3.to_checksum_address(self.batch_data_provider_address), abi=BATCH_DATA_PROVIDER_ABI)
             contract_function = getattr(contract.functions, "checkBalances")
             
@@ -296,11 +295,11 @@ class AaveProtocolDTO(ProtocolDTO):
     
     
     def get_supply(self, asset, block_number=None):
-        if not self.chain.rpc_url:
-            raise ValueError(f"RPC URL is not set for {self.chain.chain}")
+        if not self.chain.rpc:
+            raise ValueError(f"RPC URL is not set for {self.chain.chain_name}")
     
         try:
-            W3 = Web3(HTTPProvider(self.chain.rpc_url))
+            W3 = Web3(HTTPProvider(self.chain.rpc))
             contract = W3.eth.contract(address=Web3.to_checksum_address(asset), abi=SUPPLY_ABI)
             contract_function = getattr(contract.functions, "totalSupply")
             
@@ -315,15 +314,15 @@ class AaveProtocolDTO(ProtocolDTO):
     
     
     def get_emode(self, user_list, block_number=None):
-        if not self.chain.rpc_url:
-            raise ValueError(f"RPC URL is not set for {self.chain.chain}")
+        if not self.chain.rpc:
+            raise ValueError(f"RPC URL is not set for {self.chain.chain_name}")
         if not self.batch_data_provider_address:
-            raise ValueError(f"Batch data provider address is not set for {self.chain.chain}")
+            raise ValueError(f"Batch data provider address is not set for {self.chain.chain_name}")
         
         user_list = [Web3.to_checksum_address(user) for user in user_list]
     
         try:
-            W3 = Web3(HTTPProvider(self.chain.rpc_url))
+            W3 = Web3(HTTPProvider(self.chain.rpc))
             contract = W3.eth.contract(address=Web3.to_checksum_address(self.batch_data_provider_address), abi=BATCH_DATA_PROVIDER_ABI)
             contract_function = getattr(contract.functions, "batchUserEMode")
             
@@ -348,7 +347,7 @@ class AaveProtocolDTO(ProtocolDTO):
             Optional[float]: The current price of the token or None if an error occurs.
         """
         base_url = "https://coins.llama.fi/prices/current"
-        url = f"{base_url}/{self.chain.chain}:{token_address}?searchWidth=12h"
+        url = f"{base_url}/{self.chain.chain_name}:{token_address}?searchWidth=12h"
         
         response = get(url)
         if response.status_code == 429:
@@ -357,10 +356,9 @@ class AaveProtocolDTO(ProtocolDTO):
         response.raise_for_status()  # Raise an exception for HTTP errors
 
         data = response.json()
-        price_info = data.get('coins', {}).get(f'{self.chain.chain}:{token_address}', {})
+        price_info = data.get('coins', {}).get(f'{self.chain.chain_name}:{token_address}', {})
         return price_info.get('price')
 
-    
     def get_aave_supported_asset_data(self) -> pd.DataFrame:
         asset_list = self.get_reserve_list()
         
@@ -396,12 +394,12 @@ class AaveProtocolDTO(ProtocolDTO):
     
     def get_aave_supported_asset_data_to_csv(self) -> None:
         data_df = self.get_aave_supported_asset_data()
-        data_df.to_csv(f'aave_supported_asset_data_{self.chain.chain}_{TIME_STAMP}.csv', index=False)
+        data_df.to_csv(f'aave_supported_asset_data_{self.chain.chain_name}_{TIME_STAMP}.csv', index=False)
     
     
     def get_users(self) -> pd.DataFrame:
         if self.holder_query_id is None:
-            raise ValueError(f"Holder query ID is not set for {self.chain.chain}")
+            raise ValueError(f"Holder query ID is not set for {self.chain.chain_name}")
         
         dune = DuneClient(
             api_key=os.getenv('DUNE_API_KEY'),
@@ -423,7 +421,7 @@ class AaveProtocolDTO(ProtocolDTO):
     
     def get_users_to_csv(self) -> None:
         data_df = self.get_users()
-        data_df.to_csv(f'user_data_{self.chain.chain}_{TIME_STAMP}.csv', index=False)
+        data_df.to_csv(f'user_data_{self.chain.chain_name}_{TIME_STAMP}.csv', index=False)
     
     # def get_user_position_data(self, users_list, asset_data) -> pd.DataFrame:
     
@@ -497,7 +495,7 @@ class AaveProtocolDTO(ProtocolDTO):
     
     def get_user_position_data_to_csv(self) -> None:
         data_df = self.get_user_position_data()
-        data_df.to_csv(f'user_position_data_{self.chain.chain}_{TIME_STAMP}.csv', index=False)
+        data_df.to_csv(f'user_position_data_{self.chain.chain_name}_{TIME_STAMP}.csv', index=False)
         
         
     def get_user_position_data_optimized(self, users_list, asset_data: pd.DataFrame) -> pd.DataFrame:
@@ -522,4 +520,4 @@ class AaveProtocolDTO(ProtocolDTO):
     
     def get_user_position_data_optimized_to_csv(self) -> None:
         data_df = self.get_user_position_data_optimized()
-        data_df.to_csv(f'user_position_data_optimized_{self.chain.chain}_{TIME_STAMP}.csv', index=False)
+        data_df.to_csv(f'user_position_data_optimized_{self.chain.chain_name}_{TIME_STAMP}.csv', index=False)
