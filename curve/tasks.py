@@ -501,7 +501,7 @@ def task_curve_generate_ratios():
             "hhi_ratio": last_row["hhi_ratio"],
             "hhi_7d": last_row["hhi_7d"],
             "hhi_30d": last_row["hhi_30d"],
-            "hhi_7d/30d": last_row["hhi_7d/30d"],
+            "hhi_7d_30d_ratio": last_row["hhi_7d/30d"],
         }
 
         start = int((datetime.now() - timedelta(days=100)).timestamp())
@@ -624,9 +624,9 @@ def task_curve_generate_ratios():
             current["total_debt"]
         )
 
-        current["score_details"]["vol_45d"] = vol_45d
-        current["score_details"]["vol_180d"] = vol_180d
-        current["score_details"]["vol_ratio"] = vol_ratio
+        current["score_details"]["volatility_45d"] = vol_45d
+        current["score_details"]["volatility_180d"] = vol_180d
+        current["score_details"]["volatility_ratio"] = vol_ratio
         current["score_details"]["beta"] = beta
         current["score_details"]["total_debt"] = current["total_debt"]
         current["score_details"]["borrowable"] = current["borrowable"]
