@@ -142,6 +142,49 @@ class CurveScores(BaseModel):
     sl_responsiveness_score = TextField(default="0")
 
 
+class CurveScoresDetail(BaseModel):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    controller = TextField()
+    
+    # CR (Collateral Ratio) details
+    cr_ratio = TextField(default="0")
+    cr_ratio_7d = TextField(default="0")
+    cr_ratio_30d = TextField(default="0")
+    cr_7d_30d_ratio = TextField(default="0")
+    
+    # HHI (Borrower Distribution) details
+    hhi = TextField(default="0")
+    hhi_ideal = TextField(default="0")
+    hhi_ratio = TextField(default="0")
+    hhi_7d = TextField(default="0")
+    hhi_30d = TextField(default="0")
+    hhi_7d_30d_ratio = TextField(default="0")
+    
+    # Price drop probabilities
+    prob_drop1 = TextField(default="0")  # 7.5% drop probability
+    prob_drop2 = TextField(default="0")  # 15% drop probability
+    
+    # Soft liquidation details
+    debt_under_sl_ratio = TextField(default="0")
+    debt_under_sl_ratio_7d = TextField(default="0")
+    debt_under_sl_ratio_30d = TextField(default="0")
+    collateral_under_sl_ratio = TextField(default="0")
+    collateral_under_sl_ratio_7d = TextField(default="0")
+    collateral_under_sl_ratio_30d = TextField(default="0")
+    
+    # Volatility details
+    volatility_45d = TextField(default="0")
+    volatility_180d = TextField(default="0")
+    volatility_ratio = TextField(default="0")
+    beta = TextField(default="0")
+    
+    # Market details
+    total_debt = TextField(default="0")
+    borrowable = TextField(default="0")
+    bad_debt = TextField(default="0")
+    recommended_debt_ceiling = TextField(default="0")
+    
+
 class CurveDebtCeilingScore(Model):
     chain = ForeignKey(Chain, on_delete=CASCADE)
     controller = TextField()

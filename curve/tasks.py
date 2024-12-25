@@ -18,7 +18,8 @@ from scipy.stats import gaussian_kde
 
 from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
-    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, AaveUserData
+    CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, \
+    CurveScoresDetail, AaveUserData
 from curve.scoring import score_with_limits, score_bad_debt, analyze_price_drops, calculate_volatility_ratio, \
     calculate_recent_gk_beta, score_debt_ceiling
 from curve.simuliq.models.aave_protocol import AaveProtocolDTO
@@ -490,6 +491,18 @@ def task_curve_generate_ratios():
             "benchmark_borrower_distribution_score": benchmark_borrower_distribution_score,
             "aggregate_borrower_distribution_score": aggregate_borrower_distribution_score
         }
+        current["score_details"] = {
+            "cr_ratio": last_row["cr_ratio"],
+            "cr_ratio_7d": last_row["cr_ratio_7d"],
+            "cr_ratio_30d": last_row["cr_ratio_30d"],
+            "cr_7d_30d_ratio": last_row["cr_7d/30d"],
+            "hhi": last_row["hhi"],
+            "hhi_ideal": last_row["hhi_ideal"],
+            "hhi_ratio": last_row["hhi_ratio"],
+            "hhi_7d": last_row["hhi_7d"],
+            "hhi_30d": last_row["hhi_30d"],
+            "hhi_7d/30d": last_row["hhi_7d/30d"],
+        }
 
         start = int((datetime.now() - timedelta(days=100)).timestamp())
         coin = f"ethereum:{market['collateral_token']['address']}"
@@ -518,6 +531,9 @@ def task_curve_generate_ratios():
         current["scores"]["prob_drop1_score"] = prob_drop1_score
         current["scores"]["prob_drop2_score"] = prob_drop2_score
         current["scores"]["aggregate_prob_drop_score"] = aggregate_prob_drop_score
+
+        current["score_details"]["prob_drop1"] = prob_drop1
+        current["score_details"]["prob_drop2"] = prob_drop2
 
         end = datetime.now()
         start = end - timedelta(days=180)
@@ -554,6 +570,13 @@ def task_curve_generate_ratios():
         current["scores"]["collateral_under_sl_score"] = collateral_under_sl_score
         current["scores"]["relative_collateral_under_sl_score"] = relative_collateral_under_sl_score
         current["scores"]["aggregate_collateral_under_sl_score"] = aggregate_collateral_under_sl_score
+
+        current["score_details"]["debt_under_sl_ratio"] = latest_row["debt_under_sl_ratio"]
+        current["score_details"]["debt_under_sl_ratio_7d"] = latest_row["debt_under_sl_ratio_7d"]
+        current["score_details"]["debt_under_sl_ratio_30d"] = latest_row["debt_under_sl_ratio_30d"]
+        current["score_details"]["collateral_under_sl_ratio"] = latest_row["collateral_under_sl_ratio"]
+        current["score_details"]["collateral_under_sl_ratio_7d"] = latest_row["collateral_under_sl_ratio_7d"]
+        current["score_details"]["collateral_under_sl_ratio_30d"] = latest_row["collateral_under_sl_ratio_30d"]
 
         try:
             sl_score = calculate_sl_score(controller)
@@ -601,6 +624,17 @@ def task_curve_generate_ratios():
             current["total_debt"]
         )
 
+        current["score_details"]["vol_45d"] = vol_45d
+        current["score_details"]["vol_180d"] = vol_180d
+        current["score_details"]["vol_ratio"] = vol_ratio
+        current["score_details"]["beta"] = beta
+        current["score_details"]["total_debt"] = current["total_debt"]
+        current["score_details"]["borrowable"] = current["borrowable"]
+        current["score_details"]["bad_debt"] = current["health"]["bad_debt"]
+        current["score_details"]["recommended_debt_ceiling"] = debt_ceiling_scores[current["controller"]]
+
+        # Save detailed metrics
+        CurveScoresDetail(chain=chain, controller=current["controller"], **current["details"]).save()
         CurveScores(controller=current["controller"], chain=chain, **current["scores"]).save()
 
 

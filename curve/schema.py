@@ -11,11 +11,11 @@ from graphene import Int, String
 from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
     CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, Simuliq, \
-    AaveUserData
+    CurveScoresDetail, AaveUserData
 from curve.tasks import controller_asset_map
 from curve.types import Top5DebtType, ControllerMetadataType, CurveMetricsType, AggregatedSnapshotsType, \
     SnapshotType, CurveLlammaTradesType, CurveLlammaEventsType, CurveCrType, CurveMarketsType, CurveScoresType, \
-    CurveDebtCeilingScoresType, SimuliqType, AaveUserDataType
+    CurveDebtCeilingScoresType, SimuliqType, CurveScoresDetailType, AaveUserDataType
 
 
 def _curve_market_helper(model, start_time=None, end_time=None, limit=None, sort_by=None,
@@ -89,6 +89,15 @@ class Query(graphene.ObjectType):
                        chain=String(), controller=String())
     scores = graphene.List(CurveScoresType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                            chain=String(), controller=String())
+    scores_detail = graphene.List(
+        CurveScoresDetailType,
+        start_time=Int(),
+        end_time=Int(),
+        limit=Int(),
+        sort_by=String(),
+        chain=String(),
+        controller=String()
+    )
     debt_ceiling_score = graphene.List(CurveDebtCeilingScoresType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(),
                                        chain=String(), controller=String())
     simuliq = graphene.List(SimuliqType, start_time=Int(), end_time=Int(), limit=Int(), sort_by=String(), chain=String(),
@@ -272,6 +281,29 @@ class Query(graphene.ObjectType):
         if controller:
             queryset = queryset.filter(controller__iexact=controller)
 
+        if start_time:
+            queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
+        if end_time:
+            queryset = queryset.filter(created_at__lte=datetime.fromtimestamp(end_time))
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('created_at')
+        if limit:
+            queryset = queryset[:limit]
+        return queryset
+
+
+    def resolve_scores_detail(self, info, start_time=None, end_time=None, limit=None, sort_by=None,
+                            chain=None, controller=None):
+        queryset = CurveScoresDetail.objects.all()
+        if chain is None:
+            chain = "ethereum"
+        chain_obj = Chain.objects.get(chain_name__iexact=chain)
+        queryset = queryset.filter(chain=chain_obj)
+
+        if controller:
+            queryset = queryset.filter(controller__iexact=controller)
         if start_time:
             queryset = queryset.filter(created_at__gte=datetime.fromtimestamp(start_time))
         if end_time:
