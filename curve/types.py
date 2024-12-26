@@ -2,7 +2,7 @@ from graphene import ObjectType, JSONString, String, List, Int
 from graphene_django import DjangoObjectType
 
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveLlammaTrades, CurveLlammaEvents, CurveCr, \
-    CurveMarkets, CurveScores, Simuliq, CurveScoresDetail, AaveUserData
+    CurveMarkets, CurveScores, Simuliq, CurveScoresDetail, AaveUserData, CurveUserData
 
 
 class CurveMarketsType(DjangoObjectType):
@@ -76,3 +76,8 @@ class SimuliqType(DjangoObjectType):
 class AaveUserDataType(DjangoObjectType):
     class Meta:
         model = AaveUserData
+
+
+class CurveUserDataType(DjangoObjectType):
+    class Meta:
+        model = CurveUserData

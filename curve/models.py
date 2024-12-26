@@ -8,13 +8,18 @@ class Top5Debt(BaseModel):
     chain = ForeignKey(Chain, on_delete=CASCADE)
     controller = TextField()
     timestamp = DateTimeField()
-    data = JSONField()
     top5_debt = TextField(default="0")
 
     class Meta(BaseModel.Meta):
         indexes = [
             Index(fields=['chain', 'controller', 'timestamp'], name='top5debt_cmt_idx'),
         ]
+
+
+class CurveUserData(BaseModel):
+    chain = ForeignKey(Chain, on_delete=CASCADE)
+    controller = TextField()
+    data = JSONField()
 
 
 class ControllerMetadata(BaseModel):

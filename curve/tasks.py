@@ -19,7 +19,7 @@ from scipy.stats import gaussian_kde
 from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
     CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, \
-    CurveScoresDetail, AaveUserData
+    CurveScoresDetail, AaveUserData, CurveUserData
 from curve.scoring import score_with_limits, score_bad_debt, analyze_price_drops, calculate_volatility_ratio, \
     calculate_recent_gk_beta, score_debt_ceiling
 from curve.simuliq.models.aave_protocol import AaveProtocolDTO
@@ -125,7 +125,7 @@ def curve_api_call(path, params=None):
 
 
 @shared_task
-def task_curve__update_debt_ceiling():
+def task_curve_update_top5debt_and_users():
     chain = Chain.objects.get(chain_name__iexact="ethereum")
     chain_name = chain.chain_name.lower()
     timestamp = datetime.now(tz=timezone.utc)
@@ -163,14 +163,14 @@ def task_curve__update_debt_ceiling():
         user_data.sort(key=lambda x: x["debt"])
         top5_idx = int(len(user_data) * (1 - 0.05))
         top5_debt = sum([x["debt"] for x in user_data[top5_idx:]])
-        market["users"] = user_data
 
-        Top5Debt(timestamp=timestamp, chain=chain, controller=controller, data=market, top5_debt=top5_debt).save()
+        Top5Debt(timestamp=timestamp, chain=chain, controller=controller, top5_debt=top5_debt).save()
+        CurveUserData(chain=chain, controller=controller, data=user_data).save()
 
     all_user_data.sort(key=lambda x: x["debt"])
     top5_idx = int(len(all_user_data) * (1 - 0.05))
     top5_debt = sum([x["debt"] for x in all_user_data[top5_idx:]])
-    Top5Debt(timestamp=timestamp, chain=chain, controller="overall", data={}, top5_debt=top5_debt).save()
+    Top5Debt(timestamp=timestamp, chain=chain, controller="overall", top5_debt=top5_debt).save()
 
 
 @shared_task
