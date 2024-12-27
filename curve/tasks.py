@@ -16,6 +16,7 @@ from web3 import HTTPProvider, Web3
 from scipy import stats
 from scipy.stats import gaussian_kde
 
+from arcadia.utils import weth_address
 from core.models import Chain
 from curve.models import Top5Debt, ControllerMetadata, CurveMetrics, CurveMarketSnapshot, CurveLlammaTrades, \
     CurveLlammaEvents, CurveCr, CurveMarkets, CurveMarketSoftLiquidations, CurveMarketLosses, CurveScores, \
@@ -407,6 +408,37 @@ def task_curve__update_curve_usd_losses():
     )
 
 
+def get_coin_price(address):
+    start = int((datetime.now() - timedelta(days=180)).timestamp())
+    # sfrxeth v2 price is not available through defillama
+    if address == "0xac3E018457B222d93114458476f3E3416Abbe38F":
+        weth_address = "ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        response = requests.get(f"https://coins.llama.fi/chart/{weth_address}?start={start}&span=1000&period=6h")
+        weth_prices = response.json()["coins"][weth_address]["prices"]
+
+        respones = requests.get("https://api.frax.finance/v2/frxeth/summary/history?range=180d")
+        frxeth_prices = respones.json()["items"]
+        for price in frxeth_prices:
+            price["timestamp"] = int(datetime.fromisoformat(price["intervalTimestamp"][:-1]).timestamp())
+
+        weth_timestamps = [x["timestamp"] for x in weth_prices]
+        frxeth_timestamps = [x["timestamp"] for x in frxeth_prices]
+
+        indices = np.searchsorted(weth_timestamps, frxeth_timestamps)
+        sfrxeth_prices = [
+            {
+                "timestamp": x["timestamp"],
+                "price": x["sfrxethFrxethPrice"] * x["frxethWethCurve"]["price"] * weth_prices[y]["price"]
+            }
+            for x, y in zip(frxeth_prices, indices)
+        ]
+        return sfrxeth_prices
+    else:
+        coin = f"ethereum:{address}"
+        response = requests.get(f"https://coins.llama.fi/chart/{coin}?start={start}&span=1000&period=6h")
+        return response.json()["coins"][coin]["prices"]
+
+
 @shared_task
 def task_curve_generate_ratios():
     chain = Chain.objects.get(chain_name__iexact="ethereum")
@@ -504,11 +536,8 @@ def task_curve_generate_ratios():
             "hhi_7d_30d_ratio": last_row["hhi_7d/30d"],
         }
 
-        start = int((datetime.now() - timedelta(days=100)).timestamp())
-        coin = f"ethereum:{market['collateral_token']['address']}"
-        response = requests.get(f"https://coins.llama.fi/chart/{coin}?start={start}&span=400&period=6h").json()
-
-        prices_df = pd.DataFrame(response["coins"][coin]["prices"])
+        prices = get_coin_price(market["collateral_token"]["address"])
+        prices_df = pd.DataFrame(prices)
         prices_df["timestamp"] = pd.to_datetime(prices_df["timestamp"], unit="s")
         prices_df.set_index("timestamp", inplace=True)
         prices_df.sort_index(inplace=True)
