@@ -42,7 +42,7 @@ class ControllerMetadata(BaseModel):
 class CurveMetrics(BaseModel):
     chain = ForeignKey(Chain, on_delete=CASCADE)
     block_number = IntegerField()
-    total_supply = TextField()
+    circulating_supply = TextField()
     price = TextField()
 
 

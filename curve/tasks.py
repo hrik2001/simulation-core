@@ -81,6 +81,7 @@ AMM_ABI = [
 
 CRV_USD_ADDRESS = Web3.to_checksum_address("0xf939e0a03fb07f59a73314e73794be0e57ac1b4e")
 CRV_USD_AGG_ADDRESS = Web3.to_checksum_address("0x18672b1b0c623a30089A280Ed9256379fb0E4E62")
+STABLECOIN_LENS_ADDRESS = Web3.to_checksum_address("0xe24e2dB9f6Bb40bBe7c1C025bc87104F5401eCd7")
 
 controller_asset_map = {
     "sfrxETH": "0xEC0820EfafC41D8943EE8dE495fC9Ba8495B15cf",
@@ -213,16 +214,16 @@ def task_curve__update_curve_usd_metrics():
     web3 = Web3(HTTPProvider(chain.rpc))
     block_number = web3.eth.get_block("latest")["number"]
 
-    crv_usd_contract = web3.eth.contract(address=CRV_USD_ADDRESS, abi=[
+    stablecoin_lens_contract = web3.eth.contract(address=STABLECOIN_LENS_ADDRESS, abi=[
         {
             "inputs": [],
-            "name": "totalSupply",
+            "name": "circulating_supply",
             "outputs": [{"name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
-        }
+        },
     ])
-    total_supply = crv_usd_contract.functions.totalSupply().call(block_identifier=block_number)
+    circulating_supply = stablecoin_lens_contract.functions.circulating_supply().call(block_identifier=block_number)
 
     crv_usd_agg_contract = web3.eth.contract(address=CRV_USD_AGG_ADDRESS, abi=[
         {
@@ -235,7 +236,7 @@ def task_curve__update_curve_usd_metrics():
     ])
     price = crv_usd_agg_contract.functions.price().call(block_identifier=block_number)
 
-    CurveMetrics(chain=chain, block_number=block_number, total_supply=total_supply, price=price).save()
+    CurveMetrics(chain=chain, block_number=block_number, circulating_supply=circulating_supply, price=price).save()
 
 
 def get_llamma_url(chain, url_part, model):
