@@ -402,7 +402,7 @@ class AaveProtocolDTO(ProtocolDTO):
             raise ValueError(f"Holder query ID is not set for {self.chain.chain_name}")
         
         dune = DuneClient(
-            api_key=os.getenv('DUNE_API_KEY'),
+            api_key=os.getenv('DUNE_KEY'),
             base_url="https://api.dune.com",
             request_timeout=5000 # request will time out after 300 seconds
         )
