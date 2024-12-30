@@ -145,6 +145,9 @@ class CurveScores(BaseModel):
     aggregate_borrower_distribution_score = TextField(default="0")
     debt_ceiling_score = TextField(default="0")
     sl_responsiveness_score = TextField(default="0")
+    interdependency_volatility_score = TextField(default="0")
+    interdependency_price_momentum_score = TextField(default="0")
+    weighted_average_score = TextField(default="0")
 
 
 class CurveScoresDetail(BaseModel):
@@ -156,6 +159,8 @@ class CurveScoresDetail(BaseModel):
     cr_ratio_7d = TextField(default="0")
     cr_ratio_30d = TextField(default="0")
     cr_7d_30d_ratio = TextField(default="0")
+    min_ltv = TextField(default="0")
+    max_ltv = TextField(default="0")
     
     # HHI (Borrower Distribution) details
     hhi = TextField(default="0")
@@ -188,6 +193,10 @@ class CurveScoresDetail(BaseModel):
     borrowable = TextField(default="0")
     bad_debt = TextField(default="0")
     recommended_debt_ceiling = TextField(default="0")
+
+    # SL Score
+    sl_spread_analysis_score = TextField(default="0")
+    sl_peak_analysis_score = TextField(default="0")
     
 
 class CurveDebtCeilingScore(Model):

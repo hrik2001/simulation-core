@@ -91,6 +91,19 @@ controller_asset_map = {
     "tBTC": "0x1C91da0223c763d2e0173243eAdaA0A2ea47E704"
 }
 
+SCORING_WEIGHTS = {
+    "bad_debt_score": 14,
+    "debt_ceiling_score": 14,
+    "aggregate_cr_score": 11,
+    "aggregate_collateral_under_sl_score": 11,
+    "aggregate_vol_ratio_score": 11,
+    "aggregate_prob_drop_score": 9,
+    "aggregate_borrower_distribution_score": 9,
+    "sl_responsiveness_score": 9,
+    "interdependency_volatility_score": 6,
+    "interdependency_price_momentum_score": 6
+}
+
 
 def curve_batch_api_call(path, condition=None):
     url = f"{BASE_URL}{path}"
@@ -494,9 +507,6 @@ def task_curve_generate_ratios():
         min_ltv = 1 - liquidation_discount - (2 / A)
         max_ltv = 1 - liquidation_discount - (25 / A)
 
-        current["min_ltv"] = min_ltv
-        current["max_ltv"] = max_ltv
-
         current["borrowable"] = market["borrowable"]
         current["total_debt"] = market["total_debt"]
 
@@ -529,6 +539,8 @@ def task_curve_generate_ratios():
             "cr_ratio_7d": last_row["cr_ratio_7d"],
             "cr_ratio_30d": last_row["cr_ratio_30d"],
             "cr_7d_30d_ratio": last_row["cr_7d/30d"],
+            "min_ltv": min_ltv,
+            "max_ltv": max_ltv,
             "hhi": last_row["hhi"],
             "hhi_ideal": last_row["hhi_ideal"],
             "hhi_ratio": last_row["hhi_ratio"],
@@ -609,12 +621,18 @@ def task_curve_generate_ratios():
         current["score_details"]["collateral_under_sl_ratio_30d"] = latest_row["collateral_under_sl_ratio_30d"]
 
         try:
-            sl_score = calculate_sl_score(controller)
+            output = calculate_sl_score(controller)
+            sl_score = output["overall_score"]
+            spread_analysis_score = output["spread_analysis"]["score"]
+            peak_analysis_score = output["peak_analysis"]["score"]
         except Exception:
             print(traceback.format_exc())
-            sl_score = 0.0
+            sl_score, spread_analysis_score, peak_analysis_score = 0.0, 0.0, 0.0
 
         current["scores"]["sl_responsiveness_score"] = sl_score
+        current["score_details"]["sl_spread_analysis_score"] = spread_analysis_score
+        current["score_details"]["sl_peak_analysis_score"] = peak_analysis_score
+
         all_data.append(current)
 
     btc_ohlc = None
@@ -662,6 +680,24 @@ def task_curve_generate_ratios():
         current["score_details"]["borrowable"] = current["borrowable"]
         current["score_details"]["bad_debt"] = current["health"]["bad_debt"]
         current["score_details"]["recommended_debt_ceiling"] = debt_ceiling_scores[current["controller"]]
+
+        current["scores"]["interdependency_volatility_score"] = np.median([
+            current["scores"]["aggregate_vol_ratio_score"],
+            current["scores"]["aggregate_collateral_under_sl_score"],
+            current["scores"]["aggregate_borrower_distribution_score"],
+            current["scores"]["sl_responsiveness_score"],
+        ])
+        current["scores"]["interdependency_price_momentum_score"] = np.median([
+            current["scores"]["aggregate_cr_score"],
+            current["scores"]["aggregate_prob_drop_score"],
+            current["scores"]["aggregate_borrower_distribution_score"],
+            current["scores"]["debt_ceiling_score"],
+        ])
+
+        weighted_average_score = 0
+        for score, weight in SCORING_WEIGHTS.items():
+            weighted_average_score += current["scores"][score] * weight
+        current["scores"]["weighted_average_score"] = weighted_average_score
 
         # Save detailed metrics
         CurveScoresDetail(chain=chain, controller=current["controller"], **current["score_details"]).save()
@@ -817,10 +853,18 @@ def calculate_sl_score(controller):
     fraction = count / len(test)
 
     if fraction >= 0.85:
-        return 50.0
+        return {
+            "overall_score": 50.0,
+            "spread_analysis": {
+                "score": 50.0
+            },
+            "peak_analysis": {
+                "score": 50.0
+            }
+        }
 
     output = analyze_distributions_combined(df, test)
-    return output["overall_score"]
+    return output
 
 
 @shared_task
