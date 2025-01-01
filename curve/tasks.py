@@ -464,19 +464,38 @@ def task_curve_generate_ratios():
         current = {}
 
         controller = market["address"]
-        snapshots = curve_api_call(f"/v1/crvusd/markets/{chain_name}/{controller}/snapshots", params={
-            "fetch_on_chain": False,
-            "agg": "day"
-        })
-
         if controller.lower() == "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76".lower():
             continue
 
         current["controller"] = controller
 
-        snapshots_df = pd.DataFrame(snapshots["data"])
+        today = datetime.today()
+        now = int(datetime.now().timestamp())
+        start = int((today - timedelta(days=30)).timestamp())
+
+        all_snapshots = []
+        while start < now:
+            snapshots = curve_api_call(f"/v1/crvusd/markets/{chain_name}/{controller}/snapshots", params={
+                "fetch_on_chain": False,
+                "start": start,
+                "agg": "none",
+                "sort_by": "DATE_ASC"
+            })
+            if not snapshots["data"]:
+                break
+
+            snapshots_to_keep = []
+            for snapshot in snapshots["data"]:
+                snapshot["dt"] = datetime.fromisoformat(snapshot["dt"])
+                if snapshot["dt"].date() != today.date():
+                    snapshots_to_keep.append(snapshot)
+
+            all_snapshots.extend(snapshots_to_keep)
+            start = int(snapshots["data"][-1]["dt"].timestamp() + 1)
+
+        snapshots_df = pd.DataFrame(all_snapshots)
+
         if not snapshots_df.empty:
-            snapshots_df["dt"] = pd.to_datetime(snapshots_df["dt"])
             snapshots_df.set_index("dt", inplace=True)
 
             scientific_columns = ["loan_discount", "liquidation_discount"]
@@ -487,16 +506,19 @@ def task_curve_generate_ratios():
             snapshots_df.sort_index(inplace=True)
 
         snapshots_df["cr_ratio"] = snapshots_df["total_collateral_usd"] / snapshots_df["total_debt"]
-        snapshots_df["cr_ratio_30d"] = snapshots_df["cr_ratio"].rolling(30).mean()
-        snapshots_df["cr_ratio_7d"] = snapshots_df["cr_ratio"].rolling(7).mean()
-        snapshots_df["cr_7d/30d"] = snapshots_df["cr_ratio_7d"] / snapshots_df["cr_ratio_30d"]
-
         snapshots_df["hhi"] = snapshots_df["sum_debt_squared"]
         snapshots_df["hhi_ideal"] = (snapshots_df["total_debt"] ** 2) / snapshots_df["n_loans"]
         snapshots_df["hhi_ratio"] = snapshots_df["hhi"] / snapshots_df["hhi_ideal"]
-        snapshots_df["hhi_30d"] = snapshots_df["hhi"].rolling(30).mean()
-        snapshots_df["hhi_7d"] = snapshots_df["hhi"].rolling(7).mean()
-        snapshots_df["hhi_7d/30d"] = snapshots_df["hhi_7d"] / snapshots_df["hhi_30d"]
+
+        snapshots_7d_df = snapshots_df.tail(84)
+
+        cr_ratio_30d = snapshots_df["cr_ratio"].mean()
+        cr_ratio_7d = snapshots_7d_df["cr_ratio"].mean()
+        cr_7d_30d_ratio = cr_ratio_7d / cr_ratio_30d
+
+        hhi_30d = snapshots_df["hhi"].mean()
+        hhi_7d = snapshots_7d_df["hhi"].mean()
+        hhi_7d_30d_ratio = hhi_7d / hhi_30d
 
         current["snapshots"] = snapshots_df
 
@@ -515,13 +537,13 @@ def task_curve_generate_ratios():
         })
         current["health"] = health
 
-        relative_cr_score = score_with_limits(last_row["cr_7d/30d"], 1.1, 0.9, True)
+        relative_cr_score = score_with_limits(cr_7d_30d_ratio, 1.1, 0.9, True)
         absolute_cr_score = score_with_limits(1 / last_row["cr_ratio"], 0.75 * max_ltv, 0.75 * min_ltv, False)
         aggregate_cr_score = (0.4 * relative_cr_score + 0.6 * absolute_cr_score)
 
         bad_debt_score = score_bad_debt(health["bad_debt"], market["total_debt"])
 
-        relative_borrower_distribution_score = score_with_limits(last_row["hhi_7d/30d"], 1.1, 0.9, True)
+        relative_borrower_distribution_score = score_with_limits(hhi_7d_30d_ratio, 1.1, 0.9, True)
         benchmark_borrower_distribution_score = score_with_limits(last_row["hhi_ratio"], 10, 30, True)
         aggregate_borrower_distribution_score = 0.5 * relative_borrower_distribution_score + 0.5 * benchmark_borrower_distribution_score
 
@@ -536,17 +558,17 @@ def task_curve_generate_ratios():
         }
         current["score_details"] = {
             "cr_ratio": last_row["cr_ratio"],
-            "cr_ratio_7d": last_row["cr_ratio_7d"],
-            "cr_ratio_30d": last_row["cr_ratio_30d"],
-            "cr_7d_30d_ratio": last_row["cr_7d/30d"],
+            "cr_ratio_7d": cr_ratio_7d,
+            "cr_ratio_30d": cr_ratio_30d,
+            "cr_7d_30d_ratio": cr_7d_30d_ratio,
             "min_ltv": min_ltv,
             "max_ltv": max_ltv,
             "hhi": last_row["hhi"],
             "hhi_ideal": last_row["hhi_ideal"],
             "hhi_ratio": last_row["hhi_ratio"],
-            "hhi_7d": last_row["hhi_7d"],
-            "hhi_30d": last_row["hhi_30d"],
-            "hhi_7d_30d_ratio": last_row["hhi_7d/30d"],
+            "hhi_7d": hhi_7d,
+            "hhi_30d": hhi_30d,
+            "hhi_7d_30d_ratio": hhi_7d_30d_ratio,
         }
 
         prices = get_coin_price(market["collateral_token"]["address"])
