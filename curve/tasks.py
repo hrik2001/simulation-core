@@ -487,8 +487,7 @@ def task_curve_generate_ratios():
             snapshots_to_keep = []
             for snapshot in snapshots["data"]:
                 snapshot["dt"] = datetime.fromisoformat(snapshot["dt"])
-                if snapshot["dt"].date() != today.date():
-                    snapshots_to_keep.append(snapshot)
+                snapshots_to_keep.append(snapshot)
 
             all_snapshots.extend(snapshots_to_keep)
             start = int(snapshots["data"][-1]["dt"].timestamp() + 1)
@@ -570,6 +569,8 @@ def task_curve_generate_ratios():
             "hhi_30d": hhi_30d,
             "hhi_7d_30d_ratio": hhi_7d_30d_ratio,
         }
+
+        print(market["collateral_token"]["symbol"], controller, last_row["hhi"], last_row["hhi_ratio"], hhi_7d_30d_ratio)
 
         prices = get_coin_price(market["collateral_token"]["address"])
         prices_df = pd.DataFrame(prices)
