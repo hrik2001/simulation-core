@@ -426,31 +426,80 @@ def get_coin_price(address):
     start = int((datetime.now() - timedelta(days=180)).timestamp())
     # sfrxeth v2 price is not available through defillama
     if address == "0xac3E018457B222d93114458476f3E3416Abbe38F":
+        # Get WETH 6h data
         weth_address = "ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
         response = requests.get(f"https://coins.llama.fi/chart/{weth_address}?start={start}&span=1000&period=6h")
         weth_prices = response.json()["coins"][weth_address]["prices"]
 
-        respones = requests.get("https://api.frax.finance/v2/frxeth/summary/history?range=180d")
-        frxeth_prices = respones.json()["items"]
-        for price in frxeth_prices:
-            price["timestamp"] = int(datetime.fromisoformat(price["intervalTimestamp"][:-1]).timestamp())
-
-        weth_timestamps = [x["timestamp"] for x in weth_prices]
-        frxeth_timestamps = [x["timestamp"] for x in frxeth_prices]
-
-        indices = np.searchsorted(weth_timestamps, frxeth_timestamps)
+        # Get frxETH daily data
+        response = requests.get("https://api.frax.finance/v2/frxeth/summary/history?range=180d")
+        frxeth_prices = response.json()["items"]
+        
+        # Convert to DataFrames for easier manipulation
+        weth_df = pd.DataFrame(weth_prices)
+        weth_df['timestamp'] = pd.to_datetime(weth_df['timestamp'], unit='s')
+        weth_df.set_index('timestamp', inplace=True)
+        
+        # Process frxETH data
+        frxeth_df = pd.DataFrame(frxeth_prices)
+        frxeth_df['timestamp'] = pd.to_datetime(frxeth_df['intervalTimestamp']).dt.tz_localize(None)
+        frxeth_df.set_index('timestamp', inplace=True)
+        
+        # Extract required price components
+        frxeth_df['sfrxeth_frxeth'] = frxeth_df['sfrxethFrxethPrice']
+        frxeth_df['frxeth_weth'] = frxeth_df['frxethWethCurve'].apply(lambda x: x['price'])
+                
+        # Forward fill to ensure we have values for all timestamps
+        frxeth_df = frxeth_df[['sfrxeth_frxeth', 'frxeth_weth']].ffill()
+        
+        # Function to find nearest timestamp
+        def find_nearest_frxeth_data(weth_timestamp):
+            time_diff = abs(frxeth_df.index - weth_timestamp)
+            nearest_idx = time_diff.argmin()
+            return frxeth_df.iloc[nearest_idx]
+        
+        # Create aligned data using nearest timestamp matching
+        aligned_data = []
+        for timestamp, row in weth_df.iterrows():
+            frxeth_data = find_nearest_frxeth_data(timestamp)
+            aligned_data.append({
+                'timestamp': timestamp,
+                'weth_price': row['price'],
+                'sfrxeth_frxeth': frxeth_data['sfrxeth_frxeth'],
+                'frxeth_weth': frxeth_data['frxeth_weth']
+            })
+        
+        # Convert to DataFrame
+        aligned_df = pd.DataFrame(aligned_data)
+        aligned_df.set_index('timestamp', inplace=True)
+        
+        if aligned_df.empty:
+            print("Error: No data after aligning WETH and frxETH data")
+            return []
+        
+        # Calculate sfrxETH price
+        aligned_df['final_price'] = (
+            aligned_df['weth_price'] *
+            aligned_df['sfrxeth_frxeth'] *
+            aligned_df['frxeth_weth']
+        )
+        
+        # Convert back to the expected format
         sfrxeth_prices = [
             {
-                "timestamp": x["timestamp"],
-                "price": x["sfrxethFrxethPrice"] * x["frxethWethCurve"]["price"] * weth_prices[y]["price"]
+                "timestamp": int(timestamp.timestamp()),
+                "price": float(price)
             }
-            for x, y in zip(frxeth_prices, indices)
+            for timestamp, price in zip(aligned_df.index, aligned_df['final_price'])
         ]
+        
         return sfrxeth_prices
+    
     else:
         coin = f"ethereum:{address}"
         response = requests.get(f"https://coins.llama.fi/chart/{coin}?start={start}&span=1000&period=6h")
-        return response.json()["coins"][coin]["prices"]
+        prices = response.json()["coins"][coin]["prices"]
+        return prices
 
 
 @shared_task
