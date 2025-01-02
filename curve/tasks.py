@@ -706,9 +706,9 @@ def task_curve_generate_ratios():
             print(traceback.format_exc())
             sl_score, spread_analysis_score, peak_analysis_score = 0.0, 0.0, 0.0
 
-        current["scores"]["sl_responsiveness_score"] = sl_score
-        current["score_details"]["sl_spread_analysis_score"] = spread_analysis_score
-        current["score_details"]["sl_peak_analysis_score"] = peak_analysis_score
+        current["scores"]["sl_responsiveness_score"] = sl_score / 100.0
+        current["score_details"]["sl_spread_analysis_score"] = spread_analysis_score / 100.0
+        current["score_details"]["sl_peak_analysis_score"] = peak_analysis_score / 100.0
 
         all_data.append(current)
 
@@ -774,7 +774,7 @@ def task_curve_generate_ratios():
         weighted_average_score = 0
         for score, weight in SCORING_WEIGHTS.items():
             weighted_average_score += current["scores"][score] * weight
-        current["scores"]["weighted_average_score"] = weighted_average_score
+        current["scores"]["weighted_average_score"] = weighted_average_score / 100.0
 
         # Save detailed metrics
         CurveScoresDetail(chain=chain, controller=current["controller"], **current["score_details"]).save()
