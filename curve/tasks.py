@@ -356,6 +356,11 @@ def task_curve__update_curve_markets():
         controller = market["address"]
         if controller.lower() == "0x8472A9A7632b173c8Cf3a86D3afec50c35548e76".lower():
             continue
+        score = CurveScores.objects.filter(chain=chain, controller=controller).latest("created_at")
+        if score is not None:
+            market["overall_score"] = score.weighted_average_score
+        else:
+            market["overall_score"] = None
         markets_to_keep.append(market)
 
         try:
