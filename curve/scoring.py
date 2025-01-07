@@ -57,19 +57,39 @@ def score_with_limits(score_this: float,
 
 
 def score_bad_debt(bad_debt: float,
-                   current_debt: float) -> float:
-    if bad_debt == 0:
+                   current_debt: float
+                   ) -> float:
+    """
+    Score bad debt ratio with different interpolation methods
+    
+    Args:
+        bad_debt (float): Amount of bad debt
+        current_debt (float): Total current debt
+        method (str): Interpolation method ('sigmoid', 'exponential', or 'quadratic')
+        
+    Returns:
+        float: Score between 0 and 1
+    """    
+    # Constants
+    IGNORE_THRESHOLD = 0.001  # 0.1% of current debt
+    CRITICAL_THRESHOLD = 0.01  # 1% of current debt
+    
+    # Convert to ratio for easier calculation
+    bad_debt_ratio = bad_debt / current_debt if current_debt > 0 else 0
+    
+    # If below ignore threshold, return perfect score
+    if bad_debt_ratio <= IGNORE_THRESHOLD:
         return 1.0
-    elif bad_debt < 0.001 * current_debt:
-        # score between 0.5 and 1
-        return 0.5 + 0.5 * (bad_debt / (0.001 * current_debt))
-    elif bad_debt < 0.01 * current_debt:
-        # score between 0 and 0.5
-        return 0.5 * (bad_debt / (0.01 * current_debt))
-    else:
+    
+    # If above critical threshold, return zero
+    if bad_debt_ratio >= CRITICAL_THRESHOLD:
         return 0.0
-
-
+    
+    # Normalize the ratio to [0,1] range for interpolation
+    x = (bad_debt_ratio - IGNORE_THRESHOLD) / (CRITICAL_THRESHOLD - IGNORE_THRESHOLD)
+    
+    return 1 - x * x * x
+    
 def score_debt_ceiling(recommended_debt_ceiling: float,
                        current_debt_ceiling: float,
                        current_debt: float) -> float:
