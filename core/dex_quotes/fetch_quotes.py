@@ -60,7 +60,6 @@ def paraswap_job(network = None, num_samples = 30):
     stopping_criteria = 0 
     price_impact = 0
 
-    network="base"
     if network is not None:
         print(f'{network}')
 
